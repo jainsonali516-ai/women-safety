@@ -67,8 +67,10 @@ export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
     if (!res.ok) return { score: null, available: false as const };
     const json = await res.json();
     const placeCount = Number(json?.elements?.[0]?.tags?.total ?? 0);
-    // Normalize: 25+ nearby shops/amenities ≈ fully busy commercial area.
-    const score = Math.min(100, Math.round((placeCount / 25) * 100));
+    // Normalize: 15+ nearby shops/amenities ≈ fully busy commercial area. Most residential
+    // stretches genuinely have only a handful of shops within 400m, so a stricter denominator
+    // (this used to be 25) made almost every non-market street register as "isolated".
+    const score = Math.min(100, Math.round((placeCount / 15) * 100));
     return { score, available: true as const };
   } catch {
     return { score: null, available: false as const };
@@ -101,7 +103,12 @@ export interface SafetyInputs {
 
 /** Combines available live signals into a 0-100 safety score. Missing signals are simply excluded from the average. */
 export function computeSafetyScore({ streetLightCount, streetLightDataAvailable, footTrafficScore }: SafetyInputs) {
-  const lightScore = streetLightDataAvailable ? Math.min(100, streetLightCount * 10) : null; // 10 lamps within 400m ≈ fully lit
+  // OSM's highway=street_lamp tagging is very incomplete for Indian cities — most real,
+  // genuinely-lit streets simply have zero individually-mapped lamp nodes. Treating "0 found"
+  // as "confirmed unlit" (the old `count * 10`, floor 0) was systematically dragging nearly
+  // every route into a false "high risk" reading. A 0 count is inconclusive, not a red flag —
+  // the floor here reflects that uncertainty instead of asserting darkness.
+  const lightScore = streetLightDataAvailable ? Math.min(100, 35 + streetLightCount * 15) : null;
   const signals = [lightScore, footTrafficScore].filter(
     (v): v is number => typeof v === "number"
   );
