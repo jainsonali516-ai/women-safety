@@ -16,8 +16,10 @@ import { busFareForDistance, metroFareForDistance } from "@/lib/fares";
 const ALL_MODES = ["metro", "bus", "auto", "cab_uber", "cab_ola"] as const;
 
 const bodySchema = z.object({
-  origin: coordinateSchema.extend({ label: z.string().trim().max(120).optional() }),
-  destination: coordinateSchema.extend({ label: z.string().trim().max(120).optional() }),
+  // Full Nominatim addresses (e.g. "Kashmiri Gate, Lothiyan Road, Kashmere Gate, Sadar Bazaar, ...")
+  // routinely exceed 120 chars, so allow generous headroom rather than rejecting real places.
+  origin: coordinateSchema.extend({ label: z.string().trim().max(300).optional() }),
+  destination: coordinateSchema.extend({ label: z.string().trim().max(300).optional() }),
   sort: z.enum(["balanced", "safest", "fastest", "cheapest"]).default("balanced"),
   modes: z.array(z.enum(ALL_MODES)).min(1).optional(),
   concession: z.boolean().default(true),
