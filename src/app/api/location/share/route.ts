@@ -16,6 +16,12 @@ export async function POST(request: Request) {
   const { latitude, longitude } = parsed.data;
   const mapsUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
 
+  if (!isTwilioConfigured()) {
+    // No SMS provider configured — still hand back the location link so the user can share it
+    // manually (copy, WhatsApp, etc.) instead of promising an SMS that won't send.
+    return NextResponse.json({ ok: true, sms_sent: false, maps_url: mapsUrl });
+  }
+
   const { data: contacts, error } = await supabase
     .from("emergency_contacts")
     .select("id, name, phone")
@@ -23,20 +29,7 @@ export async function POST(request: Request) {
 
   if (error) return jsonError(error.message, 500);
   if (!contacts || contacts.length === 0) {
-    return jsonError("No trusted contacts saved yet", 400);
-  }
-
-  if (!isTwilioConfigured()) {
-    return NextResponse.json(
-      {
-        ok: false,
-        maps_url: mapsUrl,
-        contacts,
-        message:
-          "Twilio is not configured on this server yet. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER to send real SMS.",
-      },
-      { status: 202 }
-    );
+    return NextResponse.json({ ok: true, sms_sent: false, maps_url: mapsUrl, message: "No trusted contacts saved yet." });
   }
 
   const message = `Tulip Safety Alert: I'm sharing my live location with you. View it here: ${mapsUrl}`;
@@ -48,5 +41,5 @@ export async function POST(request: Request) {
   const sent = results.filter((r) => r.status === "fulfilled").length;
   const failed = results.length - sent;
 
-  return NextResponse.json({ ok: true, maps_url: mapsUrl, sent, failed, contacts: contacts.length });
+  return NextResponse.json({ ok: true, sms_sent: true, maps_url: mapsUrl, sent, failed, contacts: contacts.length });
 }
