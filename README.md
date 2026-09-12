@@ -6,7 +6,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 **Working with zero extra setup** (beyond your Supabase project):
 - Dark "purple night sky" / light theme toggle with an animated floating-stars-and-tulip-petals background
-- Phone-number auth (Indian mobile numbers only) via Supabase's phone OTP flow
+- Email + password auth (via Supabase Auth)
 - Trusted/emergency contacts (add, call via `tel:`, delete)
 - "Share My Location" → builds a Google Maps link from the browser's GPS and (once Twilio is configured) SMS's it to every trusted contact
 - Location-reminder "alarms" — scheduled prompts that always ask for explicit consent before anything is read or sent
@@ -21,7 +21,6 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 | Feature | Needs |
 |---|---|
 | Real SMS delivery for "Share My Location" | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
-| Phone OTP actually sending SMS | Enable **Phone** auth + a Twilio SMS provider in Supabase → Authentication → Providers |
 | Natural-language Tulip Bot replies | `ANTHROPIC_API_KEY` (falls back to rule-based replies without it) |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light + shop/amenity density as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
@@ -41,7 +40,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 ## API routes
 
-Auth: `/api/auth/phone/send-otp`, `/api/auth/phone/verify-otp`, `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`
+Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`
 Safety: `/api/contacts`, `/api/contacts/:id`, `/api/location/share`, `/api/reminders`, `/api/reminders/:id`, `/api/sos*`, `/api/incidents*`
 Journey: `/api/geocode`, `/api/directions`, `/api/routes/plan`, `/api/bot`
 `/api/health`
