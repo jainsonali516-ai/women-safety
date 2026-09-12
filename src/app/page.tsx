@@ -33,6 +33,9 @@ export default async function Home() {
         <Link href="/auth" className="btn-accent" style={{ padding: "0.9rem 2rem", borderRadius: "0.9rem", fontWeight: 600, fontSize: "1rem" }}>
           Get Started
         </Link>
+        <Link href="/about" style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", textDecoration: "underline" }}>
+          Learn more about Tulip
+        </Link>
       </main>
     );
   }

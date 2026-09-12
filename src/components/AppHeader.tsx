@@ -34,6 +34,9 @@ export function AppHeader() {
         <Link href="/contacts" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
           Contacts
         </Link>
+        <Link href="/about" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
+          About
+        </Link>
         <a
           href="tel:112"
           title="Quick SOS: call 112"
