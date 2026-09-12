@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { ConditionalBackground } from "@/components/ConditionalBackground";
@@ -23,9 +24,10 @@ export const metadata: Metadata = {
 };
 
 // Sets data-theme before first paint (default: dark/"Galactic", unless the visitor previously
-// chose light). Runs from a Server Component, which Next.js 16 allows — a Client Component
-// rendering the same raw <script> tag (as next-themes did internally) triggers a hydration
-// error there, which is what this replaced.
+// chose light). Next.js 16 flags any raw <script> JSX at all (this is what tripped up
+// next-themes' internal flash-prevention script, and a hand-rolled one in <head> hit the exact
+// same error) — next/script's beforeInteractive strategy is the sanctioned way to run an inline
+// script ahead of hydration.
 const themeInitScript = `
   try {
     var stored = localStorage.getItem('tulip-theme');
@@ -38,10 +40,8 @@ const themeInitScript = `
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-      </head>
       <body suppressHydrationWarning>
+        <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
           <EmergencyModeProvider>
             <ServiceWorkerRegister />
