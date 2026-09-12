@@ -38,7 +38,15 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 **Mock data — the safety map's heatmap/footfall markers.** `SafetyMapContainer` seeds its heatmap and corridor markers from a small hardcoded list of well-known Delhi NCR locations, not a live feed — the route scoring itself (safety/rush scores shown on route cards) uses the real, live OSM signals described above. Swapping the map's mock points for a live source is a drop-in change in that one file.
 
-**Deliberately not using Mapbox.** An earlier version of this map used Mapbox GL JS, but Mapbox's signup asked for a payment card, so the map was rebuilt on Leaflet + free OpenStreetMap/CARTO tiles instead — no key, no card, no billing account for anyone running this project.
+**Deliberately not using Mapbox.** An earlier version of this map used Mapbox GL JS, but Mapbox's signup asked for a payment card, so the map was rebuilt on Leaflet + free OpenStreetMap tiles instead (with a CSS filter faking the dark look, after CARTO's free anonymous dark tiles also started requiring a key) — no key, no card, no billing account for anyone running this project.
+
+## Pages
+
+- `/` — home: the Journey search hero, safety map, and route results (redirects to `/auth` if signed out)
+- `/safety` — Safety Tools: SOS quick-dial, Share My Location, Live Journey Tracking
+- `/contacts` — trusted contacts and location-reminder alarms
+- `/bot` — full-page Tulip Bot (also available as a floating widget on every page)
+- `/auth` — sign up / log in
 
 ## Setup
 

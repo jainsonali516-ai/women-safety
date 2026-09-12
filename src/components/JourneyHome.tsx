@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { AppHeader } from "@/components/AppHeader";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
 import { SafetyMapContainer, type MapPoint } from "@/components/SafetyMapContainer";
@@ -21,7 +20,7 @@ async function geocodeOne(query: string) {
   return data.results?.[0] ?? null;
 }
 
-export default function JourneyPage() {
+export function JourneyHome() {
   const [sort, setSort] = useState<SortMode>("balanced");
   const [pinkSaheliActive, setPinkSaheliActive] = useState(true);
   const [options, setOptions] = useState<RouteOption[]>([]);
@@ -89,7 +88,6 @@ export default function JourneyPage() {
 
   return (
     <>
-      <AppHeader />
       <JourneySearchHero
         pinkSaheliActive={pinkSaheliActive}
         onTogglePinkSaheli={() => setPinkSaheliActive((v) => !v)}

@@ -25,8 +25,11 @@ export function AppHeader() {
         <span style={{ fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.15em" }}>TULIP</span>
       </Link>
       <nav style={{ display: "flex", alignItems: "center", gap: "1.1rem" }}>
-        <Link href="/journey" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
+        <Link href="/" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
           Journey
+        </Link>
+        <Link href="/safety" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
+          Safety Tools
         </Link>
         <Link href="/contacts" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
           Contacts
