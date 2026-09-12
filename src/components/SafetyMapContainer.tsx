@@ -30,12 +30,20 @@ const AMENITY_COLOR: Record<RouteAmenity["type"], string> = {
   police: "#2196F3",
 };
 
+// Small inline SVG glyphs per amenity type — a hospital cross, a police shield, a washroom
+// figure — so each type reads as visually distinct on the map, not just by dot color.
+const AMENITY_GLYPH: Record<RouteAmenity["type"], string> = {
+  hospital: '<path d="M10 3h4v5h5v4h-5v5h-4v-5H5V8h5V3z"/>',
+  police: '<path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z"/>',
+  washroom: '<circle cx="12" cy="5" r="2.3"/><path d="M12 8.5c-2.2 0-4 1.6-4 3.6v4.4h1.6L10.4 22h3.2l.8-5.5h1.2l.8 5.5h3.2l-.8-5.5H20v-4.4c0-2-1.8-3.6-4-3.6h-4z"/>',
+};
+
 const AMENITY_BUFFER_METERS = 1000;
 
-/** 12px right on the route, fading down to 4px near the 1km buffer edge. */
-function amenityRadiusPx(distanceMeters: number) {
+/** 30px badge right on the route, shrinking to 16px near the 1km buffer edge. */
+function amenityBadgeSizePx(distanceMeters: number) {
   const t = Math.min(1, distanceMeters / AMENITY_BUFFER_METERS);
-  return 12 - t * 8;
+  return Math.round(30 - t * 14);
 }
 
 // Mock foot-density/lighting sample points across well-known Delhi NCR corridors — a stand-in
@@ -203,13 +211,15 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
 
       (amenities ?? []).forEach((a) => {
         const color = AMENITY_COLOR[a.type];
-        L.circleMarker([a.latitude, a.longitude], {
-          radius: amenityRadiusPx(a.distanceFromRouteMeters),
-          color,
-          fillColor: color,
-          fillOpacity: 0.85,
-          weight: 1,
-        })
+        const size = amenityBadgeSizePx(a.distanceFromRouteMeters);
+        const iconSize = Math.round(size * 0.6);
+        const icon = L.divIcon({
+          className: "tulip-amenity-badge",
+          html: `<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"><svg width="${iconSize}" height="${iconSize}" viewBox="0 0 24 24" fill="white">${AMENITY_GLYPH[a.type]}</svg></div>`,
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2],
+        });
+        L.marker([a.latitude, a.longitude], { icon })
           .bindPopup(
             `<strong>${a.name}</strong><br/>${a.type.charAt(0).toUpperCase() + a.type.slice(1)} — ${(a.distanceFromRouteMeters / 1000).toFixed(2)} km off route`
           )

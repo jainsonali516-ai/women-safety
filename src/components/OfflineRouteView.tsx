@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Phone, MessageCircle, Navigation, Car, TrainFront, Building2, Shield, Hospital } from "lucide-react";
+import Link from "next/link";
+import { Phone, MessageCircle, Navigation, Car, TrainFront, Building2, Shield, Hospital, UserPlus } from "lucide-react";
 import { getEmergencyRoute, type CachedEmergencyRoute } from "@/lib/offlineDb";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
+import { getSmsUri } from "@/lib/smsUri";
+import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 
 const HELP_ICON = { hospital: Hospital, police: Shield, metro: TrainFront } as const;
 
@@ -14,6 +17,7 @@ const EMERGENCY_NUMBERS = [
 ];
 
 export function OfflineRouteView() {
+  const { source, batteryLevel } = useEmergencyMode();
   const [route, setRoute] = useState<CachedEmergencyRoute | null | undefined>(undefined);
 
   useEffect(() => {
@@ -35,17 +39,33 @@ export function OfflineRouteView() {
     );
   }
 
+  const primaryContact = route.contacts[0];
+
   function checkInNow() {
-    if (!route) return;
-    const contact = route.contacts[0];
+    if (!route || !primaryContact) return;
     const locationText = route.lastKnownLocation.address
       ? route.lastKnownLocation.address
       : `${route.lastKnownLocation.latitude.toFixed(5)}, ${route.lastKnownLocation.longitude.toFixed(5)}`;
-    const timestamp = new Date(route.timestamp).toLocaleString();
-    const message = `Check-in: I am currently near ${locationText}. Battery low / offline. (as of ${timestamp})`;
-    const smsBody = encodeURIComponent(message);
+    const mapsUrl = `https://maps.google.com/?q=${route.lastKnownLocation.latitude},${route.lastKnownLocation.longitude}`;
+    const statusLabel =
+      source === "battery" && batteryLevel !== null
+        ? `Battery Low (${batteryLevel}%)`
+        : source === "offline"
+          ? "Offline"
+          : "Emergency";
+
+    const message = [
+      "[SAFETY CHECK-IN]",
+      `Status: ${statusLabel}`,
+      `Last Known Location: ${locationText}`,
+      `Google Maps Link: ${mapsUrl}`,
+      `Time: ${new Date(route.timestamp).toLocaleString()}`,
+      "Note: Sent automatically via Safety Web App.",
+    ].join("\n");
+
     // Plain sms: navigation — no fetch, no XHR, works purely over the cellular SMS channel.
-    window.location.href = contact ? `sms:${contact.phone}?body=${smsBody}` : `sms:?body=${smsBody}`;
+    // getSmsUri handles the iOS (&body=) vs Android (?body=) separator difference.
+    window.location.href = getSmsUri(primaryContact.phone, message);
   }
 
   const uberLinks = route.destination
@@ -55,13 +75,33 @@ export function OfflineRouteView() {
 
   return (
     <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", maxWidth: 640, margin: "0 auto", width: "100%" }}>
-      <button
-        onClick={checkInNow}
-        className="btn-accent"
-        style={{ padding: "1rem", borderRadius: "1rem", border: "none", fontWeight: 800, fontSize: "1.05rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem" }}
-      >
-        <MessageCircle size={20} /> Check In Now
-      </button>
+      {primaryContact ? (
+        <div>
+          <button
+            onClick={checkInNow}
+            className="btn-accent"
+            style={{ width: "100%", padding: "1rem", borderRadius: "1rem", border: "none", fontWeight: 800, fontSize: "1.05rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "0.6rem" }}
+          >
+            <MessageCircle size={20} /> Check In Now
+          </button>
+          <p style={{ fontSize: "0.72rem", color: "var(--foreground-muted)", textAlign: "center", marginTop: "0.5rem" }}>
+            Opens your native messaging app. Uses cellular SMS — no internet required.
+          </p>
+        </div>
+      ) : (
+        <div className="card" style={{ padding: "1.1rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.6rem", textAlign: "center" }}>
+          <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
+            No trusted contact saved yet — add one so Check In Now has somewhere to send your location.
+          </p>
+          <Link
+            href="/contacts"
+            className="btn-accent"
+            style={{ padding: "0.6rem 1rem", borderRadius: "0.7rem", fontWeight: 700, fontSize: "0.85rem", display: "flex", alignItems: "center", gap: "0.4rem" }}
+          >
+            <UserPlus size={16} /> Set Emergency Contact
+          </Link>
+        </div>
+      )}
 
       <div className="card" style={{ padding: "1rem" }}>
         <h3 style={{ fontWeight: 700, marginBottom: "0.6rem", fontSize: "0.9rem" }}>Emergency Calls</h3>

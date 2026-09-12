@@ -8,6 +8,7 @@ interface EmergencyModeState {
   active: boolean;
   source: ActivationSource;
   batterySupported: boolean;
+  batteryLevel: number | null; // 0-100, null if unsupported/unknown
   toggleManual: () => void;
 }
 
@@ -29,6 +30,7 @@ export function EmergencyModeProvider({ children }: { children: React.ReactNode 
   const [isLowBattery, setIsLowBattery] = useState(false);
   const [manualOverride, setManualOverride] = useState(false);
   const [batterySupported, setBatterySupported] = useState(false);
+  const [batteryLevel, setBatteryLevel] = useState<number | null>(null);
   const batteryRef = useRef<BatteryManager | null>(null);
 
   useEffect(() => {
@@ -44,7 +46,10 @@ export function EmergencyModeProvider({ children }: { children: React.ReactNode 
       nav.getBattery().then((battery) => {
         batteryRef.current = battery;
         setBatterySupported(true);
-        const check = () => setIsLowBattery(battery.level <= LOW_BATTERY_THRESHOLD && battery.charging === false);
+        const check = () => {
+          setIsLowBattery(battery.level <= LOW_BATTERY_THRESHOLD && battery.charging === false);
+          setBatteryLevel(Math.round(battery.level * 100));
+        };
         check();
         battery.addEventListener("levelchange", check);
         battery.addEventListener("chargingchange", check);
@@ -63,7 +68,7 @@ export function EmergencyModeProvider({ children }: { children: React.ReactNode 
   const source: ActivationSource = manualOverride ? "manual" : isOffline ? "offline" : isLowBattery ? "battery" : null;
 
   return (
-    <EmergencyModeContext.Provider value={{ active, source, batterySupported, toggleManual }}>
+    <EmergencyModeContext.Provider value={{ active, source, batterySupported, batteryLevel, toggleManual }}>
       {children}
     </EmergencyModeContext.Provider>
   );
