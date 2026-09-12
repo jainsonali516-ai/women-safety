@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, Flame, TrainFront, ShieldCheck } from "lucide-react";
+import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw } from "lucide-react";
 
 export interface MapPoint {
   latitude: number;
@@ -180,6 +180,20 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
     );
   }
 
+  function resetToDelhiNcr() {
+    if (origin && destination) {
+      mapRef.current?.flyToBounds(
+        [
+          [origin.latitude, origin.longitude],
+          [destination.latitude, destination.longitude],
+        ],
+        { padding: [60, 60], duration: 1 }
+      );
+    } else {
+      mapRef.current?.flyTo([28.6139, 77.209], 12, { duration: 1 });
+    }
+  }
+
   return (
     <div className="card tulip-map" style={{ position: "relative", height: 550, overflow: "hidden", padding: 0 }}>
       <div ref={containerRef} className="tulip-map-tiles" style={{ width: "100%", height: "100%" }} />
@@ -238,6 +252,23 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
           }}
         >
           <LocateFixed size={13} /> {locating ? "Locating..." : "My GPS"}
+        </button>
+        <button
+          onClick={resetToDelhiNcr}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.4rem",
+            fontSize: "0.75rem",
+            padding: "0.4rem 0.6rem",
+            borderRadius: "0.5rem",
+            border: "1px solid var(--border)",
+            background: "var(--surface)",
+            color: "var(--foreground)",
+            cursor: "pointer",
+          }}
+        >
+          <RotateCcw size={13} /> Reset View
         </button>
       </div>
     </div>
