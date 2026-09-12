@@ -1,7 +1,7 @@
 // Tulip service worker — cache-first for static assets, so the app shell loads instantly and
 // cheaply once visited, without needing a hardcoded precache manifest (Next.js's build hashes
 // its asset filenames on every build, which would make a static list go stale immediately).
-const CACHE_NAME = "tulip-static-v1";
+const CACHE_NAME = "tulip-static-v2";
 
 const STATIC_DESTINATIONS = new Set(["style", "script", "image", "font"]);
 
