@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { TulipLogo } from "@/components/TulipLogo";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { Compass, ShieldCheck, Users, MessageSquareText } from "lucide-react";
 
 export default async function Home() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   if (!user) {
     return (

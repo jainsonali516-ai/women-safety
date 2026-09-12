@@ -1,13 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { TulipLogo } from "@/components/TulipLogo";
 import { Shield, MapPinned, Users, Bot, Lock } from "lucide-react";
 
 export default async function AboutPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getSessionUser();
 
   return (
     <>

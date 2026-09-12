@@ -12,13 +12,11 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setInfo(null);
     setLoading(true);
     try {
       const endpoint = mode === "login" ? "/api/auth/login" : "/api/auth/signup";
@@ -32,12 +30,6 @@ export default function AuthPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-
-      if (mode === "signup" && !data.session) {
-        setInfo("Account created. Check your email to confirm, then log in.");
-        setMode("login");
-        return;
-      }
 
       router.push("/");
       router.refresh();
@@ -100,14 +92,13 @@ export default function AuthPage() {
           <input
             type="password"
             required
-            minLength={6}
+            minLength={8}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={inputStyle}
           />
           {error && <p style={errorStyle}>{error}</p>}
-          {info && <p style={{ fontSize: "0.8rem", color: "var(--accent-strong)" }}>{info}</p>}
           <button type="submit" disabled={loading} className="btn-accent" style={buttonStyle}>
             {loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}
           </button>
@@ -116,7 +107,6 @@ export default function AuthPage() {
             onClick={() => {
               setMode(mode === "login" ? "signup" : "login");
               setError(null);
-              setInfo(null);
             }}
             style={{ background: "none", border: "none", color: "var(--foreground-muted)", fontSize: "0.8rem", cursor: "pointer" }}
           >

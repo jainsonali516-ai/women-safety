@@ -1,23 +1,44 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { z } from "zod";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api";
+import { emailSchema, nameSchema, passwordSchema, safeParse } from "@/lib/validation";
+import { createSessionToken, hashPassword, setSessionCookie } from "@/lib/auth";
+
+const bodySchema = z.object({
+  email: emailSchema,
+  password: passwordSchema,
+  full_name: nameSchema.optional(),
+  phone: z.string().trim().max(20).optional(),
+});
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
-  const { email, password, full_name, phone } = body ?? {};
+  const parsed = safeParse(bodySchema, body);
+  if (!parsed.ok) return jsonError(parsed.error);
 
-  if (!email || !password) {
-    return jsonError("email and password are required");
-  }
+  const { email, password, full_name, phone } = parsed.data;
+  const supabase = createAdminClient();
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: { data: { full_name, phone } },
-  });
+  const { data: existing } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+  if (existing) return jsonError("An account with that email already exists", 409);
 
-  if (error) return jsonError(error.message, 400);
+  const passwordHash = await hashPassword(password);
 
-  return NextResponse.json({ user: data.user, session: data.session });
+  const { data: user, error } = await supabase
+    .from("users")
+    .insert({ email, password_hash: passwordHash, full_name, phone })
+    .select("id, email, full_name, phone, created_at")
+    .single();
+
+  if (error) return jsonError(error.message, 500);
+
+  const token = await createSessionToken({ userId: user.id, email: user.email });
+  await setSessionCookie(token);
+
+  return NextResponse.json({ user }, { status: 201 });
 }

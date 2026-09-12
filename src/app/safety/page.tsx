@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { QuickDial } from "@/components/QuickDial";
 import { ShareLocationButton } from "@/components/ShareLocationButton";
@@ -8,11 +8,7 @@ import { SosTracker } from "@/components/SosTracker";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 
 export default async function SafetyToolsPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const user = await getSessionUser();
   if (!user) redirect("/auth");
 
   return (

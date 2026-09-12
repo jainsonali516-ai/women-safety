@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError, requireUser } from "@/lib/api";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const body = await request.json().catch(() => null);
   const { latitude, longitude, message } = body ?? {};
@@ -36,13 +36,14 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("sos_alerts")
     .select("*")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error) return jsonError(error.message, 500);

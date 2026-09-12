@@ -6,7 +6,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 **Working with zero extra setup** (beyond your Supabase project):
 - Dual theme: "Galactic" dark mode (neon-pink star-tulips, purple night sky) and "Garden" light mode (blooming pastel tulips), toggle in the sticky glass nav bar
-- Email + password auth (via Supabase Auth)
+- Custom email + password auth: passwords are hashed with bcrypt (never stored in plain text) and sessions are a signed JWT in an `httpOnly` cookie, valid for 1 week — after that, the user has to log in again. User records live in Supabase Postgres (`public.users`), accessed only via the service-role key; the browser never talks to Supabase directly for auth
 - Trusted/emergency contacts (add, call via `tel:`, delete)
 - "Share My Location" → generates a Google Maps link from the browser's GPS. If Twilio is configured, it's SMS'd automatically to every trusted contact; if not, the UI offers zero-cost fallbacks instead — native `sms:` links and WhatsApp (`wa.me`) share buttons per contact, plus copy/open-in-Maps
 - Live Journey Tracking — starts an SOS alert and pings your location periodically via `watchPosition`; if the connection drops, pings are cached in `localStorage` and flushed automatically on the browser's `online` event, with an "Offline Mode — Route Cached Locally" banner while disconnected
@@ -52,9 +52,13 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 ## Setup
 
 1. `npm install`
-2. Copy `.env.example` to `.env.local` and fill in what you have (Supabase is required; the rest are optional and each feature degrades gracefully without its key).
-3. Run `supabase/schema.sql` then `supabase/schema_tulip.sql` in your Supabase project's SQL Editor, in that order.
+2. Copy `.env.example` to `.env.local` and fill in what you have. `JWT_SECRET` and the Supabase values are required; generate a secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`. Everything else is optional and each feature degrades gracefully without its key.
+3. Run, in this order, in your Supabase project's SQL Editor: `supabase/schema.sql`, `supabase/schema_tulip.sql`, `supabase/schema_users.sql`, `supabase/schema_migrate_to_custom_auth.sql`.
 4. `npm run dev`
+
+### Auth model
+
+Signup and login are handled entirely by this app, not Supabase Auth — `public.users` stores `email`, a bcrypt `password_hash`, `full_name`, and `phone`; every other table's `user_id` foreign key points at it. Row Level Security on these tables has no policies (nothing but the service-role key can touch them), so authorization is enforced in each API route by explicitly filtering on the session's user id — see `src/lib/auth.ts` (bcrypt hashing, JWT sign/verify, cookie helpers) and `src/lib/api.ts` (`requireUser()`, used at the top of every protected route).
 
 ## API routes
 

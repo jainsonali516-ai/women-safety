@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError, requireUser } from "@/lib/api";
 import { safeParse } from "@/lib/validation";
 
@@ -12,13 +12,14 @@ const reminderSchema = z.object({
 });
 
 export async function GET() {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("location_reminders")
     .select("*")
+    .eq("user_id", user.id)
     .order("time_of_day", { ascending: true });
 
   if (error) return jsonError(error.message, 500);
@@ -26,9 +27,9 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const body = await request.json().catch(() => null);
   const parsed = safeParse(reminderSchema, body);

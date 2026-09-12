@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError, requireUser } from "@/lib/api";
 
 export async function PATCH(
@@ -7,9 +7,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const body = await request.json().catch(() => null);
   const { label, time_of_day, days_of_week, enabled } = body ?? {};
@@ -31,9 +31,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const { error } = await supabase
     .from("location_reminders")

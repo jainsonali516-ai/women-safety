@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError, requireUser } from "@/lib/api";
 import { coordinateSchema, safeParse } from "@/lib/validation";
 import { isTwilioConfigured, sendSms } from "@/lib/twilio";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const user = await requireUser(supabase);
+  const user = await requireUser();
   if (!user) return jsonError("Unauthorized", 401);
+  const supabase = createAdminClient();
 
   const body = await request.json().catch(() => null);
   const parsed = safeParse(coordinateSchema, body);

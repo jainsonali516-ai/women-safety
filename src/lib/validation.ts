@@ -17,6 +17,13 @@ export const otpSchema = z
   .trim()
   .regex(/^\d{4,8}$/, "Invalid OTP code");
 
+export const emailSchema = z.string().trim().toLowerCase().email("Enter a valid email address").max(254);
+
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(72, "Password must be at most 72 characters"); // bcrypt silently truncates beyond 72 bytes
+
 export const coordinateSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),

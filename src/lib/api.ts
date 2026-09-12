@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSessionUser } from "@/lib/auth";
 
 export function jsonError(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
-export async function requireUser(supabase: SupabaseClient) {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) return null;
-  return user;
+/** Reads and verifies the session cookie set by /api/auth/login or /api/auth/signup. */
+export async function requireUser() {
+  const session = await getSessionUser();
+  if (!session) return null;
+  return { id: session.userId, email: session.email };
 }
