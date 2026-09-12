@@ -1,20 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/ThemeProvider";
 import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time mount flag to avoid SSR/client theme mismatch
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return <div style={{ width: 40, height: 40 }} />;
-
   const isDark = theme === "dark";
 
   return (
