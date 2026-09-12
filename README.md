@@ -5,23 +5,27 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 ## What's implemented
 
 **Working with zero extra setup** (beyond your Supabase project):
-- Dark "purple night sky" / light theme toggle with an animated floating-stars-and-tulip-petals background
+- Dual theme: "Galactic" dark mode (neon-pink star-tulips, purple night sky) and "Garden" light mode (blooming pastel tulips), toggle in the sticky glass nav bar
 - Email + password auth (via Supabase Auth)
 - Trusted/emergency contacts (add, call via `tel:`, delete)
-- "Share My Location" → builds a Google Maps link from the browser's GPS and (once Twilio is configured) SMS's it to every trusted contact
+- "Share My Location" → generates a Google Maps link from the browser's GPS. If Twilio is configured, it's SMS'd automatically to every trusted contact; if not, the UI offers zero-cost fallbacks instead — native `sms:` links and WhatsApp (`wa.me`) share buttons per contact, plus copy/open-in-Maps
+- Live Journey Tracking — starts an SOS alert and pings your location periodically via `watchPosition`; if the connection drops, pings are cached in `localStorage` and flushed automatically on the browser's `online` event, with an "Offline Mode — Route Cached Locally" banner while disconnected
+- Manual landmark fallback — if geolocation is denied or times out (10s), both "Share My Location" and the tracker offer a text field ("enter your current landmark / Metro station") resolved via the free geocoder instead of GPS
 - Location-reminder "alarms" — scheduled prompts that always ask for explicit consent before anything is read or sent
-- SOS quick-dial buttons (1091 / 112 / 100 / 102 / 108)
-- Journey planner UI with Metro / DTC bus / Auto / Uber / Ola options, sortable by Balanced / Safest / Fastest / Cheapest
+- SOS quick-dial buttons (1091 / 112 / 100 / 102 / 108) plus a one-tap SOS button in the nav bar
+- Journey planner UI with Metro / DTC bus / Auto / Uber / Ola options, sortable by Balanced / Safest / Fastest / Cheapest. Two-wheeler rides are excluded by design — there's no bike-taxi option anywhere in the codebase
 - Address search (OpenStreetMap Nominatim), real road-distance/duration routing (OSRM), and both safety signals (street-light density + shop/amenity foot-traffic density, both via the OSM Overpass API) — all free, no API keys or billing account required
+- Metro fares follow DMRC's real distance slabs (₹10–₹60); DTC/Cluster buses are free for women (Pink Pass)
 - Uber & Ola deep links (native app URI + web fallback) pre-filled with pickup/drop-off coordinates
-- Tulip Bot: rule-based peak-hour commute forecasting, with an optional Claude-powered natural-language layer
-- Security: strict input validation (zod) on every route, CSP/HSTS/X-Frame-Options headers, all third-party API calls proxied server-side so keys never reach the browser
+- Tulip Bot: rule-based peak-hour commute forecasting, now also as a floating collapsible widget on every page, with an optional Claude-powered natural-language layer and optional rally/road-closure warnings
+- Security: strict input validation (zod, including a stricter Indian-mobile regex) on every route, CSP/HSTS/X-Frame-Options headers, all third-party API calls proxied server-side so keys never reach the browser
 
 **Wired up but inert until you add credentials:**
 | Feature | Needs |
 |---|---|
-| Real SMS delivery for "Share My Location" | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
+| Automatic SMS delivery for "Share My Location" (instead of the manual SMS/WhatsApp fallback) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
 | Natural-language Tulip Bot replies | `ANTHROPIC_API_KEY` (falls back to rule-based replies without it) |
+| Rally/protest/road-closure warnings in Tulip Bot | `NEWS_API_KEY` (skipped without it — no warning shown, not a fabricated one) |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light + shop/amenity density as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
 

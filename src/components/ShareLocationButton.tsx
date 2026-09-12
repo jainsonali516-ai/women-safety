@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Loader2, Copy, Check } from "lucide-react";
+import { MapPin, Loader2, Copy, Check, MessageCircle } from "lucide-react";
+
+interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+}
 
 interface ShareResult {
   smsSent: boolean;
@@ -14,16 +20,53 @@ interface ShareResult {
 export function ShareLocationButton() {
   const [status, setStatus] = useState<"idle" | "locating" | "sending" | "done" | "error">("idle");
   const [result, setResult] = useState<ShareResult | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [manualLandmark, setManualLandmark] = useState("");
+  const [needsManualLocation, setNeedsManualLocation] = useState(false);
+
+  async function shareFromCoords(latitude: number, longitude: number) {
+    setStatus("sending");
+    try {
+      const [shareRes, contactsRes] = await Promise.all([
+        fetch("/api/location/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ latitude, longitude }),
+        }),
+        fetch("/api/contacts"),
+      ]);
+      const data = await shareRes.json();
+      if (!shareRes.ok) {
+        setStatus("error");
+        setErrorMessage(data.error ?? "Failed to generate location link");
+        return;
+      }
+      if (contactsRes.ok) setContacts((await contactsRes.json()).contacts ?? []);
+
+      setStatus("done");
+      setResult({
+        smsSent: data.sms_sent,
+        mapsUrl: data.maps_url,
+        sent: data.sent,
+        contacts: data.contacts,
+        note: data.message,
+      });
+    } catch {
+      setStatus("error");
+      setErrorMessage("Network error while sharing your location.");
+    }
+  }
 
   async function handleShare() {
     setErrorMessage(null);
     setResult(null);
     setCopied(false);
+    setNeedsManualLocation(false);
+
     if (!("geolocation" in navigator)) {
-      setStatus("error");
-      setErrorMessage("Geolocation is not supported in this browser.");
+      setNeedsManualLocation(true);
       return;
     }
 
@@ -33,43 +76,46 @@ export function ShareLocationButton() {
     if (!confirmed) return;
 
     setStatus("locating");
+    const timeoutId = setTimeout(() => {
+      setStatus((s) => {
+        if (s === "locating") setNeedsManualLocation(true);
+        return s === "locating" ? "idle" : s;
+      });
+    }, 10000);
+
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        setStatus("sending");
-        try {
-          const res = await fetch("/api/location/share", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              latitude: position.coords.latitude,
-              longitude: position.coords.longitude,
-            }),
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            setStatus("error");
-            setErrorMessage(data.error ?? "Failed to generate location link");
-            return;
-          }
-          setStatus("done");
-          setResult({
-            smsSent: data.sms_sent,
-            mapsUrl: data.maps_url,
-            sent: data.sent,
-            contacts: data.contacts,
-            note: data.message,
-          });
-        } catch {
-          setStatus("error");
-          setErrorMessage("Network error while getting your location.");
-        }
+      (position) => {
+        clearTimeout(timeoutId);
+        shareFromCoords(position.coords.latitude, position.coords.longitude);
       },
       () => {
-        setStatus("error");
-        setErrorMessage("Location permission denied.");
+        clearTimeout(timeoutId);
+        setStatus("idle");
+        setNeedsManualLocation(true);
       },
       { enableHighAccuracy: true, timeout: 10000 }
     );
+  }
+
+  async function useManualLandmark(e: React.FormEvent) {
+    e.preventDefault();
+    if (!manualLandmark.trim()) return;
+    setErrorMessage(null);
+    setStatus("locating");
+    try {
+      const res = await fetch(`/api/geocode?q=${encodeURIComponent(manualLandmark)}`);
+      const data = await res.json();
+      if (!res.ok || !data.results?.length) {
+        setStatus("error");
+        setErrorMessage("Couldn't find that landmark — try a more specific name.");
+        return;
+      }
+      setNeedsManualLocation(false);
+      await shareFromCoords(data.results[0].latitude, data.results[0].longitude);
+    } catch {
+      setStatus("error");
+      setErrorMessage("Network error while resolving that landmark.");
+    }
   }
 
   async function copyLink() {
@@ -81,6 +127,10 @@ export function ShareLocationButton() {
     } catch {
       /* clipboard unavailable — link is still visible/clickable */
     }
+  }
+
+  function smsMessage() {
+    return `TULIP EMERGENCY ALERT: Track my location: ${result?.mapsUrl}`;
   }
 
   return (
@@ -110,15 +160,42 @@ export function ShareLocationButton() {
 
       {errorMessage && <p style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#ef4444" }}>{errorMessage}</p>}
 
+      {needsManualLocation && (
+        <form onSubmit={useManualLandmark} style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
+            Location permission denied or weak GPS signal. Enter your current landmark or Metro station instead:
+          </p>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <input
+              value={manualLandmark}
+              onChange={(e) => setManualLandmark(e.target.value)}
+              placeholder="e.g. Rajiv Chowk Metro Station"
+              style={{
+                flex: 1,
+                padding: "0.55rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid var(--border)",
+                background: "var(--background-solid)",
+                color: "var(--foreground)",
+                fontSize: "0.85rem",
+              }}
+            />
+            <button type="submit" className="btn-accent" style={{ padding: "0.55rem 0.9rem", borderRadius: "0.5rem", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
+              Use this
+            </button>
+          </div>
+        </form>
+      )}
+
       {result && (
-        <div style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           {result.smsSent ? (
             <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
-              SMS sent to {result.sent}/{result.contacts} trusted contact(s).
+              SMS sent automatically to {result.sent}/{result.contacts} trusted contact(s).
             </p>
           ) : (
             <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-              {result.note ?? "SMS isn't set up yet — copy or open the link below to share it yourself."}
+              {result.note ?? "Automatic SMS isn't set up — send it yourself below, free, right from your phone."}
             </p>
           )}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -126,13 +203,7 @@ export function ShareLocationButton() {
               href={result.mapsUrl}
               target="_blank"
               rel="noreferrer"
-              style={{
-                fontSize: "0.85rem",
-                padding: "0.5rem 0.8rem",
-                borderRadius: "0.6rem",
-                border: "1px solid var(--border)",
-                color: "var(--foreground)",
-              }}
+              style={{ fontSize: "0.85rem", padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
             >
               Open in Maps
             </a>
@@ -154,6 +225,41 @@ export function ShareLocationButton() {
               {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
             </button>
           </div>
+
+          {!result.smsSent && contacts.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.3rem" }}>
+              {contacts.map((c) => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>{c.name}</span>
+                  <span style={{ display: "flex", gap: "0.4rem" }}>
+                    <a
+                      href={`sms:${c.phone}?body=${encodeURIComponent(smsMessage())}`}
+                      style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem", borderRadius: "0.5rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                    >
+                      Text via SMS
+                    </a>
+                    <a
+                      href={`https://wa.me/${c.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(smsMessage())}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        fontSize: "0.78rem",
+                        padding: "0.4rem 0.7rem",
+                        borderRadius: "0.5rem",
+                        border: "1px solid #25d366",
+                        color: "#25d366",
+                      }}
+                    >
+                      <MessageCircle size={13} /> WhatsApp
+                    </a>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

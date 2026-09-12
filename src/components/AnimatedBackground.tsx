@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { TulipGlyph } from "./TulipGlyph";
 
 function seededRandom(seed: number) {
   let value = seed;
@@ -12,13 +13,13 @@ function seededRandom(seed: number) {
 
 export function AnimatedBackground() {
   // Deterministic layout (seeded) so server/client render match and it never causes hydration mismatches.
-  const stars = useMemo(() => {
+  const starTulips = useMemo(() => {
     const rand = seededRandom(42);
-    return Array.from({ length: 60 }, (_, i) => ({
+    return Array.from({ length: 35 }, (_, i) => ({
       id: i,
       top: `${(rand() * 100).toFixed(2)}%`,
       left: `${(rand() * 100).toFixed(2)}%`,
-      size: `${(1 + rand() * 2).toFixed(1)}px`,
+      size: `${(8 + rand() * 10).toFixed(1)}px`,
       duration: `${(3 + rand() * 4).toFixed(1)}s`,
       delay: `${(rand() * 5).toFixed(1)}s`,
     }));
@@ -36,12 +37,23 @@ export function AnimatedBackground() {
     }));
   }, []);
 
+  const blooms = useMemo(() => {
+    const rand = seededRandom(19);
+    return Array.from({ length: 9 }, (_, i) => ({
+      id: i,
+      x: `${(5 + rand() * 90).toFixed(2)}%`,
+      size: `${(24 + rand() * 20).toFixed(0)}px`,
+      duration: `${(5 + rand() * 3).toFixed(1)}s`,
+      delay: `${(rand() * 4).toFixed(1)}s`,
+    }));
+  }, []);
+
   return (
     <div className="tulip-bg" aria-hidden="true">
-      {stars.map((s) => (
-        <span
+      {starTulips.map((s) => (
+        <TulipGlyph
           key={s.id}
-          className="star"
+          className="star-tulip"
           style={
             {
               top: s.top,
@@ -64,6 +76,22 @@ export function AnimatedBackground() {
               "--duration": p.duration,
               "--delay": p.delay,
               "--drift": p.drift,
+            } as React.CSSProperties
+          }
+        >
+          🌷
+        </span>
+      ))}
+      {blooms.map((b) => (
+        <span
+          key={b.id}
+          className="garden-bloom"
+          style={
+            {
+              "--x": b.x,
+              "--size": b.size,
+              "--duration": b.duration,
+              "--delay": b.delay,
             } as React.CSSProperties
           }
         >

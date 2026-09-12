@@ -11,6 +11,7 @@ import {
 } from "@/lib/scoring";
 import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
+import { metroFareForDistance } from "@/lib/fares";
 
 const bodySchema = z.object({
   origin: coordinateSchema.extend({ label: z.string().trim().max(120).optional() }),
@@ -64,7 +65,7 @@ export async function POST(request: Request) {
   const busDurationMin = Math.round((straightLineKm / 18) * 60 + 5);
   const autoDurationMin = Math.round((straightLineKm / 20) * 60);
 
-  const metroFare = Math.min(60, Math.max(10, Math.round(straightLineKm * 2)));
+  const metroFare = metroFareForDistance(straightLineKm);
   const busFare = straightLineKm <= 0 ? 0 : 0; // Pink Pass: DTC/Cluster bus rides are free for women in Delhi
   const autoFare = Math.round(30 + straightLineKm * 11);
   const cabFareEstimate = Math.round(50 + cabDistanceKm * 14);

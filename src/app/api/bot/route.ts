@@ -3,6 +3,7 @@ import { z } from "zod";
 import { jsonError } from "@/lib/api";
 import { safeParse, freeTextSchema } from "@/lib/validation";
 import { forecastJourney } from "@/lib/peakHours";
+import { checkForDisruptiveEvents } from "@/lib/events";
 
 const bodySchema = z.object({
   message: freeTextSchema(400),
@@ -24,14 +25,24 @@ export async function POST(request: Request) {
     cab: "Uber/Ola",
   };
 
+  const disruption = await checkForDisruptiveEvents(departureDate);
+  let recommendation = forecast.recommendation;
+  const reasoning = [...forecast.reasoning];
+  if (disruption?.detected) {
+    recommendation = "metro";
+    reasoning.unshift(
+      `🚨 Possible rally/road closure reported near that date ("${disruption.headline}"). Recommendation: use Delhi Metro to avoid surface-route disruption.`
+    );
+  }
+
   const ruleBasedReply = [
-    `For that time, I'd recommend **${modeLabel[forecast.recommendation]}**.`,
-    ...forecast.reasoning,
+    `For that time, I'd recommend **${modeLabel[recommendation]}**.`,
+    ...reasoning,
   ].join(" ");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ reply: ruleBasedReply, forecast, source: "heuristic" });
+    return NextResponse.json({ reply: ruleBasedReply, forecast: { ...forecast, recommendation }, disruption, source: "heuristic" });
   }
 
   try {
@@ -50,7 +61,7 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "user",
-            content: `User asked: "${message}"\nHeuristic forecast: recommend ${forecast.recommendation}, reasoning: ${forecast.reasoning.join(" ")}`,
+            content: `User asked: "${message}"\nHeuristic forecast: recommend ${recommendation}, reasoning: ${reasoning.join(" ")}`,
           },
         ],
       }),
@@ -60,10 +71,10 @@ export async function POST(request: Request) {
     const data = await res.json();
     const text = data?.content?.[0]?.text;
     if (!res.ok || !text) {
-      return NextResponse.json({ reply: ruleBasedReply, forecast, source: "heuristic" });
+      return NextResponse.json({ reply: ruleBasedReply, forecast: { ...forecast, recommendation }, disruption, source: "heuristic" });
     }
-    return NextResponse.json({ reply: text, forecast, source: "claude" });
+    return NextResponse.json({ reply: text, forecast: { ...forecast, recommendation }, disruption, source: "claude" });
   } catch {
-    return NextResponse.json({ reply: ruleBasedReply, forecast, source: "heuristic" });
+    return NextResponse.json({ reply: ruleBasedReply, forecast: { ...forecast, recommendation }, disruption, source: "heuristic" });
   }
 }
