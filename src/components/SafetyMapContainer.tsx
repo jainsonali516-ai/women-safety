@@ -64,14 +64,17 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
 
       const map = L.map(containerRef.current, {
         center: [28.6139, 77.209],
-        zoom: 11,
+        zoom: 12,
         zoomControl: false,
       });
       L.control.zoom({ position: "bottomleft" }).addTo(map);
+      L.control.scale({ position: "bottomleft", metric: true, imperial: false }).addTo(map);
 
-      // Plain OpenStreetMap tiles — always free, no API key. The dark look comes from a CSS
-      // filter on the tile pane (see .tulip-map-dark in globals.css) rather than a "dark"
-      // tile style, since every free-anonymous dark tile CDN we tried ended up requiring a key.
+      // Plain OpenStreetMap tiles — always free, no API key, no referer restrictions (we tried
+      // Wikimedia's tile service for real @2x/retina tiles, but it now 403s anything outside
+      // Wikimedia's own sites). No free anonymous tile host we found serves genuine retina
+      // tiles without a key, so the sharper/industrial look here comes from a higher default
+      // zoom (more real detail visible) plus a higher-contrast CSS filter on the tile pane.
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         subdomains: "abc",

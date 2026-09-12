@@ -172,10 +172,41 @@ a {
   border-radius: 1rem;
 }
 
-/* Fake a dark map style on plain (always-free, no-key) OpenStreetMap tiles via a CSS filter,
-   since every free-anonymous "dark" tile CDN we tried ended up requiring an API key. */
+/* Fake an industrial/blueprint dark map style on free, no-key OpenStreetMap tiles via a CSS
+   filter, since every free-anonymous "dark" tile CDN we tried ended up requiring an API key.
+   Higher contrast + slight desaturation reads sharper and more schematic than a flat invert. */
 [data-theme="dark"] .tulip-map-tiles .leaflet-tile-pane {
-  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.7);
+  filter: invert(1) hue-rotate(190deg) brightness(0.92) contrast(1.15) saturate(0.55);
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Sharp-edged, theme-matched Leaflet controls instead of Leaflet's default plain-white boxes. */
+.tulip-map .leaflet-control-zoom a,
+.tulip-map .leaflet-control-scale-line {
+  background: var(--surface) !important;
+  color: var(--foreground) !important;
+  border-color: var(--border) !important;
+  border-radius: 0.35rem !important;
+}
+
+.tulip-map .leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.tulip-map .leaflet-control-scale-line {
+  border-width: 2px !important;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+}
+
+.tulip-map .leaflet-tooltip {
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .glass {
