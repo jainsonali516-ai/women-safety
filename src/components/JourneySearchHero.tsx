@@ -154,9 +154,17 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
                     <AlertCircle className="w-3 h-3" /> GPS signal weak. Enter manual landmark above.
                   </p>
                 )}
-                {gpsStatus === 'success' && (
-                  <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1">
+                {gpsStatus === 'success' && originCoords && (
+                  <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1 flex-wrap">
                     <CheckCircle2 className="w-3 h-3" /> GPS position locked.
+                    <a
+                      href={`https://maps.google.com/?q=${originCoords.latitude},${originCoords.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline hover:text-emerald-400"
+                    >
+                      View on Google Maps
+                    </a>
                   </p>
                 )}
               </div>
