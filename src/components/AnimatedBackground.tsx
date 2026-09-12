@@ -11,29 +11,21 @@ function seededRandom(seed: number) {
   };
 }
 
+const STAR_COLOR_CLASSES = ["tulip-star-pink", "tulip-star-magenta", "tulip-star-violet"];
+
 export function AnimatedBackground() {
-  // Deterministic layout (seeded) so server/client render match and it never causes hydration mismatches.
+  // Deterministic layout (seeded) so server/client render match and it never causes hydration
+  // mismatches. Stars stay fixed in place and only twinkle in place — no falling/drifting motion.
   const starTulips = useMemo(() => {
     const rand = seededRandom(42);
-    return Array.from({ length: 35 }, (_, i) => ({
+    return Array.from({ length: 42 }, (_, i) => ({
       id: i,
       top: `${(rand() * 100).toFixed(2)}%`,
       left: `${(rand() * 100).toFixed(2)}%`,
       size: `${(8 + rand() * 10).toFixed(1)}px`,
       duration: `${(3 + rand() * 4).toFixed(1)}s`,
       delay: `${(rand() * 5).toFixed(1)}s`,
-    }));
-  }, []);
-
-  const petals = useMemo(() => {
-    const rand = seededRandom(7);
-    return Array.from({ length: 14 }, (_, i) => ({
-      id: i,
-      x: `${(rand() * 100).toFixed(2)}%`,
-      size: `${(14 + rand() * 14).toFixed(0)}px`,
-      duration: `${(14 + rand() * 12).toFixed(1)}s`,
-      delay: `${(rand() * 15).toFixed(1)}s`,
-      drift: `${(rand() * 120 - 60).toFixed(0)}px`,
+      colorClass: STAR_COLOR_CLASSES[i % STAR_COLOR_CLASSES.length],
     }));
   }, []);
 
@@ -42,9 +34,9 @@ export function AnimatedBackground() {
     return Array.from({ length: 9 }, (_, i) => ({
       id: i,
       x: `${(5 + rand() * 90).toFixed(2)}%`,
-      size: `${(24 + rand() * 20).toFixed(0)}px`,
-      duration: `${(5 + rand() * 3).toFixed(1)}s`,
-      delay: `${(rand() * 4).toFixed(1)}s`,
+      size: `${(28 + rand() * 22).toFixed(0)}px`,
+      duration: `${(4 + rand() * 3).toFixed(1)}s`,
+      delay: `${(rand() * 2).toFixed(1)}s`,
     }));
   }, []);
 
@@ -53,7 +45,7 @@ export function AnimatedBackground() {
       {starTulips.map((s) => (
         <TulipGlyph
           key={s.id}
-          className="star-tulip"
+          className={`star-tulip ${s.colorClass}`}
           style={
             {
               top: s.top,
@@ -65,26 +57,10 @@ export function AnimatedBackground() {
           }
         />
       ))}
-      {petals.map((p) => (
-        <span
-          key={p.id}
-          className="petal"
-          style={
-            {
-              "--x": p.x,
-              "--size": p.size,
-              "--duration": p.duration,
-              "--delay": p.delay,
-              "--drift": p.drift,
-            } as React.CSSProperties
-          }
-        >
-          🌷
-        </span>
-      ))}
       {blooms.map((b) => (
-        <span
+        <TulipGlyph
           key={b.id}
+          withStem
           className="garden-bloom"
           style={
             {
@@ -94,9 +70,7 @@ export function AnimatedBackground() {
               "--delay": b.delay,
             } as React.CSSProperties
           }
-        >
-          🌷
-        </span>
+        />
       ))}
     </div>
   );

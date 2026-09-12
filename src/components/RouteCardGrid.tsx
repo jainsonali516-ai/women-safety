@@ -39,7 +39,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
         const tierStyle = TIER_STYLE[opt.risk_tier];
         const isOpen = expanded === opt.mode;
         return (
-          <div key={opt.mode} className="card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <div key={opt.mode} className="card route-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
               <strong style={{ fontSize: "0.95rem" }}>{opt.label}</strong>
               <span
@@ -53,6 +53,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                   whiteSpace: "nowrap",
                   textTransform: "uppercase",
                   letterSpacing: "0.02em",
+                  boxShadow: `0 0 10px ${tierStyle.bg}99`,
                 }}
               >
                 {opt.risk_label}

@@ -20,7 +20,7 @@
   --galactic-starlight: #f8fafc;
   --galactic-jet: #05030a;
 
-  --background: linear-gradient(180deg, #f0fdfa, #fff1fa);
+  --background: linear-gradient(180deg, #bae6fd 0%, #fef08a 65%, #f0fdf4 100%);
   --background-solid: #f6fbf9;
   --surface: var(--garden-white);
   --surface-glass: rgba(255, 255, 255, 0.6);
@@ -29,10 +29,11 @@
   --accent: var(--garden-pink);
   --accent-strong: var(--garden-green);
   --border: #d8ead9;
+  --card-glow-border: transparent;
 }
 
 [data-theme="dark"] {
-  --background: radial-gradient(ellipse at top, var(--galactic-nebula), var(--galactic-deep) 70%);
+  --background: radial-gradient(circle at top, #1a0b2e 0%, #0d061a 60%, #05020c 100%);
   --background-solid: var(--galactic-deep);
   --surface: var(--galactic-nebula);
   --surface-glass: rgba(27, 12, 55, 0.55);
@@ -41,6 +42,7 @@
   --accent: var(--galactic-neon-pink);
   --accent-strong: var(--galactic-violet);
   --border: #33195c;
+  --card-glow-border: rgba(255, 47, 178, 0.35);
 }
 
 html {
@@ -67,7 +69,7 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.5s ease, color 0.5s ease;
+  transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
 }
 
 * {
@@ -87,80 +89,62 @@ a {
   overflow: hidden;
   pointer-events: none;
   background: var(--background);
-  transition: background 0.6s ease;
+  transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Dark mode: cute rounded tulip-stars, fixed in place, twinkling only — never falling/drifting. */
 .tulip-bg .star-tulip {
   position: absolute;
   width: var(--size, 14px);
   height: var(--size, 14px);
   opacity: 0;
-  color: var(--galactic-neon-pink);
-  filter: drop-shadow(0 0 5px var(--galactic-neon-pink)) drop-shadow(0 0 10px var(--galactic-violet));
-  animation: twinkle var(--duration, 4s) ease-in-out infinite;
+  animation: pulseTwinkle var(--duration, 4s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
   will-change: opacity, transform;
-}
-
-[data-theme="dark"] .tulip-bg .star-tulip {
-  opacity: 0.85;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.12; transform: scale(0.75) rotate(0deg); }
-  50% { opacity: 0.9; transform: scale(1.05) rotate(8deg); }
-}
-
-.tulip-bg .petal {
-  position: absolute;
-  top: -10%;
-  left: var(--x, 50%);
-  font-size: var(--size, 20px);
-  opacity: 0;
-  animation: drift var(--duration, 18s) linear infinite;
-  animation-delay: var(--delay, 0s);
-  filter: drop-shadow(0 0 6px rgba(236, 72, 153, 0.55));
-  will-change: transform, opacity;
-}
-
-[data-theme="dark"] .tulip-bg .petal {
-  opacity: 0.7;
-}
-
-@keyframes drift {
-  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 0; }
-  10% { opacity: 0.7; }
-  90% { opacity: 0.5; }
-  100% { transform: translate3d(var(--drift, 40px), 110vh, 0) rotate(360deg); opacity: 0; }
-}
-
-.tulip-bg .garden-bloom {
-  position: absolute;
-  bottom: -6%;
-  left: var(--x, 50%);
-  font-size: var(--size, 28px);
-  opacity: 0;
-  transform-origin: bottom center;
-  animation: bloom var(--duration, 6s) ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-[data-theme="dark"] .tulip-bg .garden-bloom {
   display: none;
 }
 
-:root .tulip-bg .garden-bloom {
-  opacity: 0.9;
+[data-theme="dark"] .tulip-bg .star-tulip {
+  display: block;
+  opacity: 0.85;
 }
 
-@keyframes bloom {
-  0%, 100% { transform: scale(0.9) translateY(4px) rotate(-3deg); }
-  50% { transform: scale(1.05) translateY(-2px) rotate(3deg); }
+.tulip-star-pink { color: #ff4d8d; filter: drop-shadow(0 0 4px #ff4d8d) drop-shadow(0 0 9px #ff4d8d); }
+.tulip-star-magenta { color: #ec4899; filter: drop-shadow(0 0 4px #ec4899) drop-shadow(0 0 9px #ec4899); }
+.tulip-star-violet { color: #a855f7; filter: drop-shadow(0 0 4px #a855f7) drop-shadow(0 0 9px #a855f7); }
+
+@keyframes pulseTwinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 0.95; transform: scale(1.15); }
+}
+
+/* Light mode: tulips grow up from a garden bed along the bottom and gently unfold in place. */
+.tulip-bg .garden-bloom {
+  position: absolute;
+  bottom: 0;
+  left: var(--x, 50%);
+  width: var(--size, 28px);
+  height: calc(var(--size, 28px) * 1.3);
+  color: var(--garden-pink);
+  --tulip-stem-color: var(--garden-green);
+  opacity: 0;
+  transform-origin: bottom center;
+  animation: bloomGrow var(--duration, 6s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  display: none;
+}
+
+:root:not([data-theme="dark"]) .tulip-bg .garden-bloom {
+  display: block;
+}
+
+@keyframes bloomGrow {
+  0%, 100% { transform: scaleY(0.85) scale(0.95) rotate(-2deg); opacity: 0.75; }
+  50% { transform: scaleY(1) scale(1.1) rotate(2deg); opacity: 0.95; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .tulip-bg .star-tulip,
-  .tulip-bg .petal,
   .tulip-bg .garden-bloom {
     animation: none;
   }
@@ -170,6 +154,21 @@ a {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1rem;
+}
+
+/* Frosted-glass route cards with a soft pink-purple glow border in dark mode. */
+.route-card {
+  background: var(--surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+[data-theme="dark"] .route-card {
+  border-color: var(--card-glow-border);
+  box-shadow: 0 0 18px rgba(255, 47, 178, 0.15), 0 0 32px rgba(168, 85, 247, 0.08);
 }
 
 /* Fake an industrial/blueprint dark map style on free, no-key OpenStreetMap tiles via a CSS
