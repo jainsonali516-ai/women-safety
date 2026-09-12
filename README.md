@@ -42,7 +42,8 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 ## Pages
 
-- `/` — home: the Journey search hero, safety map, and route results (redirects to `/auth` if signed out)
+- `/` — home: a welcome hub with quick links to Journey, Safety Tools, Contacts, and Tulip Bot
+- `/journey` — the Journey search hero, safety map, and route results (redirects to `/auth` if signed out)
 - `/safety` — Safety Tools: SOS quick-dial, Share My Location, Live Journey Tracking
 - `/contacts` — trusted contacts and location-reminder alarms
 - `/bot` — full-page Tulip Bot (also available as a floating widget on every page)

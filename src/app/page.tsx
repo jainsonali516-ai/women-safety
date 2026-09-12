@@ -2,8 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/AppHeader";
 import { TulipLogo } from "@/components/TulipLogo";
-import { JourneyHome } from "@/components/JourneyHome";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { Compass, ShieldCheck, Users, MessageSquareText } from "lucide-react";
 
 export default async function Home() {
   const supabase = await createClient();
@@ -40,8 +40,103 @@ export default async function Home() {
   return (
     <>
       <AppHeader />
-      <JourneyHome />
+      <main
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "3rem",
+          padding: "3.5rem 1.5rem 3rem",
+        }}
+      >
+        <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620 }}>
+          <TulipLogo size={56} />
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Welcome back to <span style={{ color: "var(--accent)" }}>Tulip</span>
+          </h1>
+          <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6 }}>
+            Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help
+            instantly, and keep your trusted circle in the loop.
+          </p>
+          <Link
+            href="/journey"
+            className="btn-accent"
+            style={{ padding: "0.9rem 2.2rem", borderRadius: "0.9rem", fontWeight: 700, fontSize: "1rem", marginTop: "0.5rem" }}
+          >
+            Plan a Journey
+          </Link>
+        </section>
+
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "1.25rem",
+            width: "100%",
+            maxWidth: 1000,
+          }}
+        >
+          <HomeCard
+            href="/journey"
+            icon={<Compass size={22} />}
+            title="Plan a Journey"
+            desc="Safety-scored routes across Metro, bus, auto & cabs, with a live corridor map."
+          />
+          <HomeCard
+            href="/safety"
+            icon={<ShieldCheck size={22} />}
+            title="Safety Tools"
+            desc="SOS quick-dial, share your live location, and journey tracking."
+          />
+          <HomeCard
+            href="/contacts"
+            icon={<Users size={22} />}
+            title="Trusted Contacts"
+            desc="Manage emergency contacts and location-reminder alarms."
+          />
+          <HomeCard
+            href="/bot"
+            icon={<MessageSquareText size={22} />}
+            title="Tulip Bot"
+            desc="Ask about an upcoming trip and get a safety-aware forecast."
+          />
+        </section>
+      </main>
       <ChatbotWidget />
     </>
+  );
+}
+
+function HomeCard({ href, icon, title, desc }: { href: string; icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <Link
+      href={href}
+      className="card"
+      style={{
+        padding: "1.5rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.75rem",
+        transition: "transform 0.15s ease, border-color 0.15s ease",
+      }}
+    >
+      <div
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: "0.75rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, var(--accent), var(--accent-strong))",
+          color: "white",
+        }}
+      >
+        {icon}
+      </div>
+      <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{title}</h3>
+      <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>{desc}</p>
+    </Link>
   );
 }
