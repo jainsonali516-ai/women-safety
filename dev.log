@@ -1,0 +1,26 @@
+
+> tulip@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.13:3000
+- Environments: .env.local
+✓ Ready in 834ms
+✓ Running next.config.ts took 194ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET / 200 in 2.4s (next.js: 521ms, proxy.ts: 852ms, application-code: 1034ms)
+ GET /about 200 in 3.4s (next.js: 2.6s, proxy.ts: 229ms, application-code: 535ms)
+ GET /contacts 200 in 608ms (next.js: 138ms, proxy.ts: 328ms, application-code: 143ms)
+ GET /api/reminders 500 in 2.5s (next.js: 1405ms, proxy.ts: 279ms, application-code: 859ms)
+ GET /api/contacts 200 in 2.9s (next.js: 268ms, proxy.ts: 1853ms, application-code: 751ms)
+ GET /api/reminders 500 in 1026ms (next.js: 13ms, proxy.ts: 374ms, application-code: 639ms)
+ GET /safety 200 in 1162ms (next.js: 256ms, proxy.ts: 419ms, application-code: 486ms)
+ GET /api/contacts 200 in 962ms (next.js: 22ms, proxy.ts: 506ms, application-code: 434ms)
+ GET /journey 200 in 991ms (next.js: 363ms, proxy.ts: 214ms, application-code: 413ms)
