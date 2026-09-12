@@ -35,10 +35,10 @@ export function JourneyHome() {
     setError(null);
     setLoading(true);
     try {
-      const originPoint = values.originCoords
-        ? { ...values.originCoords, name: values.origin }
-        : await geocodeOne(values.origin);
-      const destPoint = await geocodeOne(values.destination);
+      // Prefer coordinates the user explicitly confirmed (GPS detect or picking a suggestion)
+      // over blindly geocoding raw text, which could silently resolve to the wrong place.
+      const originPoint = values.originCoords ?? (await geocodeOne(values.origin));
+      const destPoint = values.destinationCoords ?? (await geocodeOne(values.destination));
 
       if (!originPoint || !destPoint) {
         setError("Couldn't locate one of those places — try a more specific station or landmark.");

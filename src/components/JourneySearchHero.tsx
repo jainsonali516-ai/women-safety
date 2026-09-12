@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Navigation,
   MapPin,
@@ -15,12 +15,22 @@ import {
   Calendar,
 } from 'lucide-react';
 
+interface Coords {
+  latitude: number;
+  longitude: number;
+}
+
+interface Suggestion extends Coords {
+  name: string;
+}
+
 export interface JourneySearchValues {
   origin: string;
   destination: string;
   travelDate: string;
   selectedModes: string[];
-  originCoords: { latitude: number; longitude: number } | null;
+  originCoords: Coords | null;
+  destinationCoords: Coords | null;
 }
 
 interface HeroProps {
@@ -28,6 +38,95 @@ interface HeroProps {
   onTogglePinkSaheli: () => void;
   onSearch: (values: JourneySearchValues) => void;
   loading?: boolean;
+}
+
+function googleMapsUrl(coords: Coords) {
+  return `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`;
+}
+
+function PlaceField({
+  label,
+  placeholder,
+  value,
+  onChange,
+  onSelect,
+  icon,
+  ringColor,
+  rightSlot,
+}: {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  onSelect: (s: Suggestion) => void;
+  icon: React.ReactNode;
+  ringColor: string;
+  rightSlot?: React.ReactNode;
+}) {
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleChange(next: string) {
+    onChange(next);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (next.trim().length < 2) {
+      setSuggestions([]);
+      setOpen(false);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/geocode?q=${encodeURIComponent(next)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        setSuggestions(data.results ?? []);
+        setOpen(true);
+      } catch {
+        setSuggestions([]);
+      }
+    }, 350);
+  }
+
+  return (
+    <div className="relative group text-left">
+      <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+        {label}
+      </label>
+      <div className="relative flex items-center">
+        {icon}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => handleChange(e.target.value)}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          placeholder={placeholder}
+          className={`w-full pl-12 ${rightSlot ? 'pr-12' : 'pr-4'} py-3.5 bg-slate-100/80 dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 ${ringColor} transition-all`}
+          required
+          autoComplete="off"
+        />
+        {rightSlot}
+      </div>
+      {open && suggestions.length > 0 && (
+        <ul className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-xl">
+          {suggestions.map((s) => (
+            <li
+              key={`${s.latitude},${s.longitude}`}
+              onMouseDown={() => {
+                onChange(s.name);
+                onSelect(s);
+                setOpen(false);
+              }}
+              className="px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-pink-50 dark:hover:bg-white/10 cursor-pointer border-b border-slate-100 dark:border-white/5 last:border-0"
+            >
+              {s.name}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 export const JourneySearchHero: React.FC<HeroProps> = ({
@@ -41,7 +140,8 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
   const [travelDate, setTravelDate] = useState(new Date().toISOString().split('T')[0]);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'success' | 'fallback'>('idle');
-  const [originCoords, setOriginCoords] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [originCoords, setOriginCoords] = useState<Coords | null>(null);
+  const [destinationCoords, setDestinationCoords] = useState<Coords | null>(null);
 
   const [selectedModes, setSelectedModes] = useState<string[]>(['metro', 'dtc_bus', 'cab']);
 
@@ -93,7 +193,7 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSearch({ origin, destination, travelDate, selectedModes, originCoords });
+    onSearch({ origin, destination, travelDate, selectedModes, originCoords, destinationCoords });
   };
 
   return (
@@ -123,32 +223,33 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
         <div className="mt-8 max-w-4xl mx-auto bg-white/70 dark:bg-slate-950/60 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl transition-colors duration-500">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative">
-              <div className="relative group text-left">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Starting Point / Current Location
-                </label>
-                <div className="relative flex items-center">
-                  <MapPin className="absolute left-4 w-5 h-5 text-pink-500" />
-                  <input
-                    type="text"
-                    value={origin}
-                    onChange={(e) => {
-                      setOrigin(e.target.value);
-                      setOriginCoords(null);
-                    }}
-                    placeholder="Enter station or landmark..."
-                    className="w-full pl-12 pr-12 py-3.5 bg-slate-100/80 dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-500/50 transition-all"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={handleDetectLocation}
-                    title="Detect Current GPS Location"
-                    className="absolute right-3 p-2 text-slate-400 hover:text-pink-500 dark:hover:text-pink-400 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
-                  >
-                    <Crosshair className={`w-4 h-4 ${gpsLoading ? 'animate-spin text-pink-500' : ''}`} />
-                  </button>
-                </div>
+              <div>
+                <PlaceField
+                  label="Starting Point / Current Location"
+                  placeholder="Enter station or landmark..."
+                  value={origin}
+                  onChange={(v) => {
+                    setOrigin(v);
+                    setOriginCoords(null);
+                    setGpsStatus('idle');
+                  }}
+                  onSelect={(s) => {
+                    setOriginCoords({ latitude: s.latitude, longitude: s.longitude });
+                    setGpsStatus('success');
+                  }}
+                  icon={<MapPin className="absolute left-4 w-5 h-5 text-pink-500 pointer-events-none" />}
+                  ringColor="focus:ring-pink-500/50"
+                  rightSlot={
+                    <button
+                      type="button"
+                      onClick={handleDetectLocation}
+                      title="Detect Current GPS Location"
+                      className="absolute right-3 p-2 text-slate-400 hover:text-pink-500 dark:hover:text-pink-400 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 transition-all"
+                    >
+                      <Crosshair className={`w-4 h-4 ${gpsLoading ? 'animate-spin text-pink-500' : ''}`} />
+                    </button>
+                  }
+                />
                 {gpsStatus === 'fallback' && (
                   <p className="mt-1.5 text-xs text-amber-500 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" /> GPS signal weak. Enter manual landmark above.
@@ -156,34 +257,35 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
                 )}
                 {gpsStatus === 'success' && originCoords && (
                   <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1 flex-wrap">
-                    <CheckCircle2 className="w-3 h-3" /> GPS position locked.
-                    <a
-                      href={`https://maps.google.com/?q=${originCoords.latitude},${originCoords.longitude}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline hover:text-emerald-400"
-                    >
+                    <CheckCircle2 className="w-3 h-3" /> {originCoords.latitude.toFixed(5)}, {originCoords.longitude.toFixed(5)}
+                    <a href={googleMapsUrl(originCoords)} target="_blank" rel="noreferrer" className="underline hover:text-emerald-400">
                       View on Google Maps
                     </a>
                   </p>
                 )}
               </div>
 
-              <div className="relative group text-left">
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                  Destination Point
-                </label>
-                <div className="relative flex items-center">
-                  <Navigation className="absolute left-4 w-5 h-5 text-purple-500" />
-                  <input
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="Where are you heading?"
-                    className="w-full pl-12 pr-4 py-3.5 bg-slate-100/80 dark:bg-black/40 border border-slate-300 dark:border-white/10 rounded-2xl text-sm font-medium text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/50 transition-all"
-                    required
-                  />
-                </div>
+              <div>
+                <PlaceField
+                  label="Destination Point"
+                  placeholder="Where are you heading?"
+                  value={destination}
+                  onChange={(v) => {
+                    setDestination(v);
+                    setDestinationCoords(null);
+                  }}
+                  onSelect={(s) => setDestinationCoords({ latitude: s.latitude, longitude: s.longitude })}
+                  icon={<Navigation className="absolute left-4 w-5 h-5 text-purple-500 pointer-events-none" />}
+                  ringColor="focus:ring-purple-500/50"
+                />
+                {destinationCoords && (
+                  <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1 flex-wrap">
+                    <CheckCircle2 className="w-3 h-3" /> {destinationCoords.latitude.toFixed(5)}, {destinationCoords.longitude.toFixed(5)}
+                    <a href={googleMapsUrl(destinationCoords)} target="_blank" rel="noreferrer" className="underline hover:text-emerald-400">
+                      View on Google Maps
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 
