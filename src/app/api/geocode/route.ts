@@ -1,35 +1,34 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api";
 
-// Loose bounding box covering Delhi/Gurugram/Noida/Ghaziabad/Faridabad, used to bias results.
-const NCR_BOUNDS = "28.30,76.80|28.90,77.60";
+// Loose bounding box covering Delhi/Gurugram/Noida/Ghaziabad/Faridabad: left,top,right,bottom.
+const NCR_VIEWBOX = "76.80,28.90,77.60,28.30";
 
 export async function GET(request: Request) {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return jsonError("Google Maps is not configured on this server", 503);
-
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q")?.trim();
   if (!query || query.length < 2) return jsonError("q is required");
   if (query.length > 200) return jsonError("q is too long");
 
-  const url = new URL("https://maps.googleapis.com/maps/api/geocode/json");
-  url.searchParams.set("address", `${query}, Delhi NCR, India`);
-  url.searchParams.set("bounds", NCR_BOUNDS);
-  url.searchParams.set("region", "in");
-  url.searchParams.set("key", apiKey);
+  const url = new URL("https://nominatim.openstreetmap.org/search");
+  url.searchParams.set("q", query);
+  url.searchParams.set("format", "json");
+  url.searchParams.set("limit", "5");
+  url.searchParams.set("viewbox", NCR_VIEWBOX); // soft bias toward Delhi NCR, not a hard filter
+  url.searchParams.set("countrycodes", "in");
 
   try {
-    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)" },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return jsonError("Geocoding failed", 502);
     const data = await res.json();
-    if (!res.ok || (data.status !== "OK" && data.status !== "ZERO_RESULTS")) {
-      return jsonError(data?.error_message ?? "Geocoding failed", 502);
-    }
 
-    const results = (data.results ?? []).slice(0, 5).map((r: { formatted_address: string; geometry: { location: { lat: number; lng: number } } }) => ({
-      name: r.formatted_address,
-      latitude: r.geometry.location.lat,
-      longitude: r.geometry.location.lng,
+    const results = (data as { display_name: string; lat: string; lon: string }[]).map((r) => ({
+      name: r.display_name,
+      latitude: parseFloat(r.lat),
+      longitude: parseFloat(r.lon),
     }));
 
     return NextResponse.json({ results });

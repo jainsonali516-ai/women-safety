@@ -4,10 +4,12 @@ import { jsonError } from "@/lib/api";
 import { coordinateSchema, safeParse } from "@/lib/validation";
 import {
   computeFinalScore,
+  computeHeuristicRushScore,
   computeSafetyScore,
   fetchFootTrafficScore,
   fetchStreetLightDensity,
 } from "@/lib/scoring";
+import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
 
 const bodySchema = z.object({
@@ -31,31 +33,6 @@ function midpoint(a: { latitude: number; longitude: number }, b: { latitude: num
   return { latitude: (a.latitude + b.latitude) / 2, longitude: (a.longitude + b.longitude) / 2 };
 }
 
-async function fetchDrivingRoute(origin: { latitude: number; longitude: number }, destination: { latitude: number; longitude: number }) {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return null;
-  const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
-  url.searchParams.set("origin", `${origin.latitude},${origin.longitude}`);
-  url.searchParams.set("destination", `${destination.latitude},${destination.longitude}`);
-  url.searchParams.set("mode", "driving");
-  url.searchParams.set("departure_time", "now");
-  url.searchParams.set("traffic_model", "best_guess");
-  url.searchParams.set("key", apiKey);
-  try {
-    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
-    const data = await res.json();
-    if (!res.ok || data.status !== "OK" || !data.routes?.length) return null;
-    const leg = data.routes[0].legs[0];
-    return {
-      distance: leg.distance.value as number,
-      duration: (leg.duration_in_traffic?.value ?? leg.duration.value) as number,
-      duration_typical: leg.duration.value as number,
-    };
-  } catch {
-    return null;
-  }
-}
-
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = safeParse(bodySchema, body);
@@ -77,11 +54,9 @@ export async function POST(request: Request) {
     footTrafficScore: footTraffic.score,
   });
 
-  const cabDistanceKm = driving ? driving.distance / 1000 : straightLineKm * 1.3;
-  const cabDurationMin = driving ? driving.duration / 60 : (cabDistanceKm / 22) * 60;
-  const cabTypicalMin = driving?.duration_typical ? driving.duration_typical / 60 : cabDurationMin;
-  const delayRatio = cabTypicalMin > 0 ? cabDurationMin / cabTypicalMin : 1;
-  const rushScore = Math.max(0, Math.min(100, Math.round(100 - (delayRatio - 1) * 150)));
+  const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
+  const cabDurationMin = driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60;
+  const rushScore = computeHeuristicRushScore();
 
   // Metro/DTC bus legs are distance-based estimates (avg incl.-stops speeds) — Delhi Metro/DTC
   // don't expose a public live-routing GTFS feed, so real per-station routing isn't wired up yet.
@@ -164,7 +139,7 @@ export async function POST(request: Request) {
       street_light_data_available: lights.available,
       foot_traffic_score: footTraffic.score,
       foot_traffic_data_available: footTraffic.available,
-      live_traffic_available: Boolean(driving),
+      live_routing_available: Boolean(driving),
     },
     sort,
     options: sorted,

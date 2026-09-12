@@ -38,26 +38,54 @@ export async function fetchStreetLightDensity(point: LatLng, radiusMeters = 400)
   }
 }
 
-/** Foot-traffic / commercial-activity density via Google Places Nearby Search. Requires GOOGLE_PLACES_API_KEY. */
+/**
+ * Foot-traffic / commercial-activity density via free OSM Overpass data: counts mapped
+ * shops, restaurants/cafes, and other public amenities nearby as a proxy for how populated
+ * an area typically is (a Google Places Nearby Search substitute that needs no API key).
+ */
 export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
-  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
-  if (!apiKey) return { score: null, available: false as const };
-
-  const url = new URL("https://maps.googleapis.com/maps/api/place/nearbysearch/json");
-  url.searchParams.set("location", `${point.latitude},${point.longitude}`);
-  url.searchParams.set("radius", String(radiusMeters));
-  url.searchParams.set("key", apiKey);
+  const query = `
+    [out:json][timeout:15];
+    (
+      node["shop"](around:${radiusMeters},${point.latitude},${point.longitude});
+      node["amenity"~"restaurant|cafe|fast_food|marketplace|pharmacy|bank|atm"](around:${radiusMeters},${point.latitude},${point.longitude});
+    );
+    out count;
+  `;
 
   try {
-    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(12000) });
+    const res = await fetch(OVERPASS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain",
+        "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)",
+        Accept: "application/json",
+      },
+      body: query,
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return { score: null, available: false as const };
     const json = await res.json();
-    const placeCount = Array.isArray(json?.results) ? json.results.length : 0;
-    // Normalize: 20+ nearby places ≈ fully busy commercial area.
-    const score = Math.min(100, Math.round((placeCount / 20) * 100));
+    const placeCount = Number(json?.elements?.[0]?.tags?.total ?? 0);
+    // Normalize: 25+ nearby shops/amenities ≈ fully busy commercial area.
+    const score = Math.min(100, Math.round((placeCount / 25) * 100));
     return { score, available: true as const };
   } catch {
     return { score: null, available: false as const };
   }
+}
+
+/**
+ * Rush/delay score without a live-traffic feed: a time-of-day heuristic. OSRM's free public
+ * routing server returns typical-traffic distance/duration only, not live congestion, so this
+ * stands in for a real congestion-ratio score until a paid traffic API is configured.
+ */
+export function computeHeuristicRushScore(date = new Date()) {
+  const hour = date.getHours();
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  if (isWeekend) return 80;
+  const isPeak = (hour >= 8 && hour < 11) || (hour >= 17 && hour < 22);
+  return isPeak ? 40 : 85;
 }
 
 export function isAfterSunset(date = new Date()) {
