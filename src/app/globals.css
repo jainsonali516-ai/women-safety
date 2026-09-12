@@ -172,6 +172,12 @@ a {
   border-radius: 1rem;
 }
 
+/* Fake a dark map style on plain (always-free, no-key) OpenStreetMap tiles via a CSS filter,
+   since every free-anonymous "dark" tile CDN we tried ended up requiring an API key. */
+[data-theme="dark"] .tulip-map-tiles .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.7);
+}
+
 .glass {
   background: var(--surface-glass);
   backdrop-filter: blur(14px);

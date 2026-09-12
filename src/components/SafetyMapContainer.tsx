@@ -63,9 +63,12 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
       });
       L.control.zoom({ position: "bottomleft" }).addTo(map);
 
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO',
-        subdomains: "abcd",
+      // Plain OpenStreetMap tiles — always free, no API key. The dark look comes from a CSS
+      // filter on the tile pane (see .tulip-map-dark in globals.css) rather than a "dark"
+      // tile style, since every free-anonymous dark tile CDN we tried ended up requiring a key.
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: "abc",
         maxZoom: 19,
       }).addTo(map);
 
@@ -165,8 +168,8 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
   }
 
   return (
-    <div className="card" style={{ position: "relative", height: 550, overflow: "hidden", padding: 0 }}>
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+    <div className="card tulip-map" style={{ position: "relative", height: 550, overflow: "hidden", padding: 0 }}>
+      <div ref={containerRef} className="tulip-map-tiles" style={{ width: "100%", height: "100%" }} />
 
       {typeof safetyIndex === "number" && (
         <div
