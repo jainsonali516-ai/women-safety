@@ -32,17 +32,25 @@ function midpoint(a: { latitude: number; longitude: number }, b: { latitude: num
 }
 
 async function fetchDrivingRoute(origin: { latitude: number; longitude: number }, destination: { latitude: number; longitude: number }) {
-  const token = process.env.MAPBOX_ACCESS_TOKEN;
-  if (!token) return null;
-  const coords = `${origin.longitude},${origin.latitude};${destination.longitude},${destination.latitude}`;
-  const url = new URL(`https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coords}`);
-  url.searchParams.set("access_token", token);
-  url.searchParams.set("overview", "false");
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey) return null;
+  const url = new URL("https://maps.googleapis.com/maps/api/directions/json");
+  url.searchParams.set("origin", `${origin.latitude},${origin.longitude}`);
+  url.searchParams.set("destination", `${destination.latitude},${destination.longitude}`);
+  url.searchParams.set("mode", "driving");
+  url.searchParams.set("departure_time", "now");
+  url.searchParams.set("traffic_model", "best_guess");
+  url.searchParams.set("key", apiKey);
   try {
     const res = await fetch(url.toString(), { signal: AbortSignal.timeout(10000) });
     const data = await res.json();
-    if (!res.ok || !data.routes?.length) return null;
-    return data.routes[0] as { distance: number; duration: number; duration_typical?: number };
+    if (!res.ok || data.status !== "OK" || !data.routes?.length) return null;
+    const leg = data.routes[0].legs[0];
+    return {
+      distance: leg.distance.value as number,
+      duration: (leg.duration_in_traffic?.value ?? leg.duration.value) as number,
+      duration_typical: leg.duration.value as number,
+    };
   } catch {
     return null;
   }

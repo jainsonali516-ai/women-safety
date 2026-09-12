@@ -42,7 +42,7 @@ function PlaceInput({
       setSuggestions([]);
       return;
     }
-    const res = await fetch(`/api/mapbox/geocode?q=${encodeURIComponent(value)}`);
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(value)}`);
     if (res.ok) setSuggestions((await res.json()).results);
     else setSuggestions([]);
   }

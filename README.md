@@ -22,8 +22,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 |---|---|
 | Real SMS delivery for "Share My Location" | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
 | Phone OTP actually sending SMS | Enable **Phone** auth + a Twilio SMS provider in Supabase → Authentication → Providers |
-| Address search/autocomplete, live traffic | `MAPBOX_ACCESS_TOKEN` |
-| Foot-traffic/commercial-density safety signal | `GOOGLE_PLACES_API_KEY` |
+| Address search, live-traffic directions, foot-traffic safety signal | `GOOGLE_PLACES_API_KEY` (enable Geocoding API, Directions API, Places API on it) |
 | Natural-language Tulip Bot replies | `ANTHROPIC_API_KEY` (falls back to rule-based replies without it) |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light density + Google Places foot-traffic as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
@@ -41,5 +40,5 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 Auth: `/api/auth/phone/send-otp`, `/api/auth/phone/verify-otp`, `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`
 Safety: `/api/contacts`, `/api/contacts/:id`, `/api/location/share`, `/api/reminders`, `/api/reminders/:id`, `/api/sos*`, `/api/incidents*`
-Journey: `/api/mapbox/geocode`, `/api/mapbox/directions`, `/api/routes/plan`, `/api/bot`
+Journey: `/api/geocode`, `/api/directions`, `/api/routes/plan`, `/api/bot`
 `/api/health`
