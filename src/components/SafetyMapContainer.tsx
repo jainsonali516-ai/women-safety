@@ -49,6 +49,12 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
       await import("leaflet.heat");
       if (cancelled || !containerRef.current || mapRef.current) return;
 
+      // Navigating away and back can leave Leaflet's internal id on a reused DOM node, which
+      // makes L.map() throw "Map container is already initialized" and breaks client-side
+      // routing entirely. Clearing it makes re-initialization safe.
+      const container = containerRef.current as HTMLDivElement & { _leaflet_id?: number };
+      if (container._leaflet_id) delete container._leaflet_id;
+
       // Bundlers break Leaflet's default marker icon path resolution — point it at a CDN instead.
       L.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
@@ -101,7 +107,11 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
 
     return () => {
       cancelled = true;
-      mapRef.current?.remove();
+      try {
+        mapRef.current?.remove();
+      } catch {
+        /* ignore — container may already be gone if the page unmounted mid-init */
+      }
       mapRef.current = null;
     };
   }, []);
