@@ -36,6 +36,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
   const heatLayerRef = useRef<import("leaflet").Layer | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const routeLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const userMarkerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showCorridors, setShowCorridors] = useState(true);
   const [locating, setLocating] = useState(false);
@@ -103,6 +104,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
       markersLayerRef.current = markerGroup;
 
       routeLayerRef.current = L.layerGroup().addTo(map);
+      userMarkerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
     }
 
@@ -167,12 +169,37 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
     drawRoute();
   }, [origin, destination]);
 
-  function recenterToGps() {
+  async function recenterToGps() {
     if (!("geolocation" in navigator) || !mapRef.current) return;
     setLocating(true);
+    const L = (await import("leaflet")).default;
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 14, { duration: 1 });
+        const { latitude, longitude, accuracy } = pos.coords;
+        mapRef.current?.flyTo([latitude, longitude], 15, { duration: 1 });
+
+        userMarkerRef.current?.clearLayers();
+        if (userMarkerRef.current) {
+          // Accuracy circle + pulsing "you are here" dot, like Google Maps' blue dot.
+          L.circle([latitude, longitude], {
+            radius: accuracy,
+            color: "#3b82f6",
+            fillColor: "#3b82f6",
+            fillOpacity: 0.12,
+            weight: 1,
+          }).addTo(userMarkerRef.current);
+          L.marker([latitude, longitude], {
+            icon: L.divIcon({
+              className: "tulip-user-dot-wrap",
+              html: '<span class="tulip-user-dot"></span>',
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            }),
+          })
+            .bindTooltip("You are here")
+            .addTo(userMarkerRef.current);
+        }
+
         setLocating(false);
       },
       () => setLocating(false),
