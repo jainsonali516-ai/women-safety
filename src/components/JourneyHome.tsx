@@ -4,6 +4,9 @@ import { useState } from "react";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
 import { SafetyMapContainer, type MapPoint } from "@/components/SafetyMapContainer";
+import { OfflineRouteView } from "@/components/OfflineRouteView";
+import { useEmergencyMode } from "@/components/EmergencyModeProvider";
+import { saveEmergencyRoute } from "@/lib/offlineDb";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -20,7 +23,39 @@ async function geocodeOne(query: string) {
   return data.results?.[0] ?? null;
 }
 
+/** Best-effort: caches the just-planned route for offline/low-power access. Never blocks or
+ * fails the search itself — if any of this fails, the user still sees their live results. */
+async function cacheRouteForOffline(origin: MapPoint, destination: MapPoint) {
+  try {
+    const [cacheRes, contactsRes] = await Promise.all([
+      fetch("/api/emergency-cache", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin, destination }),
+      }),
+      fetch("/api/contacts"),
+    ]);
+
+    const cacheData = cacheRes.ok ? await cacheRes.json() : { steps: [], polyline: [], helpPoints: [] };
+    const contacts = contactsRes.ok ? (await contactsRes.json()).contacts ?? [] : [];
+
+    await saveEmergencyRoute({
+      routeId: crypto.randomUUID(),
+      steps: cacheData.steps ?? [],
+      polyline: cacheData.polyline ?? [],
+      helpPoints: cacheData.helpPoints ?? [],
+      lastKnownLocation: { latitude: origin.latitude, longitude: origin.longitude, address: origin.label },
+      destination: { latitude: destination.latitude, longitude: destination.longitude, address: destination.label },
+      contacts: contacts.map((c: { name: string; phone: string }) => ({ name: c.name, phone: c.phone })),
+      timestamp: Date.now(),
+    });
+  } catch {
+    /* offline caching is a best-effort background enhancement */
+  }
+}
+
 export function JourneyHome() {
+  const { active: lowPowerActive } = useEmergencyMode();
   const [sort, setSort] = useState<SortMode>("balanced");
   const [pinkSaheliActive, setPinkSaheliActive] = useState(true);
   const [options, setOptions] = useState<RouteOption[]>([]);
@@ -72,6 +107,8 @@ export function JourneyHome() {
       setOptions(data.options);
       setSignals(data.signals);
       setLastSearch(values);
+
+      cacheRouteForOffline(originMapPoint, destMapPoint);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to plan route");
     } finally {
@@ -85,6 +122,10 @@ export function JourneyHome() {
   }
 
   const safetyIndex = options.length > 0 ? Math.round(options.reduce((a, o) => a + o.safety_score, 0) / options.length) : null;
+
+  if (lowPowerActive) {
+    return <OfflineRouteView />;
+  }
 
   return (
     <>

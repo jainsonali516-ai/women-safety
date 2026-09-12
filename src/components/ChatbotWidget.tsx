@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MessageSquareText, X, Send } from "lucide-react";
+import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -9,6 +10,7 @@ interface ChatMessage {
 }
 
 export function ChatbotWidget() {
+  const { active: lowPower } = useEmergencyMode();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "bot", text: "Ask me about an upcoming trip and I'll forecast the safest, fastest mode for that time." },
@@ -37,6 +39,8 @@ export function ChatbotWidget() {
       setLoading(false);
     }
   }
+
+  if (lowPower) return null;
 
   if (!open) {
     return (

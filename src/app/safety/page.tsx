@@ -6,6 +6,7 @@ import { QuickDial } from "@/components/QuickDial";
 import { ShareLocationButton } from "@/components/ShareLocationButton";
 import { SosTracker } from "@/components/SosTracker";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { LowPowerToggle } from "@/components/LowPowerToggle";
 
 export default async function SafetyToolsPage() {
   const user = await getSessionUser();
@@ -23,6 +24,7 @@ export default async function SafetyToolsPage() {
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+          <LowPowerToggle />
           <QuickDial />
           <ShareLocationButton />
           <SosTracker />
