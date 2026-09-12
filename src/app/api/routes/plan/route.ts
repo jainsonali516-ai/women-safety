@@ -11,12 +11,16 @@ import {
 } from "@/lib/scoring";
 import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
-import { metroFareForDistance } from "@/lib/fares";
+import { busFareForDistance, metroFareForDistance } from "@/lib/fares";
+
+const ALL_MODES = ["metro", "bus", "auto", "cab_uber", "cab_ola"] as const;
 
 const bodySchema = z.object({
   origin: coordinateSchema.extend({ label: z.string().trim().max(120).optional() }),
   destination: coordinateSchema.extend({ label: z.string().trim().max(120).optional() }),
   sort: z.enum(["balanced", "safest", "fastest", "cheapest"]).default("balanced"),
+  modes: z.array(z.enum(ALL_MODES)).min(1).optional(),
+  concession: z.boolean().default(true),
 });
 
 function haversineKm(a: { latitude: number; longitude: number }, b: { latitude: number; longitude: number }) {
@@ -39,7 +43,8 @@ export async function POST(request: Request) {
   const parsed = safeParse(bodySchema, body);
   if (!parsed.ok) return jsonError(parsed.error);
 
-  const { origin, destination, sort } = parsed.data;
+  const { origin, destination, sort, modes, concession } = parsed.data;
+  const allowedModes = new Set(modes ?? ALL_MODES);
   const straightLineKm = haversineKm(origin, destination);
   const mid = midpoint(origin, destination);
 
@@ -66,7 +71,7 @@ export async function POST(request: Request) {
   const autoDurationMin = Math.round((straightLineKm / 20) * 60);
 
   const metroFare = metroFareForDistance(straightLineKm);
-  const busFare = straightLineKm <= 0 ? 0 : 0; // Pink Pass: DTC/Cluster bus rides are free for women in Delhi
+  const busFare = busFareForDistance(straightLineKm, concession);
   const autoFare = Math.round(30 + straightLineKm * 11);
   const cabFareEstimate = Math.round(50 + cabDistanceKm * 14);
 
@@ -90,7 +95,7 @@ export async function POST(request: Request) {
     },
     {
       mode: "bus",
-      label: "DTC / Cluster Bus (free for women — Pink Pass)",
+      label: concession ? "DTC / Cluster Bus (free for women — Pink Pass)" : "DTC / Cluster Bus",
       duration_min: busDurationMin,
       fare_inr: busFare,
       safety_score: safetyScore,
@@ -124,7 +129,9 @@ export async function POST(request: Request) {
       deep_link: olaLinks.app,
       web_link: olaLinks.web,
     },
-  ].map((opt) => ({ ...opt, final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort) }));
+  ]
+    .filter((opt) => allowedModes.has(opt.mode as (typeof ALL_MODES)[number]))
+    .map((opt) => ({ ...opt, final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort) }));
 
   const sorted = [...options].sort((a, b) => {
     if (sort === "cheapest") return a.fare_inr - b.fare_inr;

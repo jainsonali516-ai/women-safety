@@ -4,9 +4,9 @@ const ContentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://cdnjs.cloudflare.com",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.supabase.co https://overpass-api.de https://nominatim.openstreetmap.org https://router.project-osrm.org",
+  "connect-src 'self' https://*.supabase.co https://overpass-api.de https://nominatim.openstreetmap.org https://router.project-osrm.org https://*.basemaps.cartocdn.com",
   "frame-ancestors 'none'",
 ].join("; ");
 

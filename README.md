@@ -13,9 +13,10 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 - Manual landmark fallback — if geolocation is denied or times out (10s), both "Share My Location" and the tracker offer a text field ("enter your current landmark / Metro station") resolved via the free geocoder instead of GPS
 - Location-reminder "alarms" — scheduled prompts that always ask for explicit consent before anything is read or sent
 - SOS quick-dial buttons (1091 / 112 / 100 / 102 / 108) plus a one-tap SOS button in the nav bar
-- Journey planner UI with Metro / DTC bus / Auto / Uber / Ola options, sortable by Balanced / Safest / Fastest / Cheapest. Two-wheeler rides are excluded by design — there's no bike-taxi option anywhere in the codebase
-- Address search (OpenStreetMap Nominatim), real road-distance/duration routing (OSRM), and both safety signals (street-light density + shop/amenity foot-traffic density, both via the OSM Overpass API) — all free, no API keys or billing account required
-- Metro fares follow DMRC's real distance slabs (₹10–₹60); DTC/Cluster buses are free for women (Pink Pass)
+- Journey planner with a spacious hero search (GPS-detect or type an origin, destination, travel date, transit-mode filter pills, and a Pink Saheli concession toggle), sortable by AI Balanced / Safest / Fastest / Cheapest. Two-wheeler rides are excluded by design — there's no bike-taxi option anywhere in the codebase
+- Safety Map: a free Leaflet + OpenStreetMap dark map (no Mapbox, no token, no billing account) showing your route, a toggleable night-corridor heatmap, and color-coded footfall markers (currently seeded with known Delhi NCR corridors as a stand-in for a live feed — see the note in `src/components/SafetyMapContainer.tsx`), plus a "recenter to my GPS" control
+- Address search (OpenStreetMap Nominatim, forward + reverse), real road-distance/duration routing (OSRM), and both safety signals (street-light density + shop/amenity foot-traffic density, both via the OSM Overpass API) — all free, no API keys or billing account required
+- Metro fares follow DMRC's real distance slabs (₹10–₹60); DTC/Cluster bus fares follow the concession toggle — ₹0 with Pink Saheli active, or a standard ₹5–₹25 distance fare with it off
 - Uber & Ola deep links (native app URI + web fallback) pre-filled with pickup/drop-off coordinates
 - Tulip Bot: rule-based peak-hour commute forecasting, now also as a floating collapsible widget on every page, with an optional Claude-powered natural-language layer and optional rally/road-closure warnings
 - Security: strict input validation (zod, including a stricter Indian-mobile regex) on every route, CSP/HSTS/X-Frame-Options headers, all third-party API calls proxied server-side so keys never reach the browser
@@ -34,6 +35,10 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 **Rate limits to know about:** Nominatim and the public OSRM demo server are shared, rate-limited community services meant for light/demo use, not production traffic. Fine for development and low-volume use; a production deployment should move to a paid or self-hosted instance of each (or a Google Maps Platform key, which requires a billing account but has a large free monthly credit) to avoid being rate-limited or blocked.
 
 **Not implemented — real Delhi Metro/DTC per-station routing.** Delhi Metro/DTC don't publish a public real-time GTFS routing feed, so Metro/bus legs are distance-based time estimates (see the comment in `src/app/api/routes/plan/route.ts`), not real station-by-station itineraries.
+
+**Mock data — the safety map's heatmap/footfall markers.** `SafetyMapContainer` seeds its heatmap and corridor markers from a small hardcoded list of well-known Delhi NCR locations, not a live feed — the route scoring itself (safety/rush scores shown on route cards) uses the real, live OSM signals described above. Swapping the map's mock points for a live source is a drop-in change in that one file.
+
+**Deliberately not using Mapbox.** An earlier version of this map used Mapbox GL JS, but Mapbox's signup asked for a payment card, so the map was rebuilt on Leaflet + free OpenStreetMap/CARTO tiles instead — no key, no card, no billing account for anyone running this project.
 
 ## Setup
 

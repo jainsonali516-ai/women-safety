@@ -7,3 +7,16 @@ export function metroFareForDistance(km: number) {
   if (km <= 32) return 50;
   return 60;
 }
+
+/**
+ * DTC/Cluster bus fare. Women ride free under Delhi's Pink Pass scheme (`concession: true`,
+ * the default) — `concession: false` shows the standard fare a non-concession rider would pay.
+ */
+export function busFareForDistance(km: number, concession = true) {
+  if (concession) return 0;
+  if (km <= 4) return 5;
+  if (km <= 8) return 10;
+  if (km <= 12) return 15;
+  if (km <= 20) return 20;
+  return 25;
+}
