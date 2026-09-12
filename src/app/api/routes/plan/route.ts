@@ -8,12 +8,14 @@ import {
   computeSafetyScore,
   fetchFootTrafficScore,
   fetchStreetLightDensity,
+  isAfterSunset,
 } from "@/lib/scoring";
 import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
-import { busFareForDistance, metroFareForDistance } from "@/lib/fares";
+import { busFareForDistance, eRickshawFareForDistance, metroFareForDistance } from "@/lib/fares";
+import { classifyRiskTier, explainCost, explainSafety, explainSpeed } from "@/lib/riskTier";
 
-const ALL_MODES = ["metro", "bus", "auto", "cab_uber", "cab_ola"] as const;
+const ALL_MODES = ["metro", "bus", "e_rickshaw", "auto", "cab_uber", "cab_ola"] as const;
 
 const bodySchema = z.object({
   // Full Nominatim addresses (e.g. "Kashmiri Gate, Lothiyan Road, Kashmere Gate, Sadar Bazaar, ...")
@@ -49,6 +51,8 @@ export async function POST(request: Request) {
   const allowedModes = new Set(modes ?? ALL_MODES);
   const straightLineKm = haversineKm(origin, destination);
   const mid = midpoint(origin, destination);
+  const afterSunset = isAfterSunset();
+  const isPeakHour = computeHeuristicRushScore() < 70;
 
   const [lights, footTraffic, driving] = await Promise.all([
     fetchStreetLightDensity(mid),
@@ -62,6 +66,13 @@ export async function POST(request: Request) {
     footTrafficScore: footTraffic.score,
   });
 
+  const safetyExplanationBase = {
+    streetLightCount: lights.count,
+    streetLightDataAvailable: lights.available,
+    footTrafficScore: footTraffic.score,
+    afterSunset,
+  };
+
   const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
   const cabDurationMin = driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60;
   const rushScore = computeHeuristicRushScore();
@@ -70,10 +81,12 @@ export async function POST(request: Request) {
   // don't expose a public live-routing GTFS feed, so real per-station routing isn't wired up yet.
   const metroDurationMin = Math.round((straightLineKm / 33) * 60 + 8); // +8 min avg station access/interchange
   const busDurationMin = Math.round((straightLineKm / 18) * 60 + 5);
+  const eRickshawDurationMin = Math.round((straightLineKm / 12) * 60);
   const autoDurationMin = Math.round((straightLineKm / 20) * 60);
 
   const metroFare = metroFareForDistance(straightLineKm);
   const busFare = busFareForDistance(straightLineKm, concession);
+  const eRickshawFare = eRickshawFareForDistance(straightLineKm);
   const autoFare = Math.round(30 + straightLineKm * 11);
   const cabFareEstimate = Math.round(50 + cabDistanceKm * 14);
 
@@ -86,7 +99,7 @@ export async function POST(request: Request) {
     { ...destination, label: destination.label }
   );
 
-  const options = [
+  const rawOptions = [
     {
       mode: "metro",
       label: "Delhi Metro",
@@ -94,6 +107,7 @@ export async function POST(request: Request) {
       fare_inr: metroFare,
       safety_score: Math.min(100, safetyScore + 15), // stations/platforms are staffed & monitored
       rush_score: 85,
+      mode_bonus: 15,
     },
     {
       mode: "bus",
@@ -102,7 +116,23 @@ export async function POST(request: Request) {
       fare_inr: busFare,
       safety_score: safetyScore,
       rush_score: 55,
+      mode_bonus: 0,
     },
+    // E-Rickshaws are realistically short feeder trips (to/from a metro station or bus stop),
+    // not a substitute for the whole journey once distance grows beyond a couple of km.
+    ...(straightLineKm <= 3
+      ? [
+          {
+            mode: "e_rickshaw",
+            label: "E-Rickshaw (feeder)",
+            duration_min: eRickshawDurationMin,
+            fare_inr: eRickshawFare,
+            safety_score: safetyScore,
+            rush_score: 70,
+            mode_bonus: 0,
+          },
+        ]
+      : []),
     {
       mode: "auto",
       label: "Auto-Rickshaw",
@@ -110,6 +140,7 @@ export async function POST(request: Request) {
       fare_inr: autoFare,
       safety_score: safetyScore,
       rush_score: rushScore,
+      mode_bonus: 0,
     },
     {
       mode: "cab_uber",
@@ -118,6 +149,7 @@ export async function POST(request: Request) {
       fare_inr: cabFareEstimate,
       safety_score: Math.min(100, safetyScore + 10),
       rush_score: rushScore,
+      mode_bonus: 10,
       deep_link: uberLinks.app,
       web_link: uberLinks.web,
     },
@@ -128,12 +160,35 @@ export async function POST(request: Request) {
       fare_inr: Math.round(cabFareEstimate * 0.95),
       safety_score: Math.min(100, safetyScore + 10),
       rush_score: rushScore,
+      mode_bonus: 10,
       deep_link: olaLinks.app,
       web_link: olaLinks.web,
     },
-  ]
-    .filter((opt) => allowedModes.has(opt.mode as (typeof ALL_MODES)[number]))
-    .map((opt) => ({ ...opt, final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort) }));
+  ].filter((opt) => allowedModes.has(opt.mode as (typeof ALL_MODES)[number]));
+
+  const options = rawOptions.map((opt) => {
+    const riskTier = classifyRiskTier(opt.safety_score);
+    const legDistanceKm = opt.mode.startsWith("cab") ? cabDistanceKm : straightLineKm;
+    return {
+      mode: opt.mode,
+      label: opt.label,
+      duration_min: opt.duration_min,
+      fare_inr: opt.fare_inr,
+      safety_score: opt.safety_score,
+      rush_score: opt.rush_score,
+      final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort),
+      risk_tier: riskTier.tier,
+      risk_label: riskTier.label,
+      risk_alert: riskTier.alert,
+      deep_link: "deep_link" in opt ? opt.deep_link : undefined,
+      web_link: "web_link" in opt ? opt.web_link : undefined,
+      why: {
+        safety: explainSafety({ ...safetyExplanationBase, modeBonus: opt.mode_bonus, modeLabel: opt.label }),
+        cost: explainCost(opt.label, opt.fare_inr, legDistanceKm, opt.mode === "bus" ? concession : undefined),
+        speed: explainSpeed(opt.label, opt.duration_min, Boolean(driving), isPeakHour),
+      },
+    };
+  });
 
   const sorted = [...options].sort((a, b) => {
     if (sort === "cheapest") return a.fare_inr - b.fare_inr;
@@ -150,6 +205,7 @@ export async function POST(request: Request) {
       foot_traffic_score: footTraffic.score,
       foot_traffic_data_available: footTraffic.available,
       live_routing_available: Boolean(driving),
+      after_sunset: afterSunset,
     },
     sort,
     options: sorted,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw } from "lucide-react";
+import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets } from "lucide-react";
 
 export interface MapPoint {
   latitude: number;
@@ -9,10 +9,33 @@ export interface MapPoint {
   label?: string;
 }
 
+export interface RouteAmenity {
+  name: string;
+  type: "washroom" | "hospital" | "police";
+  latitude: number;
+  longitude: number;
+  distanceFromRouteMeters: number;
+}
+
 interface Props {
   origin?: MapPoint | null;
   destination?: MapPoint | null;
   safetyIndex?: number | null;
+  amenities?: RouteAmenity[];
+}
+
+const AMENITY_COLOR: Record<RouteAmenity["type"], string> = {
+  washroom: "#FF69B4",
+  hospital: "#9C27B0",
+  police: "#2196F3",
+};
+
+const AMENITY_BUFFER_METERS = 1000;
+
+/** 12px right on the route, fading down to 4px near the 1km buffer edge. */
+function amenityRadiusPx(distanceMeters: number) {
+  const t = Math.min(1, distanceMeters / AMENITY_BUFFER_METERS);
+  return 12 - t * 8;
 }
 
 // Mock foot-density/lighting sample points across well-known Delhi NCR corridors — a stand-in
@@ -30,15 +53,17 @@ const MOCK_CORRIDORS: { name: string; latitude: number; longitude: number; densi
 const DENSITY_COLOR: Record<string, string> = { high: "#22c55e", moderate: "#eab308", low: "#ef4444" };
 const DENSITY_WEIGHT: Record<string, number> = { high: 0.9, moderate: 0.55, low: 0.25 };
 
-export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) {
+export function SafetyMapContainer({ origin, destination, safetyIndex, amenities }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const heatLayerRef = useRef<import("leaflet").Layer | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const routeLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const userMarkerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const amenityLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showCorridors, setShowCorridors] = useState(true);
+  const [showAmenities, setShowAmenities] = useState(true);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
@@ -105,6 +130,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
 
       routeLayerRef.current = L.layerGroup().addTo(map);
       userMarkerRef.current = L.layerGroup().addTo(map);
+      amenityLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
     }
 
@@ -168,6 +194,37 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
     }
     drawRoute();
   }, [origin, destination]);
+
+  useEffect(() => {
+    async function drawAmenities() {
+      if (!mapRef.current || !amenityLayerRef.current) return;
+      const L = (await import("leaflet")).default;
+      amenityLayerRef.current.clearLayers();
+
+      (amenities ?? []).forEach((a) => {
+        const color = AMENITY_COLOR[a.type];
+        L.circleMarker([a.latitude, a.longitude], {
+          radius: amenityRadiusPx(a.distanceFromRouteMeters),
+          color,
+          fillColor: color,
+          fillOpacity: 0.85,
+          weight: 1,
+        })
+          .bindPopup(
+            `<strong>${a.name}</strong><br/>${a.type.charAt(0).toUpperCase() + a.type.slice(1)} — ${(a.distanceFromRouteMeters / 1000).toFixed(2)} km off route`
+          )
+          .addTo(amenityLayerRef.current!);
+      });
+    }
+    drawAmenities();
+  }, [amenities]);
+
+  useEffect(() => {
+    if (!amenityLayerRef.current || !mapRef.current) return;
+    const map = mapRef.current;
+    if (showAmenities) amenityLayerRef.current.addTo(map);
+    else map.removeLayer(amenityLayerRef.current);
+  }, [showAmenities]);
 
   async function recenterToGps() {
     if (!("geolocation" in navigator) || !mapRef.current) return;
@@ -262,6 +319,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex }: Props) 
       >
         <ToggleBtn active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} icon={<Flame size={13} />} label="Night Heatmap" />
         <ToggleBtn active={showCorridors} onClick={() => setShowCorridors((v) => !v)} icon={<TrainFront size={13} />} label="Safety Corridors" />
+        <ToggleBtn active={showAmenities} onClick={() => setShowAmenities((v) => !v)} icon={<Droplets size={13} />} label="Nearby Amenities" />
         <button
           onClick={recenterToGps}
           disabled={locating}

@@ -20,3 +20,8 @@ export function busFareForDistance(km: number, concession = true) {
   if (km <= 20) return 20;
   return 25;
 }
+
+/** Shared e-rickshaw feeder fare — a flat ₹10-20 depending on distance, only realistic for short feeder trips. */
+export function eRickshawFareForDistance(km: number) {
+  return km <= 1.5 ? 10 : 20;
+}

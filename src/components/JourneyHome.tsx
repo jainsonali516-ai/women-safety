@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
-import { SafetyMapContainer, type MapPoint } from "@/components/SafetyMapContainer";
+import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
 import { OfflineRouteView } from "@/components/OfflineRouteView";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
@@ -65,6 +65,22 @@ export function JourneyHome() {
   const [error, setError] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, unknown> | null>(null);
   const [lastSearch, setLastSearch] = useState<JourneySearchValues | null>(null);
+  const [amenities, setAmenities] = useState<RouteAmenity[]>([]);
+
+  async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
+    try {
+      const res = await fetch("/api/route-amenities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin: originPoint, destination: destPoint }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      setAmenities(data.amenities ?? []);
+    } catch {
+      /* amenity dots are a map enhancement, not critical to the route results */
+    }
+  }
 
   async function runSearch(values: JourneySearchValues, sortOverride?: SortMode) {
     setError(null);
@@ -85,11 +101,14 @@ export function JourneyHome() {
       setOrigin(originMapPoint);
       setDestination(destMapPoint);
 
-      const modes = values.selectedModes.flatMap((m) => UI_MODE_MAP[m] ?? []);
-      if (modes.length === 0) {
+      const toggledModes = values.selectedModes.flatMap((m) => UI_MODE_MAP[m] ?? []);
+      if (toggledModes.length === 0) {
         setError("Select at least one transit mode.");
         return;
       }
+      // Auto-rickshaw and e-rickshaw aren't user-toggleable in the hero's filter pills, but
+      // should still show up alongside whatever the user did pick.
+      const modes = Array.from(new Set([...toggledModes, "auto", "e_rickshaw"]));
 
       const res = await fetch("/api/routes/plan", {
         method: "POST",
@@ -109,6 +128,7 @@ export function JourneyHome() {
       setLastSearch(values);
 
       cacheRouteForOffline(originMapPoint, destMapPoint);
+      fetchRouteAmenities(originMapPoint, destMapPoint);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to plan route");
     } finally {
@@ -139,7 +159,7 @@ export function JourneyHome() {
       <main style={{ padding: "0 1.5rem 2rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {error && <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>{error}</p>}
 
-        <SafetyMapContainer origin={origin} destination={destination} safetyIndex={safetyIndex} />
+        <SafetyMapContainer origin={origin} destination={destination} safetyIndex={safetyIndex} amenities={amenities} />
 
         {options.length > 0 && (
           <>
