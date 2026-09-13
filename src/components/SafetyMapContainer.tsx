@@ -113,6 +113,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
   const [exploreMode, setExploreMode] = useState(false);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreError, setExploreError] = useState<string | null>(null);
+  const [exploreAreaTooLarge, setExploreAreaTooLarge] = useState(false);
   const [exploreFilters, setExploreFilters] = useState<Set<AmenityType>>(new Set(EXPLORE_TYPES));
 
   useEffect(() => {
@@ -352,6 +353,15 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
     cluster.addTo(map);
     let pendingGroups = 0;
 
+    // The map usually opens zoomed out far enough to see all of Delhi NCR (to fit a searched
+    // route, or just the default view) — nowhere near the tight area the server will actually
+    // search (see MAX_VIEWPORT_SPAN_DEGREES in helpPoints.ts, needed to keep Overpass fast).
+    // Toggling this on at that zoom would silently hit "area too large" on every request and
+    // never show a single marker, which reads as "this feature doesn't work." Zoom 15 comfortably
+    // fits under that cap for this map's actual on-screen size, so jump there first — but only
+    // in, never out, if the user's already looking closer than that.
+    if (map.getZoom() < 15) map.setZoom(15);
+
     // Split into a fast group (hospital/police/washroom) and the much slower shop-dense
     // "safe_zone" group — same lesson learned from /api/route-amenities: fetching everything as
     // one request means the whole result waits on the slowest category. Fetching the two groups
@@ -371,6 +381,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
       abortRef.current = controller;
       pendingGroups++;
       setExploreLoading(true);
+      setExploreAreaTooLarge(false);
 
       try {
         const res = await fetch("/api/amenities/viewport", {
@@ -386,7 +397,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
           return;
         }
         if (data.areaTooLarge) {
-          setExploreError("Zoom in to explore amenities here.");
+          setExploreAreaTooLarge(true);
           return;
         }
         exploreCacheRef.current.set(cacheKey, data.amenities);
@@ -587,6 +598,28 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
           </div>
         )}
       </div>
+
+      {exploreMode && exploreAreaTooLarge && (
+        <div
+          className="glass"
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 1001,
+            padding: "0.9rem 1.3rem",
+            borderRadius: "0.9rem",
+            fontSize: "0.85rem",
+            fontWeight: 700,
+            textAlign: "center",
+            maxWidth: 260,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.35)",
+          }}
+        >
+          Zoom in to explore amenities in this area
+        </div>
+      )}
 
       {exploreMode && (
         <div
