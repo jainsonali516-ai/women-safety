@@ -13,7 +13,7 @@ export interface HelpPoint {
   distanceMeters: number;
 }
 
-export type AmenityType = "washroom" | "hospital" | "police" | "safe_zone";
+export type AmenityType = "washroom" | "hospital" | "police" | "restaurant" | "safe_zone";
 
 export interface AmenityPoint {
   name: string;
@@ -110,19 +110,18 @@ function distanceToSegmentMeters(point: LatLng, a: LatLng, b: LatLng) {
  * map. Approximates "along the route" via perpendicular distance to the straight segment, since
  * the app doesn't load full turn-by-turn route geometry into the map (see SafetyMapContainer).
  */
-// "safe_zone" covers pharmacies, malls, and restaurants/cafes — busy, well-lit places along a
-// route rather than a designated emergency-response point like a hospital or police station.
-// Needs an OR of several OSM tags, so it's a query-fragment builder rather than one flat tag.
+// "restaurant" and "safe_zone" used to be one combined category (pharmacy+restaurant+cafe+mall
+// in a single query) — split apart because bundling them meant restaurants/cafes disappeared
+// whenever the heavier combined query (more tags to match, denser results in commercial areas)
+// timed out, even though a plain hospital/police-sized query would have succeeded fine.
 // `locationClause` is Overpass's "around a point" or "within a bounding box" filter — the tag
 // matching is identical either way, only where to look differs.
 function amenityQueryFor(type: AmenityType, locationClause: string): string {
   if (type === "washroom") return `node["amenity"="toilets"]${locationClause};`;
   if (type === "hospital") return `node["amenity"="hospital"]${locationClause};`;
   if (type === "police") return `node["amenity"="police"]${locationClause};`;
-  return `
-    node["amenity"~"pharmacy|restaurant|cafe"]${locationClause};
-    node["shop"="mall"]${locationClause};
-  `;
+  if (type === "restaurant") return `node["amenity"~"restaurant|cafe|fast_food"]${locationClause};`;
+  return `node["amenity"="pharmacy"]${locationClause};\n    node["shop"="mall"]${locationClause};`;
 }
 
 // Overpass bbox order is (south,west,north,east) — easy to get backwards, hence the named clause.
@@ -165,7 +164,8 @@ function defaultNameFor(type: AmenityType): string {
   if (type === "washroom") return "Public Washroom";
   if (type === "hospital") return "Hospital";
   if (type === "police") return "Police Station";
-  return "Nearby Safe Zone";
+  if (type === "restaurant") return "Restaurant / Cafe";
+  return "Pharmacy / Mall";
 }
 
 async function fetchAmenitiesOfType(
@@ -220,63 +220,13 @@ export async function fetchRouteAmenities(
   // server's safe concurrency margin is apparently thinner than "2" in practice. For a safety
   // app, an amenity category randomly vanishing is worse than the extra second or two this
   // costs. `onlyTypes` lets a caller request a subset — used to fetch the fast hospital/police/
-  // washroom queries as one client request, separate from the much slower shop-dense
-  // "safe_zone" query, so that group can appear on the map without waiting on the slowest one.
-  const types = (onlyTypes ?? (["washroom", "hospital", "police", "safe_zone"] as const)) as AmenityType[];
+  // washroom/restaurant queries as one client request, separate from the slower "safe_zone"
+  // (pharmacy/mall) query, so that group can appear on the map without waiting on the other.
+  const types = (onlyTypes ?? (["washroom", "hospital", "police", "restaurant", "safe_zone"] as const)) as AmenityType[];
   const results: RouteAmenity[][] = [];
   for (const type of types) {
     results.push(await fetchAmenitiesOfType(type, bounds, origin, destination, bufferMeters));
   }
 
   return results.flat().slice(0, 150);
-}
-
-// Above this span (roughly 6-7km at Delhi's latitude), a bbox query has to scan too much ground
-// to stay fast, and a fully-zoomed-out map would return an unusably dense pile of pins anyway —
-// better to ask the user to zoom in than to make Overpass (and the map) do that much work.
-const MAX_VIEWPORT_SPAN_DEGREES = 0.06;
-
-/**
- * Amenities anywhere inside the map's current visible bounds, for free pan/zoom exploration —
- * unlike fetchRouteAmenities, these aren't relative to a route (no distanceFromRouteMeters), just
- * "what's here." Same sequential-per-type Overpass calling pattern as fetchRouteAmenities, for
- * the same reliability reason.
- */
-export async function fetchAmenitiesInViewport(
-  bounds: ViewportBounds,
-  types: AmenityType[]
-): Promise<{ amenities: AmenityPoint[]; areaTooLarge: boolean }> {
-  const spanLat = bounds.north - bounds.south;
-  const spanLng = bounds.east - bounds.west;
-  if (spanLat > MAX_VIEWPORT_SPAN_DEGREES || spanLng > MAX_VIEWPORT_SPAN_DEGREES) {
-    return { amenities: [], areaTooLarge: true };
-  }
-
-  const results: AmenityPoint[][] = [];
-  for (const type of types) {
-    const query = `
-      [out:json][timeout:6];
-      (${overpassBboxFilterFor(type, bounds)});
-      out body 60;
-    `;
-    // Fail fast, no mirror retry: this is free-exploration browsing, not a safety score input —
-    // 3 sequential types x up to 2 mirrors x ~10s each could make toggling this on hang for
-    // close to a minute in the worst case (real reports of exactly that). Missing a category
-    // occasionally is an acceptable trade for this feature staying responsive.
-    const data = await queryOverpass(query, 6000, false);
-    if (!data) continue;
-
-    results.push(
-      (data.elements as { tags?: Record<string, string>; lat: number; lon: number }[]).map(
-        (el): AmenityPoint => ({
-          name: el.tags?.name ?? defaultNameFor(type),
-          type,
-          latitude: el.lat,
-          longitude: el.lon,
-        })
-      )
-    );
-  }
-
-  return { amenities: results.flat().slice(0, 300), areaTooLarge: false };
 }

@@ -4,14 +4,14 @@ import { jsonError } from "@/lib/api";
 import { coordinateSchema, safeParse } from "@/lib/validation";
 import { fetchRouteAmenities, type RouteAmenity } from "@/lib/helpPoints";
 
-const AMENITY_TYPES = ["washroom", "hospital", "police", "safe_zone"] as const;
+const AMENITY_TYPES = ["washroom", "hospital", "police", "restaurant", "safe_zone"] as const;
 
 const bodySchema = z.object({
   origin: coordinateSchema,
   destination: coordinateSchema,
-  // Optional: lets the client ask for a subset (e.g. the fast hospital/police/washroom types
-  // separately from the much slower shop-dense "safe_zone" query in commercial areas) so pins
-  // can appear on the map as each group resolves instead of all waiting on the slowest one.
+  // Optional: lets the client ask for a subset (e.g. the fast group separately from the slower
+  // "safe_zone" pharmacy/mall query) so pins can appear on the map as each group resolves
+  // instead of all waiting on the slowest one.
   types: z.array(z.enum(AMENITY_TYPES)).min(1).optional(),
 });
 

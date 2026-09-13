@@ -110,15 +110,14 @@ export function JourneyHome() {
     }
   }
 
-  /** Fetches the fast hospital/police/washroom amenities and the much slower shop-dense
-   * "safe_zone" category (restaurants/malls/pharmacies — Overpass has to scan far more in a
-   * commercial area before it can even apply a result cap) as two independent, parallel
-   * requests instead of one combined call, so the fast group's pins can appear on the map right
-   * away instead of all of them waiting on the slowest one. */
+  /** Fetches the fast hospital/police/washroom/restaurant amenities and the slower "safe_zone"
+   * category (pharmacy/mall — Overpass has to scan more for these in a commercial area) as two
+   * independent, parallel requests instead of one combined call, so the fast group's pins can
+   * appear on the map right away instead of all of them waiting on the slowest one. */
   async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
     const requestId = ++amenityRequestIdRef.current;
     setAmenities([]);
-    fetchAmenityGroup(originPoint, destPoint, ["washroom", "hospital", "police"], requestId);
+    fetchAmenityGroup(originPoint, destPoint, ["washroom", "hospital", "police", "restaurant"], requestId);
     fetchAmenityGroup(originPoint, destPoint, ["safe_zone"], requestId);
   }
 
