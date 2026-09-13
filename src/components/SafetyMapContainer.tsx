@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets, Compass, Loader2 } from "lucide-react";
+import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets, Compass, Loader2, Layers, X } from "lucide-react";
 import { classifyRiskTier, RISK_TIER_COLOR } from "@/lib/riskTier";
 import type { AmenityPoint, AmenityType } from "@/lib/helpPoints";
 import "leaflet.markercluster/dist/MarkerCluster.css";
@@ -99,13 +99,17 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
   const [showCorridors, setShowCorridors] = useState(true);
   const [showAmenities, setShowAmenities] = useState(true);
   const [locating, setLocating] = useState(false);
+  // Collapsed by default — the full button stack was covering a large chunk of the map,
+  // especially on phones. One small toggle button expands it into a dropdown on demand.
+  const [controlsOpen, setControlsOpen] = useState(false);
 
   // --- Pan/zoom amenity exploration (separate from the route-linked `amenities` prop above) ---
   const exploreClusterRef = useRef<import("leaflet").MarkerClusterGroup | null>(null);
   const exploreCacheRef = useRef<Map<string, AmenityPoint[]>>(new Map());
-  const exploreAbortRef = useRef<AbortController | null>(null);
+  const exploreAbortFastRef = useRef<AbortController | null>(null);
+  const exploreAbortSlowRef = useRef<AbortController | null>(null);
   const exploreDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const exploreRawRef = useRef<AmenityPoint[]>([]); // last fetched batch, before category filtering
+  const exploreRawRef = useRef<AmenityPoint[]>([]); // amenities fetched so far for the current view, before category filtering
   const [exploreMode, setExploreMode] = useState(false);
   const [exploreLoading, setExploreLoading] = useState(false);
   const [exploreError, setExploreError] = useState<string | null>(null);
@@ -339,59 +343,73 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
       // exploreMode is true (see the JSX below), so there's nothing to visibly reset — it'll
       // start fresh from fetchForCurrentView the next time explore mode is turned back on.
       map.removeLayer(cluster);
-      exploreAbortRef.current?.abort();
+      exploreAbortFastRef.current?.abort();
+      exploreAbortSlowRef.current?.abort();
       if (exploreDebounceRef.current) clearTimeout(exploreDebounceRef.current);
       return;
     }
 
     cluster.addTo(map);
+    let pendingGroups = 0;
 
-    async function fetchForCurrentView() {
-      const b = map!.getBounds();
-      const bounds = { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
-      const cacheKey = boundsCacheKey(bounds);
-
+    // Split into a fast group (hospital/police/washroom) and the much slower shop-dense
+    // "safe_zone" group — same lesson learned from /api/route-amenities: fetching everything as
+    // one request means the whole result waits on the slowest category. Fetching the two groups
+    // as independent requests lets the fast one render right away instead of both being stuck
+    // behind whichever is slow this time.
+    async function fetchGroup(bounds: { north: number; south: number; east: number; west: number }, types: AmenityType[], groupLabel: string, abortRef: { current: AbortController | null }) {
+      const cacheKey = `${boundsCacheKey(bounds)}::${groupLabel}`;
       const cached = exploreCacheRef.current.get(cacheKey);
       if (cached) {
-        exploreRawRef.current = cached;
-        setExploreError(null);
+        exploreRawRef.current = [...exploreRawRef.current, ...cached];
         renderExploreMarkers();
         return;
       }
 
-      exploreAbortRef.current?.abort();
+      abortRef.current?.abort();
       const controller = new AbortController();
-      exploreAbortRef.current = controller;
-
+      abortRef.current = controller;
+      pendingGroups++;
       setExploreLoading(true);
-      setExploreError(null);
+
       try {
         const res = await fetch("/api/amenities/viewport", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bounds, types: EXPLORE_TYPES }),
+          body: JSON.stringify({ bounds, types }),
           signal: controller.signal,
         });
         const data = await res.json();
         if (controller.signal.aborted) return; // superseded by a newer pan/zoom
         if (!res.ok) {
-          setExploreError("Couldn't load amenities for this area.");
+          setExploreError("Couldn't load some amenities for this area.");
           return;
         }
         if (data.areaTooLarge) {
           setExploreError("Zoom in to explore amenities here.");
-          exploreRawRef.current = [];
-          renderExploreMarkers();
           return;
         }
         exploreCacheRef.current.set(cacheKey, data.amenities);
-        exploreRawRef.current = data.amenities;
+        exploreRawRef.current = [...exploreRawRef.current, ...data.amenities];
         renderExploreMarkers();
       } catch (err) {
-        if ((err as Error).name !== "AbortError") setExploreError("Couldn't load amenities for this area.");
+        if ((err as Error).name !== "AbortError") setExploreError("Couldn't load some amenities for this area.");
       } finally {
-        if (!controller.signal.aborted) setExploreLoading(false);
+        if (!controller.signal.aborted) {
+          pendingGroups--;
+          if (pendingGroups <= 0) setExploreLoading(false);
+        }
       }
+    }
+
+    function fetchForCurrentView() {
+      const b = map!.getBounds();
+      const bounds = { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+      exploreRawRef.current = [];
+      setExploreError(null);
+      renderExploreMarkers(); // clear stale markers from the previous view immediately
+      fetchGroup(bounds, ["washroom", "hospital", "police"], "fast", exploreAbortFastRef);
+      fetchGroup(bounds, ["safe_zone"], "slow", exploreAbortSlowRef);
     }
 
     function onMoveEnd() {
@@ -494,59 +512,80 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
         </div>
       )}
 
-      <div
-        className="glass"
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.4rem",
-          padding: "0.5rem",
-          borderRadius: "0.8rem",
-        }}
-      >
-        <ToggleBtn active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} icon={<Flame size={13} />} label="Night Heatmap" />
-        <ToggleBtn active={showCorridors} onClick={() => setShowCorridors((v) => !v)} icon={<TrainFront size={13} />} label="Safety Corridors" />
-        <ToggleBtn active={showAmenities} onClick={() => setShowAmenities((v) => !v)} icon={<Droplets size={13} />} label="Nearby Amenities" />
-        <ToggleBtn active={exploreMode} onClick={() => setExploreMode((v) => !v)} icon={<Compass size={13} />} label="Explore Nearby" />
+      <div style={{ position: "absolute", top: 12, right: 12, zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
         <button
-          onClick={recenterToGps}
-          disabled={locating}
+          onClick={() => setControlsOpen((v) => !v)}
+          aria-label={controlsOpen ? "Hide map controls" : "Show map controls"}
+          aria-expanded={controlsOpen}
+          className="glass"
           style={{
+            width: 38,
+            height: 38,
+            borderRadius: "0.7rem",
             display: "flex",
             alignItems: "center",
-            gap: "0.4rem",
-            fontSize: "0.75rem",
-            padding: "0.4rem 0.6rem",
-            borderRadius: "0.5rem",
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
+            justifyContent: "center",
+            border: "none",
             color: "var(--foreground)",
             cursor: "pointer",
           }}
         >
-          <LocateFixed size={13} /> {locating ? "Locating..." : "My GPS"}
+          {controlsOpen ? <X size={16} /> : <Layers size={16} />}
         </button>
-        <button
-          onClick={resetToDelhiNcr}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            fontSize: "0.75rem",
-            padding: "0.4rem 0.6rem",
-            borderRadius: "0.5rem",
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
-            color: "var(--foreground)",
-            cursor: "pointer",
-          }}
-        >
-          <RotateCcw size={13} /> Reset View
-        </button>
+
+        {controlsOpen && (
+          <div
+            className="glass"
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.4rem",
+              padding: "0.5rem",
+              borderRadius: "0.8rem",
+              maxWidth: "min(220px, calc(100vw - 3rem))",
+            }}
+          >
+            <ToggleBtn active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} icon={<Flame size={13} />} label="Night Heatmap" />
+            <ToggleBtn active={showCorridors} onClick={() => setShowCorridors((v) => !v)} icon={<TrainFront size={13} />} label="Safety Corridors" />
+            <ToggleBtn active={showAmenities} onClick={() => setShowAmenities((v) => !v)} icon={<Droplets size={13} />} label="Nearby Amenities" />
+            <ToggleBtn active={exploreMode} onClick={() => setExploreMode((v) => !v)} icon={<Compass size={13} />} label="Explore Nearby" />
+            <button
+              onClick={recenterToGps}
+              disabled={locating}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontSize: "0.75rem",
+                padding: "0.4rem 0.6rem",
+                borderRadius: "0.5rem",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+              }}
+            >
+              <LocateFixed size={13} /> {locating ? "Locating..." : "My GPS"}
+            </button>
+            <button
+              onClick={resetToDelhiNcr}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+                fontSize: "0.75rem",
+                padding: "0.4rem 0.6rem",
+                borderRadius: "0.5rem",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+              }}
+            >
+              <RotateCcw size={13} /> Reset View
+            </button>
+          </div>
+        )}
       </div>
 
       {exploreMode && (
