@@ -61,7 +61,7 @@ export function ChatbotWidget() {
           justifyContent: "center",
           cursor: "pointer",
           boxShadow: "0 8px 24px rgba(0,0,0,0.25)",
-          zIndex: 50,
+          zIndex: 2000,
         }}
       >
         <MessageSquareText size={22} />
@@ -83,7 +83,16 @@ export function ChatbotWidget() {
         flexDirection: "column",
         overflow: "hidden",
         boxShadow: "0 12px 32px rgba(0,0,0,0.3)",
-        zIndex: 50,
+        // The Leaflet map's own floating controls (Night Heatmap/Nearby Amenities/etc.) use
+        // z-index 1000 on an element that doesn't establish its own stacking context, so at the
+        // page level they were winning over this panel's old z-index of 50 and visually covering
+        // it — that's the "chatbot appears behind the map" bug. 2000 clears that (and everything
+        // else in the app) with headroom. pointerEvents is explicit here since this panel is a
+        // separate DOM subtree from the map (not nested inside it), so once it's stacked on top
+        // it already receives its own clicks/typing/scroll directly — no event-propagation
+        // workaround needed, just correct stacking.
+        pointerEvents: "auto",
+        zIndex: 2000,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem", borderBottom: "1px solid var(--border)" }}>
