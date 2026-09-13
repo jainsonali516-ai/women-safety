@@ -360,7 +360,8 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
     // never show a single marker, which reads as "this feature doesn't work." Zoom 15 comfortably
     // fits under that cap for this map's actual on-screen size, so jump there first — but only
     // in, never out, if the user's already looking closer than that.
-    if (map.getZoom() < 15) map.setZoom(15);
+    const zoomedIn = map.getZoom() < 15;
+    if (zoomedIn) map.setZoom(15);
 
     // Split into a fast group (hospital/police/washroom) and the much slower shop-dense
     // "safe_zone" group — same lesson learned from /api/route-amenities: fetching everything as
@@ -429,7 +430,12 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
     }
 
     map.on("moveend", onMoveEnd);
-    fetchForCurrentView(); // load the current view immediately on enabling explore mode
+    // If setZoom just fired above, Leaflet's own (async) zoom animation will end with a
+    // "moveend" that onMoveEnd already catches — firing a second, immediate fetch here too
+    // would either double up the request or run against bounds that haven't settled yet from
+    // the still-animating zoom. Only fetch immediately when the zoom (and thus bounds) didn't
+    // just change.
+    if (!zoomedIn) fetchForCurrentView();
 
     return () => {
       map.off("moveend", onMoveEnd);

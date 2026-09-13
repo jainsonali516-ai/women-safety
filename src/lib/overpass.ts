@@ -21,26 +21,30 @@ function delay(ms: number) {
 }
 
 /**
- * Returns the parsed Overpass JSON, or null if every attempt (primary + mirror retry) failed.
- * A genuinely successful response is usually 1-3s; 10s per attempt is generous headroom without
- * letting one stuck attempt (now potentially doubled by the mirror retry, and again per amenity
- * type since these run sequentially — see fetchRouteAmenities) drag a whole search out too far.
+ * Returns the parsed Overpass JSON, or null if every attempt failed.
+ * A genuinely successful response is usually 1-3s; `timeoutMs` per attempt is generous headroom
+ * without letting one stuck attempt (potentially doubled by the mirror retry, and again per
+ * amenity type since these run sequentially — see fetchRouteAmenities) drag a whole search out
+ * too far. `retryMirror: false` skips the second mirror entirely — worth it for a feature where
+ * failing fast matters more than squeezing out one more transient-failure recovery, like the
+ * free-exploration map browsing (unlike the safety-score-relevant calls, which keep the retry).
  */
-export async function queryOverpass(query: string, timeoutMs = 10000): Promise<{ elements: unknown[] } | null> {
-  for (let attempt = 0; attempt < OVERPASS_MIRRORS.length; attempt++) {
+export async function queryOverpass(query: string, timeoutMs = 10000, retryMirror = true): Promise<{ elements: unknown[] } | null> {
+  const mirrors = retryMirror ? OVERPASS_MIRRORS : OVERPASS_MIRRORS.slice(0, 1);
+  for (let attempt = 0; attempt < mirrors.length; attempt++) {
     try {
-      const res = await fetch(OVERPASS_MIRRORS[attempt], {
+      const res = await fetch(mirrors[attempt], {
         method: "POST",
         headers: OVERPASS_HEADERS,
         body: query,
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (res.ok) return await res.json();
-      console.error(`[overpass] ${OVERPASS_MIRRORS[attempt]} -> HTTP ${res.status}`);
+      console.error(`[overpass] ${mirrors[attempt]} -> HTTP ${res.status}`);
     } catch (err) {
-      console.error(`[overpass] ${OVERPASS_MIRRORS[attempt]} -> ${err instanceof Error ? err.message : err}`);
+      console.error(`[overpass] ${mirrors[attempt]} -> ${err instanceof Error ? err.message : err}`);
     }
-    if (attempt < OVERPASS_MIRRORS.length - 1) await delay(500);
+    if (attempt < mirrors.length - 1) await delay(500);
   }
   return null;
 }

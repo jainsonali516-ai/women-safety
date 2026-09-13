@@ -255,11 +255,15 @@ export async function fetchAmenitiesInViewport(
   const results: AmenityPoint[][] = [];
   for (const type of types) {
     const query = `
-      [out:json][timeout:10];
+      [out:json][timeout:6];
       (${overpassBboxFilterFor(type, bounds)});
       out body 60;
     `;
-    const data = await queryOverpass(query, 9000);
+    // Fail fast, no mirror retry: this is free-exploration browsing, not a safety score input —
+    // 3 sequential types x up to 2 mirrors x ~10s each could make toggling this on hang for
+    // close to a minute in the worst case (real reports of exactly that). Missing a category
+    // occasionally is an acceptable trade for this feature staying responsive.
+    const data = await queryOverpass(query, 6000, false);
     if (!data) continue;
 
     results.push(
