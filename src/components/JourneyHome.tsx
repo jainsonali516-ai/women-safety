@@ -8,6 +8,7 @@ import { OfflineRouteView } from "@/components/OfflineRouteView";
 import { SafetyZoneBreakdown } from "@/components/SafetyZoneBreakdown";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
+import { computeFinalScore } from "@/lib/scoring";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -16,6 +17,25 @@ const UI_MODE_MAP: Record<string, string[]> = {
   dtc_bus: ["bus"],
   cab: ["cab_uber", "cab_ola"],
 };
+
+/**
+ * Re-sorting doesn't need a fresh server round-trip — the safety/duration/fare numbers behind
+ * each option don't change with the sort tab, only the ordering (and the "balanced" blended
+ * score) does. Recomputing and reordering here, from data already on the page, makes tab
+ * switches instant instead of re-running live geocoding + Overpass/OSRM lookups every time.
+ */
+function reorderOptions(options: RouteOption[], sort: SortMode): RouteOption[] {
+  const rescored = options.map((opt) => ({
+    ...opt,
+    final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort),
+  }));
+  return rescored.sort((a, b) => {
+    if (sort === "cheapest") return a.fare_inr - b.fare_inr;
+    if (sort === "fastest") return a.duration_min - b.duration_min;
+    if (sort === "safest") return b.safety_score - a.safety_score;
+    return b.final_score - a.final_score;
+  });
+}
 
 async function geocodeOne(query: string) {
   const res = await fetch(`/api/geocode?q=${encodeURIComponent(query)}`);
@@ -65,7 +85,6 @@ export function JourneyHome() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, unknown> | null>(null);
-  const [lastSearch, setLastSearch] = useState<JourneySearchValues | null>(null);
   const [amenities, setAmenities] = useState<RouteAmenity[]>([]);
 
   async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
@@ -83,7 +102,7 @@ export function JourneyHome() {
     }
   }
 
-  async function runSearch(values: JourneySearchValues, sortOverride?: SortMode) {
+  async function runSearch(values: JourneySearchValues) {
     setError(null);
     setLoading(true);
     try {
@@ -117,7 +136,7 @@ export function JourneyHome() {
         body: JSON.stringify({
           origin: originMapPoint,
           destination: destMapPoint,
-          sort: sortOverride ?? sort,
+          sort,
           modes,
           concession: pinkSaheliActive,
         }),
@@ -126,7 +145,6 @@ export function JourneyHome() {
       if (!res.ok) throw new Error(data.error);
       setOptions(data.options);
       setSignals(data.signals);
-      setLastSearch(values);
 
       cacheRouteForOffline(originMapPoint, destMapPoint);
       fetchRouteAmenities(originMapPoint, destMapPoint);
@@ -139,7 +157,7 @@ export function JourneyHome() {
 
   function changeSort(next: SortMode) {
     setSort(next);
-    if (lastSearch) runSearch(lastSearch, next);
+    if (options.length > 0) setOptions((prev) => reorderOptions(prev, next));
   }
 
   const safetyIndex = options.length > 0 ? Math.round(options.reduce((a, o) => a + o.safety_score, 0) / options.length) : null;
