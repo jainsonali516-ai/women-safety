@@ -2,11 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { jsonError } from "@/lib/api";
 import { coordinateSchema, safeParse } from "@/lib/validation";
-import { fetchRouteAmenities } from "@/lib/helpPoints";
+import { fetchRouteAmenities, type RouteAmenity } from "@/lib/helpPoints";
+
+const AMENITY_TYPES = ["washroom", "hospital", "police", "safe_zone"] as const;
 
 const bodySchema = z.object({
   origin: coordinateSchema,
   destination: coordinateSchema,
+  // Optional: lets the client ask for a subset (e.g. the fast hospital/police/washroom types
+  // separately from the much slower shop-dense "safe_zone" query in commercial areas) so pins
+  // can appear on the map as each group resolves instead of all waiting on the slowest one.
+  types: z.array(z.enum(AMENITY_TYPES)).min(1).optional(),
 });
 
 export async function POST(request: Request) {
@@ -14,6 +20,11 @@ export async function POST(request: Request) {
   const parsed = safeParse(bodySchema, body);
   if (!parsed.ok) return jsonError(parsed.error);
 
-  const amenities = await fetchRouteAmenities(parsed.data.origin, parsed.data.destination);
+  const amenities = await fetchRouteAmenities(
+    parsed.data.origin,
+    parsed.data.destination,
+    undefined,
+    parsed.data.types as RouteAmenity["type"][] | undefined
+  );
   return NextResponse.json({ amenities });
 }

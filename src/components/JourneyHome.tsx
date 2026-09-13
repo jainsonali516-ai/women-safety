@@ -87,19 +87,32 @@ export function JourneyHome() {
   const [amenities, setAmenities] = useState<RouteAmenity[]>([]);
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
 
-  async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
+  async function fetchAmenityGroup(originPoint: MapPoint, destPoint: MapPoint, types: string[]) {
     try {
       const res = await fetch("/api/route-amenities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ origin: originPoint, destination: destPoint }),
+        body: JSON.stringify({ origin: originPoint, destination: destPoint, types }),
       });
       if (!res.ok) return;
       const data = await res.json();
-      setAmenities(data.amenities ?? []);
+      // Merge rather than replace — the other group's request is in flight independently and
+      // may resolve before or after this one.
+      setAmenities((prev) => [...prev, ...(data.amenities ?? [])]);
     } catch {
       /* amenity dots are a map enhancement, not critical to the route results */
     }
+  }
+
+  /** Fetches the fast hospital/police/washroom amenities and the much slower shop-dense
+   * "safe_zone" category (restaurants/malls/pharmacies — Overpass has to scan far more in a
+   * commercial area before it can even apply a result cap) as two independent, parallel
+   * requests instead of one combined call, so the fast group's pins can appear on the map right
+   * away instead of all of them waiting on the slowest one. */
+  async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
+    setAmenities([]);
+    fetchAmenityGroup(originPoint, destPoint, ["washroom", "hospital", "police"]);
+    fetchAmenityGroup(originPoint, destPoint, ["safe_zone"]);
   }
 
   async function runSearch(values: JourneySearchValues) {

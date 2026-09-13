@@ -141,13 +141,14 @@ async function fetchAmenitiesOfType(
 ): Promise<RouteAmenity[]> {
   // One lightweight query per amenity type — combining all types (plus a high result cap) into
   // a single query reliably timed out (504) under load on Overpass's shared public server;
-  // small parallel-in-spirit-but-sequential queries succeed far more often, same lesson as the
-  // other Overpass calls in this app (see fetchStreetLightDensity/fetchFootTrafficScore in
-  // scoring.ts).
+  // several small queries succeed far more often, same lesson as the other Overpass calls in
+  // this app (see fetchStreetLightDensity/fetchFootTrafficScore in scoring.ts). A smaller result
+  // cap (was 60) also means less for Overpass to compute/transfer and less for us to parse —
+  // the map only ever shows a handful of nearby markers per type anyway.
   const query = `
     [out:json][timeout:12];
     (${overpassFilterFor(type, searchRadius, mid)});
-    out body 60;
+    out body 35;
   `;
 
   try {
@@ -182,16 +183,31 @@ async function fetchAmenitiesOfType(
   }
 }
 
-export async function fetchRouteAmenities(origin: LatLng, destination: LatLng, bufferMeters = 1000): Promise<RouteAmenity[]> {
+export async function fetchRouteAmenities(
+  origin: LatLng,
+  destination: LatLng,
+  bufferMeters = 1000,
+  onlyTypes?: RouteAmenity["type"][]
+): Promise<RouteAmenity[]> {
   const mid = { latitude: (origin.latitude + destination.latitude) / 2, longitude: (origin.longitude + destination.longitude) / 2 };
   const searchRadius = haversineMeters(origin, destination) / 2 + bufferMeters;
 
-  // Sequential, not Promise.all: Overpass's public instance enforces a small concurrent-slot
-  // limit per client (commonly 2), so firing all amenity-type queries at once reliably breaks
-  // whichever one lands third or later.
+  // 2-at-a-time, not fully serial and not all 4 at once: Overpass's public instance enforces a
+  // small concurrent-slot limit per client (commonly 2) — firing all 4 together reliably breaks
+  // whichever lands third or later, but running fully one-by-one was a direct cause of amenities
+  // visibly lagging behind the rest of the search results. Two batches of 2 in parallel roughly
+  // halves the wait while staying inside that known-safe concurrency limit. `onlyTypes` lets a
+  // caller request a subset — used to fetch the fast hospital/police/washroom queries separately
+  // from the much slower shop-dense "safe_zone" query, so the client can show the fast group
+  // immediately instead of waiting on the slowest one.
+  const types = (onlyTypes ?? (["washroom", "hospital", "police", "safe_zone"] as const)) as RouteAmenity["type"][];
   const results: RouteAmenity[][] = [];
-  for (const type of ["washroom", "hospital", "police", "safe_zone"] as const) {
-    results.push(await fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters));
+  for (let i = 0; i < types.length; i += 2) {
+    const batch = types.slice(i, i + 2);
+    const batchResults = await Promise.all(
+      batch.map((type) => fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters))
+    );
+    results.push(...batchResults);
   }
 
   return results.flat().slice(0, 150);
