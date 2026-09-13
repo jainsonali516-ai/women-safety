@@ -64,6 +64,7 @@ export async function POST(request: Request) {
     streetLightCount: lights.count,
     streetLightDataAvailable: lights.available,
     footTrafficScore: footTraffic.score,
+    afterSunset,
   });
 
   const safetyExplanationBase = {
@@ -78,16 +79,28 @@ export async function POST(request: Request) {
   // not just the absence of a bonus, and steeper after sunset when that gap matters most.
   const unmonitoredModePenalty = afterSunset ? 15 : 8;
 
-  const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
-  const cabDurationMin = driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60;
   const rushScore = computeHeuristicRushScore();
 
-  // Metro/DTC bus legs are distance-based estimates (avg incl.-stops speeds) — Delhi Metro/DTC
-  // don't expose a public live-routing GTFS feed, so real per-station routing isn't wired up yet.
-  const metroDurationMin = Math.round((straightLineKm / 33) * 60 + 8); // +8 min avg station access/interchange
-  const busDurationMin = Math.round((straightLineKm / 18) * 60 + 5);
-  const eRickshawDurationMin = Math.round((straightLineKm / 12) * 60);
-  const autoDurationMin = Math.round((straightLineKm / 20) * 60);
+  // Surface roads (bus/auto/e-rickshaw/cab) genuinely slow down in weekday peak traffic — OSRM's
+  // free public router returns a "typical," not live-traffic, duration, so this heuristic
+  // multiplier is the only peak-hour effect currently applied to road-based ETAs.
+  const roadPeakMultiplier = isPeakHour ? 1.35 : 1;
+
+  const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
+  const cabDurationMin = (driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60) * roadPeakMultiplier;
+
+  // Delhi Metro/DTC don't expose a public live-routing GTFS feed, so real per-station routing
+  // isn't wired up — these are distance-based estimates at each mode's average incl.-stops speed.
+  // Metro adds an explicit average headway wait (trains run every ~4-6 min) plus typical station
+  // access/egress time, rather than one unexplained flat padding constant. Unlike road transport,
+  // Metro trip time isn't meaningfully affected by road traffic (if anything, trains run *more*
+  // frequently at peak), so no peak multiplier applies to it.
+  const METRO_AVG_HEADWAY_MIN = 5;
+  const METRO_STATION_ACCESS_MIN = 4;
+  const metroDurationMin = Math.round((straightLineKm / 33) * 60 + METRO_AVG_HEADWAY_MIN + METRO_STATION_ACCESS_MIN);
+  const busDurationMin = Math.round(((straightLineKm / 18) * 60 + 5) * roadPeakMultiplier);
+  const eRickshawDurationMin = Math.round((straightLineKm / 12) * 60 * roadPeakMultiplier);
+  const autoDurationMin = Math.round((straightLineKm / 20) * 60 * roadPeakMultiplier);
 
   const metroFare = metroFareForDistance(straightLineKm);
   const busFare = busFareForDistance(straightLineKm, concession);

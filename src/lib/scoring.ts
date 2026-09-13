@@ -1,4 +1,5 @@
 import { istParts } from "@/lib/istTime";
+import { getSunTimes } from "@/lib/sunTimes";
 
 interface LatLng {
   latitude: number;
@@ -69,10 +70,12 @@ export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
     if (!res.ok) return { score: null, available: false as const };
     const json = await res.json();
     const placeCount = Number(json?.elements?.[0]?.tags?.total ?? 0);
-    // Normalize: 15+ nearby shops/amenities ≈ fully busy commercial area. Most residential
-    // stretches genuinely have only a handful of shops within 400m, so a stricter denominator
-    // (this used to be 25) made almost every non-market street register as "isolated".
-    const score = Math.min(100, Math.round((placeCount / 15) * 100));
+    // Same reasoning as the street-light floor below: OSM's shop/amenity tagging is genuinely
+    // sparse for a lot of real, populated Indian residential streets, so "0 mapped" is
+    // inconclusive, not "confirmed deserted." A hard floor of 0 here was fine when this signal
+    // was only ever averaged 50/50 with lighting — now that daytime scoring weights foot traffic
+    // up to 70%, an unmapped-but-genuinely-normal street would otherwise get dragged down hard.
+    const score = Math.min(100, Math.round(30 + placeCount * 10));
     return { score, available: true as const };
   } catch {
     return { score: null, available: false as const };
@@ -91,30 +94,44 @@ export function computeHeuristicRushScore(date = new Date()) {
   return isPeak ? 40 : 85;
 }
 
+/**
+ * Real astronomical sunset for Delhi NCR, not a fixed 19:00 cutoff — Delhi's actual sunset
+ * ranges from ~17:25 IST in late December to ~19:20 IST in late June, so a fixed threshold was
+ * routinely wrong by an hour or more depending on the season.
+ */
 export function isAfterSunset(date = new Date()) {
-  const { hour } = istParts(date);
-  return hour >= 19 || hour < 6;
+  const { preciseHour } = istParts(date);
+  const { sunriseHour, sunsetHour } = getSunTimes(date);
+  return preciseHour >= sunsetHour || preciseHour < sunriseHour;
 }
 
 export interface SafetyInputs {
   streetLightCount: number;
   streetLightDataAvailable: boolean;
   footTrafficScore: number | null;
+  afterSunset: boolean;
 }
 
-/** Combines available live signals into a 0-100 safety score. Missing signals are simply excluded from the average. */
-export function computeSafetyScore({ streetLightCount, streetLightDataAvailable, footTrafficScore }: SafetyInputs) {
+/**
+ * Combines available live signals into a 0-100 safety score. Missing signals are simply excluded
+ * from the weighted average. Weighting shifts with time of day: lighting matters far more once
+ * it's actually dark, while during daylight a lively, populated stretch is the better signal and
+ * an OSM lamp count (which is only ever relevant after dark anyway) is de-emphasized.
+ */
+export function computeSafetyScore({ streetLightCount, streetLightDataAvailable, footTrafficScore, afterSunset }: SafetyInputs) {
   // OSM's highway=street_lamp tagging is very incomplete for Indian cities — most real,
   // genuinely-lit streets simply have zero individually-mapped lamp nodes. Treating "0 found"
   // as "confirmed unlit" (the old `count * 10`, floor 0) was systematically dragging nearly
   // every route into a false "high risk" reading. A 0 count is inconclusive, not a red flag —
   // the floor here reflects that uncertainty instead of asserting darkness.
   const lightScore = streetLightDataAvailable ? Math.min(100, 35 + streetLightCount * 15) : null;
-  const signals = [lightScore, footTrafficScore].filter(
-    (v): v is number => typeof v === "number"
-  );
-  if (signals.length === 0) return 50; // neutral fallback when no live data is available
-  return Math.round(signals.reduce((a, b) => a + b, 0) / signals.length);
+
+  if (lightScore === null && footTrafficScore === null) return 50; // neutral fallback, no live data
+  if (lightScore === null) return footTrafficScore as number;
+  if (footTrafficScore === null) return lightScore;
+
+  const lightWeight = afterSunset ? 0.65 : 0.3;
+  return Math.round(lightScore * lightWeight + footTrafficScore * (1 - lightWeight));
 }
 
 export function computeFinalScore(safetyScore: number, rushScore: number, mode: "balanced" | "safest" | "fastest" | "cheapest") {

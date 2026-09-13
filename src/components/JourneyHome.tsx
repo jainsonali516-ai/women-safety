@@ -5,7 +5,6 @@ import { JourneySearchHero, type JourneySearchValues } from "@/components/Journe
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
 import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
 import { OfflineRouteView } from "@/components/OfflineRouteView";
-import { SafetyZoneBreakdown } from "@/components/SafetyZoneBreakdown";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
 import { computeFinalScore } from "@/lib/scoring";
@@ -179,8 +178,6 @@ export function JourneyHome() {
         {error && <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>{error}</p>}
 
         <SafetyMapContainer origin={origin} destination={destination} safetyIndex={safetyIndex} amenities={amenities} />
-
-        {origin && destination && <SafetyZoneBreakdown origin={origin} destination={destination} />}
 
         {options.length > 0 && (
           <>

@@ -7,14 +7,23 @@ export function istParts(date: Date) {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Asia/Kolkata",
     hour: "numeric",
+    minute: "numeric",
     hour12: false,
     weekday: "short",
   }).formatToParts(date);
   const hourPart = parts.find((p) => p.type === "hour")?.value ?? "0";
+  const minutePart = parts.find((p) => p.type === "minute")?.value ?? "0";
   const weekdayPart = parts.find((p) => p.type === "weekday")?.value ?? "Mon";
   // "24" shows up at midnight with hour12:false in some runtimes — normalize to 0.
   const hour = Number(hourPart) % 24;
+  const minute = Number(minutePart);
   const weekdayIndex = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(weekdayPart);
   const isWeekend = weekdayPart === "Sat" || weekdayPart === "Sun";
-  return { hour, dayOfWeek: weekdayIndex < 0 ? 0 : weekdayIndex, isWeekend };
+  return {
+    hour,
+    minute,
+    preciseHour: hour + minute / 60,
+    dayOfWeek: weekdayIndex < 0 ? 0 : weekdayIndex,
+    isWeekend,
+  };
 }
