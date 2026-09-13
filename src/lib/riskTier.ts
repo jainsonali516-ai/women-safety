@@ -57,6 +57,8 @@ export function explainSafety(inputs: SafetyExplanationInputs): string {
 
   if (inputs.modeBonus > 0) {
     parts.push(`${inputs.modeLabel} adds a safety margin (staffed/monitored, or a single identifiable driver)`);
+  } else if (inputs.modeBonus < 0) {
+    parts.push(`${inputs.modeLabel} has no staffed platform and no single pre-verified driver, so a penalty is applied${inputs.afterSunset ? " — more heavily after sunset" : ""}`);
   }
 
   if (parts.length === 0) return "Live safety signals weren't available for this route — score defaults to neutral.";

@@ -73,6 +73,11 @@ export async function POST(request: Request) {
     afterSunset,
   };
 
+  // Bus/auto have no staffed platform and no single identifiable, pre-verified driver the way
+  // Metro (staffed stations) and app cabs (a named, tracked driver) do — an honest penalty,
+  // not just the absence of a bonus, and steeper after sunset when that gap matters most.
+  const unmonitoredModePenalty = afterSunset ? 15 : 8;
+
   const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
   const cabDurationMin = driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60;
   const rushScore = computeHeuristicRushScore();
@@ -114,9 +119,9 @@ export async function POST(request: Request) {
       label: concession ? "DTC / Cluster Bus (free for women — Pink Pass)" : "DTC / Cluster Bus",
       duration_min: busDurationMin,
       fare_inr: busFare,
-      safety_score: safetyScore,
+      safety_score: Math.max(0, safetyScore - unmonitoredModePenalty),
       rush_score: 55,
-      mode_bonus: 0,
+      mode_bonus: -unmonitoredModePenalty,
     },
     // E-Rickshaws are realistically short feeder trips (to/from a metro station or bus stop),
     // not a substitute for the whole journey once distance grows beyond a couple of km.
@@ -138,9 +143,9 @@ export async function POST(request: Request) {
       label: "Auto-Rickshaw",
       duration_min: autoDurationMin,
       fare_inr: autoFare,
-      safety_score: safetyScore,
+      safety_score: Math.max(0, safetyScore - unmonitoredModePenalty),
       rush_score: rushScore,
-      mode_bonus: 0,
+      mode_bonus: -unmonitoredModePenalty,
     },
     {
       mode: "cab_uber",
