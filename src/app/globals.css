@@ -253,6 +253,27 @@ a {
   border: 1px solid var(--border);
 }
 
+/* Header nav: full links on wide screens, a hamburger + slide-down panel on phones —
+   the old fixed-gap flex row simply ran off the right edge on narrow viewports with no
+   way to reach Contacts/SOS/theme toggle at all. */
+.app-nav-desktop {
+  display: none;
+}
+
+.app-nav-mobile-controls {
+  display: flex;
+}
+
+@media (min-width: 860px) {
+  .app-nav-desktop {
+    display: flex;
+  }
+
+  .app-nav-mobile-controls {
+    display: none;
+  }
+}
+
 .btn-accent {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: white;
