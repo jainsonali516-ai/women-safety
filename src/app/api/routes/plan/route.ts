@@ -118,24 +118,37 @@ export async function POST(request: Request) {
   );
 
   const rawOptions = [
-    {
-      mode: "metro",
-      label: "Delhi Metro",
-      duration_min: metroDurationMin,
-      fare_inr: metroFare,
-      safety_score: Math.min(100, safetyScore + 15), // stations/platforms are staffed & monitored
-      rush_score: 85,
-      mode_bonus: 15,
-    },
-    {
-      mode: "bus",
-      label: concession ? "DTC / Cluster Bus (free for women — Pink Pass)" : "DTC / Cluster Bus",
-      duration_min: busDurationMin,
-      fare_inr: busFare,
-      safety_score: Math.max(0, safetyScore - unmonitoredModePenalty),
-      rush_score: 55,
-      mode_bonus: -unmonitoredModePenalty,
-    },
+    // Metro stations are realistically spaced ~1+ km apart — under that, origin and destination
+    // are effectively at the same station, and nobody walks into a station, boards, and gets off
+    // one stop later for a trip this short. Showing it anyway was a real "no one would actually
+    // do this" case, not an honest option.
+    ...(straightLineKm >= 1.2
+      ? [
+          {
+            mode: "metro",
+            label: "Delhi Metro",
+            duration_min: metroDurationMin,
+            fare_inr: metroFare,
+            safety_score: Math.min(100, safetyScore + 15), // stations/platforms are staffed & monitored
+            rush_score: 85,
+            mode_bonus: 15,
+          },
+        ]
+      : []),
+    // Same logic for a bus: nobody waits at a stop for a bus to cover a few-hundred-metre walk.
+    ...(straightLineKm >= 0.8
+      ? [
+          {
+            mode: "bus",
+            label: concession ? "DTC / Cluster Bus (free for women — Pink Pass)" : "DTC / Cluster Bus",
+            duration_min: busDurationMin,
+            fare_inr: busFare,
+            safety_score: Math.max(0, safetyScore - unmonitoredModePenalty),
+            rush_score: 55,
+            mode_bonus: -unmonitoredModePenalty,
+          },
+        ]
+      : []),
     // E-Rickshaws are realistically short feeder trips (to/from a metro station or bus stop),
     // not a substitute for the whole journey once distance grows beyond a couple of km.
     ...(straightLineKm <= 3
