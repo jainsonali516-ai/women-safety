@@ -20,8 +20,11 @@
   --galactic-starlight: #f8fafc;
   --galactic-jet: #05030a;
 
-  --background: linear-gradient(180deg, #bae6fd 0%, #fef08a 65%, #f0fdf4 100%);
-  --background-solid: #f6fbf9;
+  /* Dreamy pastel-sunset gradient with a soft pink ambient glow, lavender-blush to misty-rose. */
+  --background:
+    radial-gradient(circle at 22% 18%, rgba(255, 182, 213, 0.4), transparent 45%),
+    linear-gradient(160deg, #fff0f5 0%, #ffe4e1 100%);
+  --background-solid: #fff5f8;
   --surface: var(--garden-white);
   --surface-glass: rgba(255, 255, 255, 0.6);
   --foreground: #143024;
@@ -30,10 +33,16 @@
   --accent-strong: var(--garden-green);
   --border: #d8ead9;
   --card-glow-border: transparent;
+  --card-border-pink: rgba(255, 105, 180, 0.4);
+  --card-shadow-pink: rgba(255, 105, 180, 0.18);
 }
 
 [data-theme="dark"] {
-  --background: radial-gradient(circle at top, #1a0b2e 0%, #0d061a 60%, #05020c 100%);
+  /* Deep midnight berry with soft pink ambient radial glows. */
+  --background:
+    radial-gradient(circle at 20% 20%, rgba(255, 119, 188, 0.16), transparent 42%),
+    radial-gradient(circle at 80% 70%, rgba(217, 70, 239, 0.13), transparent 48%),
+    radial-gradient(circle at top, #2d124d 0%, #1a0b2e 65%, #0d061a 100%);
   --background-solid: var(--galactic-deep);
   --surface: var(--galactic-nebula);
   --surface-glass: rgba(27, 12, 55, 0.55);
@@ -43,6 +52,8 @@
   --accent-strong: var(--galactic-violet);
   --border: #33195c;
   --card-glow-border: rgba(255, 47, 178, 0.35);
+  --card-border-pink: rgba(255, 47, 178, 0.4);
+  --card-shadow-pink: rgba(255, 47, 178, 0.22);
 }
 
 html {
@@ -81,7 +92,11 @@ a {
   text-decoration: none;
 }
 
-/* ---------- Animated background ---------- */
+/* ---------- Animated background ----------
+   The actual petal/star/transport-icon animation is a <canvas> painted in JS
+   (src/components/BackgroundCanvas.tsx) — this class only supplies the theme-reactive gradient,
+   full-viewport fixed positioning, and the negative z-index + pointer-events:none that keep it
+   strictly behind and out of the way of every real UI element on the page. */
 .tulip-bg {
   position: fixed;
   inset: 0;
@@ -92,107 +107,15 @@ a {
   transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Cute rounded tulip-stars, fixed in place, twinkling — now active in both themes. */
-.tulip-bg .star-tulip {
-  position: absolute;
-  width: var(--size, 14px);
-  height: var(--size, 14px);
-  opacity: 0.85;
-  animation: pulseTwinkle var(--duration, 4s) ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-  will-change: opacity, transform;
-  display: block;
-}
-
-/* Same neon pink/magenta/violet palette reads a bit softer against the light Garden sky. */
-:root:not([data-theme="dark"]) .tulip-bg .star-tulip {
-  opacity: 0.55;
-}
-
-/* A single drop-shadow (not two stacked ones — each is a separate expensive compositing pass,
-   and with dozens of these animating at once, stacking them was a real source of phone jank). */
-.tulip-star-pink { color: #ff4d8d; filter: drop-shadow(0 0 5px #ff4d8d); }
-.tulip-star-magenta { color: #ec4899; filter: drop-shadow(0 0 5px #ec4899); }
-.tulip-star-violet { color: #a855f7; filter: drop-shadow(0 0 5px #a855f7); }
-
-@keyframes pulseTwinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.8); }
-  50% { opacity: 0.95; transform: scale(1.15); }
-}
-
-/* Falling pink tulip petals, drifting down with a gentle side-to-side sway — active in both
-   themes, layered above the twinkling stars (and, in light mode, the growing garden blooms). */
-.tulip-bg .falling-petal {
-  position: absolute;
-  top: -10%;
-  width: var(--size, 14px);
-  height: var(--size, 14px);
-  opacity: 0;
-  animation: fallDrift var(--duration, 12s) linear infinite;
-  animation-delay: var(--delay, 0s);
-  will-change: transform, opacity;
-}
-
-@keyframes fallDrift {
-  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
-  8% { opacity: 0.85; }
-  50% { transform: translate(var(--drift, 20px), 55vh) rotate(180deg); }
-  92% { opacity: 0.85; }
-  100% { transform: translate(0, 115vh) rotate(360deg); opacity: 0; }
-}
-
-/* Light mode: tulips grow up from a garden bed along the bottom and gently unfold in place. */
-.tulip-bg .garden-bloom {
-  position: absolute;
-  bottom: 0;
-  left: var(--x, 50%);
-  width: var(--size, 28px);
-  height: calc(var(--size, 28px) * 1.3);
-  color: var(--garden-pink);
-  --tulip-stem-color: var(--garden-green);
-  opacity: 0;
-  transform-origin: bottom center;
-  animation: bloomGrow var(--duration, 6s) ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-  display: none;
-}
-
-:root:not([data-theme="dark"]) .tulip-bg .garden-bloom {
-  display: block;
-}
-
-@keyframes bloomGrow {
-  0%, 100% { transform: scaleY(0.85) scale(0.95) rotate(-2deg); opacity: 0.75; }
-  50% { transform: scaleY(1) scale(1.1) rotate(2deg); opacity: 0.95; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tulip-bg .star-tulip,
-  .tulip-bg .garden-bloom,
-  .tulip-bg .falling-petal {
-    animation: none;
-    display: none;
-  }
-}
-
-/* Phones have far less GPU headroom for dozens of simultaneously animated, drop-shadowed
-   elements than a desktop browser — this was reported as visible lag/jank while interacting
-   with the app. The element counts were already reduced in AnimatedBackground.tsx; this further
-   halves what's on screen at once on narrow viewports specifically. Relies on these being the
-   only children of .tulip-bg, in this render order (stars, then blooms, then petals). */
-@media (max-width: 640px) {
-  .tulip-bg .star-tulip:nth-child(even) {
-    display: none;
-  }
-  .tulip-bg .falling-petal:nth-child(odd) {
-    display: none;
-  }
-}
-
+/* Ultra-cute rounded glassmorphic cards — soft translucent surface, blur, and a subtle pink
+   glow border, used for every card-style surface in the app. */
 .card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
+  background: var(--surface-glass);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--card-border-pink);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 25px var(--card-shadow-pink);
 }
 
 /* Frosted-glass route cards with a soft pink-purple glow border in dark mode. */
@@ -200,8 +123,9 @@ a {
   background: var(--surface-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
+  border: 1px solid var(--card-border-pink);
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 25px var(--card-shadow-pink);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -358,12 +282,20 @@ a {
   }
 }
 
+/* Cute pill-shaped buttons with a soft glow and a gentle hover "pop" — border-radius is
+   !important because most call sites also set their own inline border-radius (a handful of
+   different values across the app); overriding here is what makes every primary button
+   app-wide pill-shaped without editing every one of those call sites individually. */
 .btn-accent {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: white;
-  transition: filter 0.2s ease, transform 0.2s ease;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 25px rgba(255, 105, 180, 0.25);
+  transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-accent:hover {
   filter: brightness(1.08);
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(255, 105, 180, 0.35);
 }

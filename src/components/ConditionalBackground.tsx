@@ -1,11 +1,11 @@
 "use client";
 
-import { AnimatedBackground } from "./AnimatedBackground";
+import { BackgroundCanvas } from "./BackgroundCanvas";
 import { useEmergencyMode } from "./EmergencyModeProvider";
 
-/** Stops the animated background (CSS animations + DOM nodes) entirely in low-power mode. */
+/** Stops the animated background (canvas rAF loop) entirely in low-power mode. */
 export function ConditionalBackground() {
   const { active } = useEmergencyMode();
   if (active) return null;
-  return <AnimatedBackground />;
+  return <BackgroundCanvas />;
 }
