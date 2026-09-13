@@ -1,3 +1,5 @@
+import { istParts } from "@/lib/istTime";
+
 interface LatLng {
   latitude: number;
   longitude: number;
@@ -83,15 +85,14 @@ export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
  * stands in for a real congestion-ratio score until a paid traffic API is configured.
  */
 export function computeHeuristicRushScore(date = new Date()) {
-  const hour = date.getHours();
-  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  const { hour, isWeekend } = istParts(date);
   if (isWeekend) return 80;
   const isPeak = (hour >= 8 && hour < 11) || (hour >= 17 && hour < 22);
   return isPeak ? 40 : 85;
 }
 
 export function isAfterSunset(date = new Date()) {
-  const hour = date.getHours();
+  const { hour } = istParts(date);
   return hour >= 19 || hour < 6;
 }
 

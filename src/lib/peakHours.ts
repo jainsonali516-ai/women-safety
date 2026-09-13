@@ -1,6 +1,8 @@
 // Heuristic peak-hour model for Delhi NCR commute forecasting.
 // Placeholder for a future model trained on real historical ridership/traffic data.
 
+import { istParts } from "@/lib/istTime";
+
 export function isMetroPeakHour(hour: number) {
   return (hour >= 8 && hour < 11) || (hour >= 17 && hour < 21);
 }
@@ -21,9 +23,7 @@ export interface Forecast {
 }
 
 export function forecastJourney(date: Date): Forecast {
-  const hour = date.getHours();
-  const dayOfWeek = date.getDay();
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  const { hour, dayOfWeek, isWeekend } = istParts(date);
   const reasoning: string[] = [];
   let recommendation = "metro";
 
