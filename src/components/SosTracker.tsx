@@ -1,11 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Radio, WifiOff, Square, BatteryLow } from "lucide-react";
+import { Radio, WifiOff, Square, BatteryLow, Copy, Check, MessageCircle, Share2 } from "lucide-react";
 import { enqueuePing, flushQueue, readQueue } from "@/lib/offlineQueue";
 import { useEmergencyMode, getSinglePositionLowPower } from "@/components/EmergencyModeProvider";
 
 const LOW_POWER_POLL_INTERVAL_MS = 5 * 60 * 1000; // one-shot fix every 5 min instead of continuous GPS
+
+interface Contact {
+  id: string;
+  name: string;
+  phone: string;
+}
 
 export function SosTracker() {
   const { active: lowPower } = useEmergencyMode();
@@ -13,6 +19,8 @@ export function SosTracker() {
   const [isOffline, setIsOffline] = useState(false);
   const [cachedCount, setCachedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [copied, setCopied] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lowPowerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const alertIdRef = useRef<string | null>(null);
@@ -137,9 +145,33 @@ export function SosTracker() {
       setAlertId(data.alert.id);
       alertIdRef.current = data.alert.id;
       beginTracking(data.alert.id);
+
+      fetch("/api/contacts")
+        .then((r) => (r.ok ? r.json() : { contacts: [] }))
+        .then((d) => setContacts(d.contacts ?? []))
+        .catch(() => {});
     } catch {
       setError("Network error while starting tracking.");
     }
+  }
+
+  function trackingUrl(id: string) {
+    return `${window.location.origin}/track/${id}`;
+  }
+
+  async function copyTrackingLink() {
+    if (!alertId) return;
+    try {
+      await navigator.clipboard.writeText(trackingUrl(alertId));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable — link is still visible/copyable by hand */
+    }
+  }
+
+  function trackingMessage(id: string) {
+    return `TULIP: I've started live journey tracking — watch my location here: ${trackingUrl(id)}`;
   }
 
   async function stopTracking() {
@@ -154,6 +186,7 @@ export function SosTracker() {
     await flushQueue();
     setAlertId(null);
     alertIdRef.current = null;
+    setContacts([]);
     setCachedCount(readQueue().length);
   }
 
@@ -231,6 +264,79 @@ export function SosTracker() {
         >
           <Square size={16} /> Stop Tracking
         </button>
+      )}
+
+      {alertId && (
+        <div style={{ marginTop: "1rem", paddingTop: "0.9rem", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 600 }}>
+            <Share2 size={15} /> Share this so someone can actually watch your location
+          </p>
+          <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)" }}>
+            Send this link to a trusted contact — it opens a live map that updates automatically until you stop tracking.
+          </p>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <a
+              href={trackingUrl(alertId)}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: "0.85rem", padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+            >
+              Open link
+            </a>
+            <button
+              onClick={copyTrackingLink}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.85rem",
+                padding: "0.5rem 0.8rem",
+                borderRadius: "0.6rem",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+              }}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
+
+          {contacts.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.2rem" }}>
+              {contacts.map((c) => (
+                <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>{c.name}</span>
+                  <span style={{ display: "flex", gap: "0.4rem" }}>
+                    <a
+                      href={`sms:${c.phone}?body=${encodeURIComponent(trackingMessage(alertId))}`}
+                      style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem", borderRadius: "0.5rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                    >
+                      Text via SMS
+                    </a>
+                    <a
+                      href={`https://wa.me/${c.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(trackingMessage(alertId))}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
+                        fontSize: "0.78rem",
+                        padding: "0.4rem 0.7rem",
+                        borderRadius: "0.5rem",
+                        border: "1px solid #25d366",
+                        color: "#25d366",
+                      }}
+                    >
+                      <MessageCircle size={13} /> WhatsApp
+                    </a>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
