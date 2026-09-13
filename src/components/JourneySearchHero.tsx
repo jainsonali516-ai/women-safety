@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   Sparkles,
   AlertCircle,
-  CheckCircle2,
   Calendar,
 } from 'lucide-react';
 
@@ -40,9 +39,6 @@ interface HeroProps {
   loading?: boolean;
 }
 
-function googleMapsUrl(coords: Coords) {
-  return `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`;
-}
 
 function PlaceField({
   label,
@@ -255,14 +251,6 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
                     <AlertCircle className="w-3 h-3" /> GPS signal weak. Enter manual landmark above.
                   </p>
                 )}
-                {gpsStatus === 'success' && originCoords && (
-                  <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1 flex-wrap">
-                    <CheckCircle2 className="w-3 h-3" /> {originCoords.latitude.toFixed(5)}, {originCoords.longitude.toFixed(5)}
-                    <a href={googleMapsUrl(originCoords)} target="_blank" rel="noreferrer" className="underline hover:text-emerald-400">
-                      View on Google Maps
-                    </a>
-                  </p>
-                )}
               </div>
 
               <div>
@@ -278,14 +266,6 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
                   icon={<Navigation className="absolute left-4 w-5 h-5 text-purple-500 pointer-events-none" />}
                   ringColor="focus:ring-purple-500/50"
                 />
-                {destinationCoords && (
-                  <p className="mt-1.5 text-xs text-emerald-500 flex items-center gap-1 flex-wrap">
-                    <CheckCircle2 className="w-3 h-3" /> {destinationCoords.latitude.toFixed(5)}, {destinationCoords.longitude.toFixed(5)}
-                    <a href={googleMapsUrl(destinationCoords)} target="_blank" rel="noreferrer" className="underline hover:text-emerald-400">
-                      View on Google Maps
-                    </a>
-                  </p>
-                )}
               </div>
             </div>
 

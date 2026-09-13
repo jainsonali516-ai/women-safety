@@ -109,9 +109,11 @@ a {
   opacity: 0.55;
 }
 
-.tulip-star-pink { color: #ff4d8d; filter: drop-shadow(0 0 4px #ff4d8d) drop-shadow(0 0 9px #ff4d8d); }
-.tulip-star-magenta { color: #ec4899; filter: drop-shadow(0 0 4px #ec4899) drop-shadow(0 0 9px #ec4899); }
-.tulip-star-violet { color: #a855f7; filter: drop-shadow(0 0 4px #a855f7) drop-shadow(0 0 9px #a855f7); }
+/* A single drop-shadow (not two stacked ones — each is a separate expensive compositing pass,
+   and with dozens of these animating at once, stacking them was a real source of phone jank). */
+.tulip-star-pink { color: #ff4d8d; filter: drop-shadow(0 0 5px #ff4d8d); }
+.tulip-star-magenta { color: #ec4899; filter: drop-shadow(0 0 5px #ec4899); }
+.tulip-star-violet { color: #a855f7; filter: drop-shadow(0 0 5px #a855f7); }
 
 @keyframes pulseTwinkle {
   0%, 100% { opacity: 0.2; transform: scale(0.8); }
@@ -169,6 +171,20 @@ a {
   .tulip-bg .garden-bloom,
   .tulip-bg .falling-petal {
     animation: none;
+    display: none;
+  }
+}
+
+/* Phones have far less GPU headroom for dozens of simultaneously animated, drop-shadowed
+   elements than a desktop browser — this was reported as visible lag/jank while interacting
+   with the app. The element counts were already reduced in AnimatedBackground.tsx; this further
+   halves what's on screen at once on narrow viewports specifically. Relies on these being the
+   only children of .tulip-bg, in this render order (stars, then blooms, then petals). */
+@media (max-width: 640px) {
+  .tulip-bg .star-tulip:nth-child(even) {
+    display: none;
+  }
+  .tulip-bg .falling-petal:nth-child(odd) {
     display: none;
   }
 }

@@ -19,7 +19,11 @@ export function AnimatedBackground() {
   // fallingPetals layer below.
   const starTulips = useMemo(() => {
     const rand = seededRandom(42);
-    return Array.from({ length: 42 }, (_, i) => ({
+    // Was 42 — each one animates opacity/transform behind a drop-shadow filter, which is
+    // expensive to composite; combined with the falling-petal layer this was reportedly making
+    // phones feel laggy/janky. Cutting the count (here and below) is the main fix, plus a
+    // mobile-only CSS rule below that hides roughly half of what's left on narrow screens.
+    return Array.from({ length: 22 }, (_, i) => ({
       id: i,
       top: `${(rand() * 100).toFixed(2)}%`,
       left: `${(rand() * 100).toFixed(2)}%`,
@@ -46,7 +50,7 @@ export function AnimatedBackground() {
   // growing garden blooms.
   const fallingPetals = useMemo(() => {
     const rand = seededRandom(77);
-    return Array.from({ length: 16 }, (_, i) => ({
+    return Array.from({ length: 9 }, (_, i) => ({
       id: i,
       left: `${(rand() * 100).toFixed(2)}%`,
       size: `${(10 + rand() * 12).toFixed(1)}px`,
