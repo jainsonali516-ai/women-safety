@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
-import { Phone, Trash2, Plus, Bell } from "lucide-react";
+import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
 
 interface Contact {
   id: string;
@@ -94,26 +94,28 @@ export default function ContactsPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "1.5rem", maxWidth: 700, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         <section className="card" style={{ padding: "1.25rem" }}>
-          <h2 style={{ fontWeight: 700, marginBottom: "1rem" }}>Trusted Contacts</h2>
-          <form onSubmit={addContact} style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
-            <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required style={inputStyle} />
-            <input placeholder="+91 phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required style={inputStyle} />
-            <input placeholder="Relationship" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} style={inputStyle} />
-            <button type="submit" className="btn-accent" style={{ ...smallBtn, display: "flex", alignItems: "center", gap: "0.3rem" }}>
+          <h2 style={{ fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <Users size={18} style={{ color: "var(--accent-strong)" }} /> Trusted Contacts
+          </h2>
+          <form onSubmit={addContact} className="mobile-stack" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+            <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="field" style={inputStyle} />
+            <input placeholder="+91 phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="field" style={inputStyle} />
+            <input placeholder="Relationship" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} className="field" style={inputStyle} />
+            <button type="submit" className="btn-accent mobile-full field" style={{ ...smallBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem" }}>
               <Plus size={16} /> Add
             </button>
           </form>
           {error && <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: "0.5rem" }}>{error}</p>}
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {contacts.map((c) => (
-              <li key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
-                <span>
+              <li key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", padding: "0.7rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
+                <span style={{ minWidth: 0 }}>
                   <strong>{c.name}</strong>{" "}
                   <span style={{ color: "var(--foreground-muted)", fontSize: "0.85rem" }}>
                     {c.phone} {c.relationship ? `· ${c.relationship}` : ""}
                   </span>
                 </span>
-                <span style={{ display: "flex", gap: "0.5rem" }}>
+                <span style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <a href={`tel:${c.phone}`} style={iconBtn}>
                     <Phone size={16} />
                   </a>
@@ -123,7 +125,12 @@ export default function ContactsPage() {
                 </span>
               </li>
             ))}
-            {contacts.length === 0 && <p style={{ color: "var(--foreground-muted)", fontSize: "0.85rem" }}>No contacts yet.</p>}
+            {contacts.length === 0 && (
+              <div className="empty-state">
+                <Users size={22} />
+                No contacts yet — add someone you trust so you can reach them fast in an emergency.
+              </div>
+            )}
           </ul>
         </section>
 
@@ -135,19 +142,19 @@ export default function ContactsPage() {
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", marginBottom: "1rem" }}>
             Reminds you to share your location at set times. You will always be asked for consent before anything is sent.
           </p>
-          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-            <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} style={inputStyle} />
-            <button onClick={addReminder} className="btn-accent" style={smallBtn}>
+          <div className="mobile-stack" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+            <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="field" style={inputStyle} />
+            <button onClick={addReminder} className="btn-accent mobile-full field" style={smallBtn}>
               Add Weekday Reminder
             </button>
           </div>
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {reminders.map((r) => (
-              <li key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.6rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
+              <li key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", padding: "0.7rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
                 <span>
                   {r.time_of_day.slice(0, 5)} — {r.days_of_week.map((d) => DAY_LABELS[d]).join(", ")}
                 </span>
-                <span style={{ display: "flex", gap: "0.5rem" }}>
+                <span style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <button onClick={() => toggleReminder(r)} style={{ ...iconBtn, color: r.enabled ? "var(--accent-strong)" : "var(--foreground-muted)" }}>
                     {r.enabled ? "On" : "Off"}
                   </button>
@@ -157,7 +164,12 @@ export default function ContactsPage() {
                 </span>
               </li>
             ))}
-            {reminders.length === 0 && <p style={{ color: "var(--foreground-muted)", fontSize: "0.85rem" }}>No reminders set.</p>}
+            {reminders.length === 0 && (
+              <div className="empty-state">
+                <BellOff size={22} />
+                No reminders set — add one so Tulip nudges you to share your location on a schedule.
+              </div>
+            )}
           </ul>
         </section>
       </main>

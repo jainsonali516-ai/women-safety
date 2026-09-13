@@ -17,7 +17,7 @@ export default async function SafetyToolsPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "2rem 1.5rem", display: "flex", flexDirection: "column", gap: "2rem", maxWidth: 960, margin: "0 auto", width: "100%" }}>
         <section style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "1.5rem 0" }}>
-          <h1 style={{ fontSize: "2rem", fontWeight: 800 }}>Safety Tools</h1>
+          <h1 style={{ fontSize: "clamp(1.6rem, 6vw, 2rem)", fontWeight: 800 }}>Safety Tools</h1>
           <p style={{ color: "var(--foreground-muted)", fontSize: "1rem", maxWidth: 560 }}>
             Quick access to emergency help, live location sharing, and journey tracking.
           </p>

@@ -274,6 +274,51 @@ a {
   }
 }
 
+/* A calmer, more legible empty state than a lone line of muted text — used on Contacts and
+   Reminders when a list is empty. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1.4rem 1rem;
+  text-align: center;
+  color: var(--foreground-muted);
+  font-size: 0.85rem;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1px dashed var(--border);
+  border-radius: 0.75rem;
+}
+
+.empty-state svg {
+  opacity: 0.6;
+}
+
+/* Phone polish: bigger tap targets (44px+ is the usual comfortable minimum), a touch more
+   breathing room between stacked sections, and full-width primary actions so buttons are easy
+   to hit with a thumb instead of being squeezed into a wrapped inline row. */
+@media (max-width: 640px) {
+  input,
+  select,
+  button {
+    font-size: 1rem;
+  }
+
+  .field {
+    min-height: 2.75rem;
+  }
+
+  .mobile-full {
+    width: 100%;
+  }
+
+  .mobile-stack {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+}
+
 .btn-accent {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: white;
