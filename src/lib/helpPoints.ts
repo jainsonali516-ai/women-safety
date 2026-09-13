@@ -125,13 +125,40 @@ function amenityQueryFor(type: AmenityType, locationClause: string): string {
   `;
 }
 
-function overpassFilterFor(type: AmenityType, searchRadius: number, mid: LatLng): string {
-  return amenityQueryFor(type, `(around:${searchRadius},${mid.latitude},${mid.longitude})`);
-}
-
 // Overpass bbox order is (south,west,north,east) — easy to get backwards, hence the named clause.
 function overpassBboxFilterFor(type: AmenityType, bounds: ViewportBounds): string {
   return amenityQueryFor(type, `(${bounds.south},${bounds.west},${bounds.north},${bounds.east})`);
+}
+
+const EARTH_RADIUS_M = 6371000;
+function metersToLatDegrees(m: number) {
+  return (m / EARTH_RADIUS_M) * (180 / Math.PI);
+}
+function metersToLngDegrees(m: number, atLatDeg: number) {
+  return (m / (EARTH_RADIUS_M * Math.cos((atLatDeg * Math.PI) / 180))) * (180 / Math.PI);
+}
+
+/**
+ * A tight bounding box around the route's own extent, padded by `bufferMeters` — NOT a circle
+ * around the midpoint sized to the whole route length. That was the actual bug behind amenities
+ * failing to show on longer routes: a circle wide enough to reach a route's endpoints from its
+ * midpoint has area that grows with the SQUARE of route length (an 18km-radius circle for a
+ * 35km route is ~1075 km², almost all of it nowhere near the actual path), which made Overpass
+ * queries slow enough to reliably time out. A bbox around the route's real footprint scales
+ * LINEARLY with route length instead (a 35km x ~2km corridor is ~70 km²) — over 15x less area
+ * for Overpass to search, for the exact same eventual radius-1km-of-the-route result, since the
+ * perpendicular-distance filter below still trims to the real corridor either way.
+ */
+function routeBoundingBox(origin: LatLng, destination: LatLng, bufferMeters: number): ViewportBounds {
+  const midLat = (origin.latitude + destination.latitude) / 2;
+  const latPad = metersToLatDegrees(bufferMeters);
+  const lngPad = metersToLngDegrees(bufferMeters, midLat);
+  return {
+    north: Math.max(origin.latitude, destination.latitude) + latPad,
+    south: Math.min(origin.latitude, destination.latitude) - latPad,
+    east: Math.max(origin.longitude, destination.longitude) + lngPad,
+    west: Math.min(origin.longitude, destination.longitude) - lngPad,
+  };
 }
 
 function defaultNameFor(type: AmenityType): string {
@@ -143,8 +170,7 @@ function defaultNameFor(type: AmenityType): string {
 
 async function fetchAmenitiesOfType(
   type: AmenityType,
-  mid: LatLng,
-  searchRadius: number,
+  bounds: ViewportBounds,
   origin: LatLng,
   destination: LatLng,
   bufferMeters: number
@@ -157,7 +183,7 @@ async function fetchAmenitiesOfType(
   // the map only ever shows a handful of nearby markers per type anyway.
   const query = `
     [out:json][timeout:12];
-    (${overpassFilterFor(type, searchRadius, mid)});
+    (${overpassBboxFilterFor(type, bounds)});
     out body 35;
   `;
 
@@ -185,8 +211,7 @@ export async function fetchRouteAmenities(
   bufferMeters = 1000,
   onlyTypes?: AmenityType[]
 ): Promise<RouteAmenity[]> {
-  const mid = { latitude: (origin.latitude + destination.latitude) / 2, longitude: (origin.longitude + destination.longitude) / 2 };
-  const searchRadius = haversineMeters(origin, destination) / 2 + bufferMeters;
+  const bounds = routeBoundingBox(origin, destination, bufferMeters);
 
   // Fully sequential — this was briefly changed to 2-at-a-time to cut latency, but real-world
   // testing showed that pairing two queries in parallel made them *both* unreliable (one
@@ -200,7 +225,7 @@ export async function fetchRouteAmenities(
   const types = (onlyTypes ?? (["washroom", "hospital", "police", "safe_zone"] as const)) as AmenityType[];
   const results: RouteAmenity[][] = [];
   for (const type of types) {
-    results.push(await fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters));
+    results.push(await fetchAmenitiesOfType(type, bounds, origin, destination, bufferMeters));
   }
 
   return results.flat().slice(0, 150);
