@@ -20,8 +20,13 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Returns the parsed Overpass JSON, or null if every attempt (primary + mirror retry) failed. */
-export async function queryOverpass(query: string, timeoutMs = 13000): Promise<{ elements: unknown[] } | null> {
+/**
+ * Returns the parsed Overpass JSON, or null if every attempt (primary + mirror retry) failed.
+ * A genuinely successful response is usually 1-3s; 10s per attempt is generous headroom without
+ * letting one stuck attempt (now potentially doubled by the mirror retry, and again per amenity
+ * type since these run sequentially — see fetchRouteAmenities) drag a whole search out too far.
+ */
+export async function queryOverpass(query: string, timeoutMs = 10000): Promise<{ elements: unknown[] } | null> {
   for (let attempt = 0; attempt < OVERPASS_MIRRORS.length; attempt++) {
     try {
       const res = await fetch(OVERPASS_MIRRORS[attempt], {
@@ -31,8 +36,9 @@ export async function queryOverpass(query: string, timeoutMs = 13000): Promise<{
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (res.ok) return await res.json();
-    } catch {
-      /* fall through to the next mirror */
+      console.error(`[overpass] ${OVERPASS_MIRRORS[attempt]} -> HTTP ${res.status}`);
+    } catch (err) {
+      console.error(`[overpass] ${OVERPASS_MIRRORS[attempt]} -> ${err instanceof Error ? err.message : err}`);
     }
     if (attempt < OVERPASS_MIRRORS.length - 1) await delay(500);
   }

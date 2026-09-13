@@ -166,22 +166,19 @@ export async function fetchRouteAmenities(
   const mid = { latitude: (origin.latitude + destination.latitude) / 2, longitude: (origin.longitude + destination.longitude) / 2 };
   const searchRadius = haversineMeters(origin, destination) / 2 + bufferMeters;
 
-  // 2-at-a-time, not fully serial and not all 4 at once: Overpass's public instance enforces a
-  // small concurrent-slot limit per client (commonly 2) — firing all 4 together reliably breaks
-  // whichever lands third or later, but running fully one-by-one was a direct cause of amenities
-  // visibly lagging behind the rest of the search results. Two batches of 2 in parallel roughly
-  // halves the wait while staying inside that known-safe concurrency limit. `onlyTypes` lets a
-  // caller request a subset — used to fetch the fast hospital/police/washroom queries separately
-  // from the much slower shop-dense "safe_zone" query, so the client can show the fast group
-  // immediately instead of waiting on the slowest one.
+  // Fully sequential — this was briefly changed to 2-at-a-time to cut latency, but real-world
+  // testing showed that pairing two queries in parallel made them *both* unreliable (one
+  // request finished fine while the paired one silently came back empty, then the pattern
+  // flipped on the next search) rather than saving much real time — Overpass's shared public
+  // server's safe concurrency margin is apparently thinner than "2" in practice. For a safety
+  // app, an amenity category randomly vanishing is worse than the extra second or two this
+  // costs. `onlyTypes` lets a caller request a subset — used to fetch the fast hospital/police/
+  // washroom queries as one client request, separate from the much slower shop-dense
+  // "safe_zone" query, so that group can appear on the map without waiting on the slowest one.
   const types = (onlyTypes ?? (["washroom", "hospital", "police", "safe_zone"] as const)) as RouteAmenity["type"][];
   const results: RouteAmenity[][] = [];
-  for (let i = 0; i < types.length; i += 2) {
-    const batch = types.slice(i, i + 2);
-    const batchResults = await Promise.all(
-      batch.map((type) => fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters))
-    );
-    results.push(...batchResults);
+  for (const type of types) {
+    results.push(await fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters));
   }
 
   return results.flat().slice(0, 150);
