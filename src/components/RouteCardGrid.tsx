@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Clock, IndianRupee, Navigation, Shield, AlertTriangle } from "lucide-react";
+import { ChevronDown, Clock, IndianRupee, Navigation, Shield, AlertTriangle, ExternalLink } from "lucide-react";
 
 export interface RouteOption {
   mode: string;
@@ -102,6 +102,21 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                 <p><strong style={{ color: "var(--foreground)" }}>Safety:</strong> {opt.why.safety}</p>
                 <p><strong style={{ color: "var(--foreground)" }}>Cost:</strong> {opt.why.cost}</p>
                 <p><strong style={{ color: "var(--foreground)" }}>Speed:</strong> {opt.why.speed}</p>
+                {(opt.mode === "metro" || opt.mode === "bus") && (
+                  <p style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)" }}>
+                    <strong style={{ color: "var(--foreground)" }}>Line / platform / interchange details:</strong> not
+                    available here — Delhi Metro and DTC don&apos;t publish a public real-time feed for this. Use the{" "}
+                    <a
+                      href={opt.mode === "metro" ? "https://www.delhimetrorail.com" : "https://dtc.delhi.gov.in"}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "var(--accent-strong)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.2rem" }}
+                    >
+                      official {opt.mode === "metro" ? "DMRC" : "DTC"} app/site <ExternalLink size={11} />
+                    </a>{" "}
+                    for exact line, platform, and direction.
+                  </p>
+                )}
               </div>
             )}
 
