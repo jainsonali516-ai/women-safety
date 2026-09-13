@@ -6,7 +6,8 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 **Working with zero extra setup** (beyond your Supabase project):
 - Dual theme: "Galactic" dark mode (neon-pink star-tulips, purple night sky) and "Garden" light mode (blooming pastel tulips), toggle in the sticky glass nav bar
-- Custom email + password auth: passwords are hashed with bcrypt (never stored in plain text) and sessions are a signed JWT in an `httpOnly` cookie, valid for 1 week — after that, the user has to log in again. User records live in Supabase Postgres (`public.users`), accessed only via the service-role key; the browser never talks to Supabase directly for auth
+- Custom email + password (or phone + password) auth: passwords are hashed with bcrypt (never stored in plain text) and sessions are a signed JWT in an `httpOnly` cookie, valid for 1 week — after that, the user has to log in again. User records live in Supabase Postgres (`public.users`), accessed only via the service-role key; the browser never talks to Supabase directly for auth. Login always returns the same generic error whether the identifier doesn't exist or the password is wrong, by design — it stops the endpoint being used to check who has an account here
+- **Guest access**: journey search, live safety scores, and the map all work with no account. Only actions that write to a personal record — saving an emergency contact, starting an SOS/live-tracking session — are gated, with a glassmorphic sign-in modal (`src/components/AuthModal.tsx` via `RequireAuthGate`) instead of a blanket login wall on the whole page. The header shows a "Sign In" pill for guests, or a rounded avatar with a dropdown (email, manage contacts, sign out) once authenticated
 - Trusted/emergency contacts (add, call via `tel:`, delete)
 - "Share My Location" → generates a Google Maps link from the browser's GPS. If Twilio is configured, it's SMS'd automatically to every trusted contact; if not, the UI offers zero-cost fallbacks instead — native `sms:` links and WhatsApp (`wa.me`) share buttons per contact, plus copy/open-in-Maps
 - Live Journey Tracking — starts an SOS alert and pings your location periodically via `watchPosition`; if the connection drops, pings are cached in `localStorage` and flushed automatically on the browser's `online` event, with an "Offline Mode — Route Cached Locally" banner while disconnected. A real shareable link (`/track/[id]`) lets a trusted contact — who has no Tulip account — watch that location update live on a map, polling a deliberately unauthenticated endpoint (`/api/sos/[id]/public`) where the alert's random id is itself the access token; it exposes only status/name/location, never account details, and stops updating once you stop tracking
@@ -68,16 +69,20 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 1. `npm install`
 2. Copy `.env.example` to `.env.local` and fill in what you have. `JWT_SECRET` and the Supabase values are required; generate a secret with `node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"`. Everything else is optional and each feature degrades gracefully without its key.
-3. Run, in this order, in your Supabase project's SQL Editor: `supabase/schema.sql`, `supabase/schema_tulip.sql`, `supabase/schema_users.sql`, `supabase/schema_migrate_to_custom_auth.sql`.
+3. Run, in this order, in your Supabase project's SQL Editor: `supabase/schema.sql`, `supabase/schema_tulip.sql`, `supabase/schema_users.sql`, `supabase/schema_migrate_to_custom_auth.sql`, `supabase/schema_phone_login.sql`.
 4. `npm run dev`
 
 ### Auth model
 
 Signup and login are handled entirely by this app, not Supabase Auth — `public.users` stores `email`, a bcrypt `password_hash`, `full_name`, and `phone`; every other table's `user_id` foreign key points at it. Row Level Security on these tables has no policies (nothing but the service-role key can touch them), so authorization is enforced in each API route by explicitly filtering on the session's user id — see `src/lib/auth.ts` (bcrypt hashing, JWT sign/verify, cookie helpers) and `src/lib/api.ts` (`requireUser()`, used at the top of every protected route).
 
+`phone` is normalized to `+91XXXXXXXXXX` at signup (not stored as free text) so it can double as a login identifier alongside email — `schema_phone_login.sql` adds a partial unique index on it (NULLs excluded) since two accounts sharing a phone value would otherwise make a phone-login lookup ambiguous. Accounts created before this change may have an unnormalized or missing phone and won't be able to log in by phone until it's re-entered through a normalized flow.
+
+Contact phone numbers rely on Supabase's infrastructure-level encryption at rest plus server-only access (service-role key, never exposed to the browser) rather than an additional application-level encryption layer — a deliberate choice given this project's scale, not an oversight.
+
 ## API routes
 
-Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`
+Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` (guest vs signed-in check for client components)
 Safety: `/api/contacts`, `/api/contacts/:id`, `/api/location/share`, `/api/reminders`, `/api/reminders/:id`, `/api/sos*`, `/api/incidents*`
 Journey: `/api/geocode`, `/api/directions`, `/api/routes/plan`, `/api/bot`
 `/api/health`

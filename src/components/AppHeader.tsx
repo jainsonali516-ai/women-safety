@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { TulipLogo } from "./TulipLogo";
 import { ThemeToggle } from "./ThemeToggle";
+import { ProfileMenu } from "./ProfileMenu";
 import { ShieldAlert, Menu, X } from "lucide-react";
 
 const NAV_LINKS = [
@@ -63,6 +64,7 @@ export function AppHeader() {
           <ShieldAlert size={14} /> SOS
         </a>
         <ThemeToggle />
+        <ProfileMenu />
       </nav>
 
       <div className="app-nav-mobile-controls" style={{ alignItems: "center", gap: "0.6rem" }}>
@@ -84,6 +86,7 @@ export function AppHeader() {
         >
           <ShieldAlert size={13} /> SOS
         </a>
+        <ProfileMenu />
         <button
           onClick={() => setMenuOpen((v) => !v)}
           aria-label={menuOpen ? "Close menu" : "Open menu"}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
+import { RequireAuthGate } from "@/components/RequireAuthGate";
 import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
 
 interface Contact {
@@ -22,6 +23,19 @@ interface Reminder {
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export default function ContactsPage() {
+  return (
+    <>
+      <AppHeader />
+      <main style={{ flex: 1, padding: "1.5rem", maxWidth: 700, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <RequireAuthGate message="Sign in to save your emergency contacts & enable automatic alerts.">
+          <ContactsManager />
+        </RequireAuthGate>
+      </main>
+    </>
+  );
+}
+
+function ContactsManager() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [form, setForm] = useState({ name: "", phone: "", relationship: "" });
@@ -91,9 +105,7 @@ export default function ContactsPage() {
 
   return (
     <>
-      <AppHeader />
-      <main style={{ flex: 1, padding: "1.5rem", maxWidth: 700, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-        <section className="card" style={{ padding: "1.25rem" }}>
+      <section className="card" style={{ padding: "1.25rem" }}>
           <h2 style={{ fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <Users size={18} style={{ color: "var(--accent-strong)" }} /> Trusted Contacts
           </h2>
@@ -171,8 +183,7 @@ export default function ContactsPage() {
               </div>
             )}
           </ul>
-        </section>
-      </main>
+      </section>
     </>
   );
 }

@@ -7,6 +7,7 @@ import { ConditionalBackground } from "@/components/ConditionalBackground";
 import { EmergencyModeProvider } from "@/components/EmergencyModeProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { EmergencyModeBanner } from "@/components/EmergencyModeBanner";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,12 +44,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>
-          <EmergencyModeProvider>
-            <ServiceWorkerRegister />
-            <ConditionalBackground />
-            <EmergencyModeBanner />
-            {children}
-          </EmergencyModeProvider>
+          <AuthProvider>
+            <EmergencyModeProvider>
+              <ServiceWorkerRegister />
+              <ConditionalBackground />
+              <EmergencyModeBanner />
+              {children}
+            </EmergencyModeProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

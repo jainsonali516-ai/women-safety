@@ -1,17 +1,16 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { QuickDial } from "@/components/QuickDial";
 import { ShareLocationButton } from "@/components/ShareLocationButton";
 import { SosTracker } from "@/components/SosTracker";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { LowPowerToggle } from "@/components/LowPowerToggle";
+import { RequireAuthGate } from "@/components/RequireAuthGate";
 
-export default async function SafetyToolsPage() {
-  const user = await getSessionUser();
-  if (!user) redirect("/auth");
-
+// Guest-accessible page — the emergency dial pad (100/112/1091/etc.) is public information that
+// needs no account. Only the actions that write to a personal account (sharing your live
+// location, starting an SOS trail) are individually gated below.
+export default function SafetyToolsPage() {
   return (
     <>
       <AppHeader />
@@ -26,8 +25,12 @@ export default async function SafetyToolsPage() {
         <section style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
           <LowPowerToggle />
           <QuickDial />
-          <ShareLocationButton />
-          <SosTracker />
+          <RequireAuthGate message="Sign in to share your live location with trusted contacts.">
+            <ShareLocationButton />
+          </RequireAuthGate>
+          <RequireAuthGate message="Sign in to start an SOS alert and share a live tracking link.">
+            <SosTracker />
+          </RequireAuthGate>
         </section>
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem" }}>

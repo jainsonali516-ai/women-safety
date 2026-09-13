@@ -2,14 +2,16 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api";
-import { emailSchema, nameSchema, passwordSchema, safeParse } from "@/lib/validation";
+import { emailSchema, indianPhoneSchema, nameSchema, passwordSchema, safeParse } from "@/lib/validation";
 import { createSessionToken, hashPassword, setSessionCookie } from "@/lib/auth";
 
 const bodySchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   full_name: nameSchema.optional(),
-  phone: z.string().trim().max(20).optional(),
+  // Normalized to +91XXXXXXXXXX (not a loose free-text string) so it can double as a reliable
+  // login lookup key, not just a profile field — see /api/auth/login.
+  phone: indianPhoneSchema.optional(),
 });
 
 export async function POST(request: Request) {
@@ -26,6 +28,11 @@ export async function POST(request: Request) {
     .eq("email", email)
     .maybeSingle();
   if (existing) return jsonError("An account with that email already exists", 409);
+
+  if (phone) {
+    const { data: phoneTaken } = await supabase.from("users").select("id").eq("phone", phone).maybeSingle();
+    if (phoneTaken) return jsonError("An account with that phone number already exists", 409);
+  }
 
   const passwordHash = await hashPassword(password);
 
