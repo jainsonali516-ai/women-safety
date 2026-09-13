@@ -1,12 +1,11 @@
 import { istParts } from "@/lib/istTime";
 import { getSunTimes } from "@/lib/sunTimes";
+import { queryOverpass } from "@/lib/overpass";
 
 interface LatLng {
   latitude: number;
   longitude: number;
 }
-
-const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
 
 /**
  * Counts mapped street lights within `radiusMeters` of the midpoint of a route.
@@ -21,24 +20,10 @@ export async function fetchStreetLightDensity(point: LatLng, radiusMeters = 400)
     out count;
   `;
 
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain",
-        "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)",
-        Accept: "application/json",
-      },
-      body: query,
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!res.ok) return { count: 0, available: false };
-    const json = await res.json();
-    const count = Number(json?.elements?.[0]?.tags?.total ?? 0);
-    return { count, available: true };
-  } catch {
-    return { count: 0, available: false };
-  }
+  const data = await queryOverpass(query);
+  if (!data) return { count: 0, available: false };
+  const count = Number((data.elements?.[0] as { tags?: { total?: string } } | undefined)?.tags?.total ?? 0);
+  return { count, available: true };
 }
 
 /**
@@ -56,30 +41,16 @@ export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
     out count;
   `;
 
-  try {
-    const res = await fetch(OVERPASS_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain",
-        "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)",
-        Accept: "application/json",
-      },
-      body: query,
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!res.ok) return { score: null, available: false as const };
-    const json = await res.json();
-    const placeCount = Number(json?.elements?.[0]?.tags?.total ?? 0);
-    // Same reasoning as the street-light floor below: OSM's shop/amenity tagging is genuinely
-    // sparse for a lot of real, populated Indian residential streets, so "0 mapped" is
-    // inconclusive, not "confirmed deserted." A hard floor of 0 here was fine when this signal
-    // was only ever averaged 50/50 with lighting — now that daytime scoring weights foot traffic
-    // up to 70%, an unmapped-but-genuinely-normal street would otherwise get dragged down hard.
-    const score = Math.min(100, Math.round(30 + placeCount * 10));
-    return { score, available: true as const };
-  } catch {
-    return { score: null, available: false as const };
-  }
+  const data = await queryOverpass(query);
+  if (!data) return { score: null, available: false as const };
+  const placeCount = Number((data.elements?.[0] as { tags?: { total?: string } } | undefined)?.tags?.total ?? 0);
+  // Same reasoning as the street-light floor below: OSM's shop/amenity tagging is genuinely
+  // sparse for a lot of real, populated Indian residential streets, so "0 mapped" is
+  // inconclusive, not "confirmed deserted." A hard floor of 0 here was fine when this signal
+  // was only ever averaged 50/50 with lighting — now that daytime scoring weights foot traffic
+  // up to 70%, an unmapped-but-genuinely-normal street would otherwise get dragged down hard.
+  const score = Math.min(100, Math.round(30 + placeCount * 10));
+  return { score, available: true as const };
 }
 
 /**

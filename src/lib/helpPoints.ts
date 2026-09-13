@@ -1,3 +1,5 @@
+import { queryOverpass } from "@/lib/overpass";
+
 interface LatLng {
   latitude: number;
   longitude: number;
@@ -45,44 +47,30 @@ export async function fetchNearbyHelpPoints(point: LatLng, radiusMeters = 2000):
     out body 20;
   `;
 
-  try {
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain",
-        "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)",
-        Accept: "application/json",
-      },
-      body: query,
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
+  const data = await queryOverpass(query);
+  if (!data) return [];
 
-    const points: HelpPoint[] = (data.elements ?? [])
-      .map((el: { tags?: Record<string, string>; lat: number; lon: number }) => {
-        const tags = el.tags ?? {};
-        const type: HelpPoint["type"] = tags.amenity === "hospital" ? "hospital" : tags.amenity === "police" ? "police" : "metro";
-        return {
-          name: tags.name ?? (type === "hospital" ? "Hospital" : type === "police" ? "Police Station" : "Metro Station"),
-          type,
-          latitude: el.lat,
-          longitude: el.lon,
-          distanceMeters: Math.round(haversineMeters(point, { latitude: el.lat, longitude: el.lon })),
-        };
-      })
-      .sort((a: HelpPoint, b: HelpPoint) => a.distanceMeters - b.distanceMeters);
+  const points: HelpPoint[] = (data.elements as { tags?: Record<string, string>; lat: number; lon: number }[])
+    .map((el) => {
+      const tags = el.tags ?? {};
+      const type: HelpPoint["type"] = tags.amenity === "hospital" ? "hospital" : tags.amenity === "police" ? "police" : "metro";
+      return {
+        name: tags.name ?? (type === "hospital" ? "Hospital" : type === "police" ? "Police Station" : "Metro Station"),
+        type,
+        latitude: el.lat,
+        longitude: el.lon,
+        distanceMeters: Math.round(haversineMeters(point, { latitude: el.lat, longitude: el.lon })),
+      };
+    })
+    .sort((a: HelpPoint, b: HelpPoint) => a.distanceMeters - b.distanceMeters);
 
-    // At most one of each type where possible, capped at 3, so the list isn't all hospitals.
-    const byType = new Map<string, HelpPoint>();
-    for (const p of points) {
-      if (!byType.has(p.type)) byType.set(p.type, p);
-      if (byType.size === 3) break;
-    }
-    return Array.from(byType.values());
-  } catch {
-    return [];
+  // At most one of each type where possible, capped at 3, so the list isn't all hospitals.
+  const byType = new Map<string, HelpPoint>();
+  for (const p of points) {
+    if (!byType.has(p.type)) byType.set(p.type, p);
+    if (byType.size === 3) break;
   }
+  return Array.from(byType.values());
 }
 
 /** Approximate perpendicular distance (meters) from a point to the straight-line segment a→b. */
@@ -151,36 +139,22 @@ async function fetchAmenitiesOfType(
     out body 35;
   `;
 
-  try {
-    const res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain",
-        "User-Agent": "TulipSafetyApp/1.0 (contact: safety-app)",
-        Accept: "application/json",
-      },
-      body: query,
-      signal: AbortSignal.timeout(13000),
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
+  const data = await queryOverpass(query);
+  if (!data) return [];
 
-    return (data.elements ?? [])
-      .map((el: { tags?: Record<string, string>; lat: number; lon: number }): RouteAmenity => {
-        const tags = el.tags ?? {};
-        const point = { latitude: el.lat, longitude: el.lon };
-        return {
-          name: tags.name ?? defaultNameFor(type),
-          type,
-          latitude: el.lat,
-          longitude: el.lon,
-          distanceFromRouteMeters: Math.round(distanceToSegmentMeters(point, origin, destination)),
-        };
-      })
-      .filter((a: RouteAmenity) => a.distanceFromRouteMeters <= bufferMeters);
-  } catch {
-    return [];
-  }
+  return (data.elements as { tags?: Record<string, string>; lat: number; lon: number }[])
+    .map((el): RouteAmenity => {
+      const tags = el.tags ?? {};
+      const point = { latitude: el.lat, longitude: el.lon };
+      return {
+        name: tags.name ?? defaultNameFor(type),
+        type,
+        latitude: el.lat,
+        longitude: el.lon,
+        distanceFromRouteMeters: Math.round(distanceToSegmentMeters(point, origin, destination)),
+      };
+    })
+    .filter((a) => a.distanceFromRouteMeters <= bufferMeters);
 }
 
 export async function fetchRouteAmenities(
