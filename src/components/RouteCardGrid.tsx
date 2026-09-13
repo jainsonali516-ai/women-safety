@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, Clock, IndianRupee, Navigation, Shield, AlertTriangle, ExternalLink } from "lucide-react";
+import { RISK_TIER_COLOR } from "@/lib/riskTier";
 
 export interface RouteOption {
   mode: string;
@@ -20,10 +21,10 @@ export interface RouteOption {
 }
 
 const TIER_STYLE: Record<RouteOption["risk_tier"], { bg: string; fg: string }> = {
-  high: { bg: "#ef4444", fg: "white" },
-  mid_high: { bg: "#f97316", fg: "white" },
-  mid_low: { bg: "#eab308", fg: "#3f2d00" },
-  safe: { bg: "#22c55e", fg: "white" },
+  high: { bg: RISK_TIER_COLOR.high, fg: "white" },
+  mid_high: { bg: RISK_TIER_COLOR.mid_high, fg: "white" },
+  mid_low: { bg: RISK_TIER_COLOR.mid_low, fg: "#3f2d00" },
+  safe: { bg: RISK_TIER_COLOR.safe, fg: "white" },
 };
 
 export function RouteCardGrid({ options }: { options: RouteOption[] }) {

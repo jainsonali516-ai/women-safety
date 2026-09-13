@@ -85,6 +85,7 @@ export function JourneyHome() {
   const [error, setError] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, unknown> | null>(null);
   const [amenities, setAmenities] = useState<RouteAmenity[]>([]);
+  const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
 
   async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
     try {
@@ -144,6 +145,7 @@ export function JourneyHome() {
       if (!res.ok) throw new Error(data.error);
       setOptions(data.options);
       setSignals(data.signals);
+      setRoutePolyline(data.route_polyline ?? null);
 
       cacheRouteForOffline(originMapPoint, destMapPoint);
       fetchRouteAmenities(originMapPoint, destMapPoint);
@@ -177,7 +179,13 @@ export function JourneyHome() {
       <main style={{ padding: "0 1.5rem 2rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
         {error && <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>{error}</p>}
 
-        <SafetyMapContainer origin={origin} destination={destination} safetyIndex={safetyIndex} amenities={amenities} />
+        <SafetyMapContainer
+          origin={origin}
+          destination={destination}
+          safetyIndex={safetyIndex}
+          amenities={amenities}
+          routePolyline={routePolyline}
+        />
 
         {options.length > 0 && (
           <>

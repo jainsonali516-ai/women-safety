@@ -217,6 +217,10 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     straight_line_km: Math.round(straightLineKm * 10) / 10,
+    // Real road-snapped path (actual street turns/flyovers/roundabouts, from the same OSRM call
+    // already used for cab/bus/auto duration) — null when live routing was unavailable, in which
+    // case the map falls back to a straight line and says so rather than pretending otherwise.
+    route_polyline: driving?.polyline ?? null,
     signals: {
       street_light_count_near_midpoint: lights.count,
       street_light_data_available: lights.available,

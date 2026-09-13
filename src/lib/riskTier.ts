@@ -1,5 +1,14 @@
 export type RiskTier = "high" | "mid_high" | "mid_low" | "safe";
 
+// Single source of truth for tier color, shared by the route cards and the map's route glow so
+// a "Mid-High Risk" badge and a route line always mean the same color everywhere in the app.
+export const RISK_TIER_COLOR: Record<RiskTier, string> = {
+  high: "#ef4444",
+  mid_high: "#f97316",
+  mid_low: "#eab308",
+  safe: "#22c55e",
+};
+
 export interface RiskTierInfo {
   tier: RiskTier;
   label: string;

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets } from "lucide-react";
+import { classifyRiskTier, RISK_TIER_COLOR } from "@/lib/riskTier";
 
 export interface MapPoint {
   latitude: number;
@@ -22,6 +23,8 @@ interface Props {
   destination?: MapPoint | null;
   safetyIndex?: number | null;
   amenities?: RouteAmenity[];
+  /** Real road-snapped [lat, lng] path from OSRM — null when live routing was unavailable. */
+  routePolyline?: [number, number][] | null;
 }
 
 const AMENITY_COLOR: Record<RouteAmenity["type"], string> = {
@@ -61,7 +64,7 @@ const MOCK_CORRIDORS: { name: string; latitude: number; longitude: number; densi
 const DENSITY_COLOR: Record<string, string> = { high: "#22c55e", moderate: "#eab308", low: "#ef4444" };
 const DENSITY_WEIGHT: Record<string, number> = { high: 0.9, moderate: 0.55, low: 0.25 };
 
-export function SafetyMapContainer({ origin, destination, safetyIndex, amenities }: Props) {
+export function SafetyMapContainer({ origin, destination, safetyIndex, amenities, routePolyline }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const heatLayerRef = useRef<import("leaflet").Layer | null>(null);
@@ -182,26 +185,44 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
         L.marker([destination.latitude, destination.longitude]).bindTooltip(destination.label ?? "Destination").addTo(routeLayerRef.current);
       }
       if (origin && destination) {
-        L.polyline(
-          [
-            [origin.latitude, origin.longitude],
-            [destination.latitude, destination.longitude],
-          ],
-          { color: "#ff2fb2", weight: 3, dashArray: "6 6" }
-        ).addTo(routeLayerRef.current);
-        mapRef.current.flyToBounds(
-          [
-            [origin.latitude, origin.longitude],
-            [destination.latitude, destination.longitude],
-          ],
-          { padding: [60, 60], duration: 1.2 }
-        );
+        // A uniform glow matching the route's overall risk tier — one route line per search,
+        // colored the same as the risk badge shown on the cards below, not a per-stretch
+        // breakdown (that was tried and removed by request in favor of this simpler view).
+        const tierColor = typeof safetyIndex === "number" ? classifyRiskTier(safetyIndex).tier : null;
+        const glowColor = tierColor ? RISK_TIER_COLOR[tierColor] : "#ff2fb2";
+
+        if (routePolyline && routePolyline.length > 1) {
+          // Real road-snapped path (actual street turns/flyovers/roundabouts from OSRM), not a
+          // straight line between the two points.
+          L.polyline(routePolyline, { color: glowColor, weight: 5, opacity: 0.85 }).addTo(routeLayerRef.current);
+          L.polyline(routePolyline, { color: glowColor, weight: 12, opacity: 0.18 }).addTo(routeLayerRef.current);
+        } else {
+          // Live routing wasn't available for this search — say so with a dashed line rather
+          // than silently drawing a straight "path" that looks like a real route.
+          L.polyline(
+            [
+              [origin.latitude, origin.longitude],
+              [destination.latitude, destination.longitude],
+            ],
+            { color: glowColor, weight: 3, dashArray: "6 6" }
+          )
+            .bindTooltip("Live routing unavailable — showing a straight-line estimate")
+            .addTo(routeLayerRef.current);
+        }
+
+        const bounds = routePolyline && routePolyline.length > 1
+          ? routePolyline
+          : [
+              [origin.latitude, origin.longitude] as [number, number],
+              [destination.latitude, destination.longitude] as [number, number],
+            ];
+        mapRef.current.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 });
       } else if (origin) {
         mapRef.current.flyTo([origin.latitude, origin.longitude], 13, { duration: 1 });
       }
     }
     drawRoute();
-  }, [origin, destination]);
+  }, [origin, destination, routePolyline, safetyIndex]);
 
   useEffect(() => {
     async function drawAmenities() {
