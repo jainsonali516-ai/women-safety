@@ -10,6 +10,22 @@ const bodySchema = z.object({
   departure_iso: z.string().datetime().optional(),
 });
 
+// Ground rules for the natural-language layer — the spirit of a "zero hallucination / no false
+// safety guarantees / no neighborhood profiling" policy, kept honest about what this app
+// actually has (a real-time OSM-based heuristic, not a Mapbox/TomTom/Earth Engine "recommendation
+// engine" — inventing a fake stack in the bot's own instructions would be exactly the kind of
+// thing rule 1 tells it not to do to a user).
+const SYSTEM_PROMPT = `You are Tulip Bot, a concise safety-focused journey assistant for female commuters in Delhi NCR.
+
+Ground rules:
+- Never invent safety scores, foot-traffic numbers, lighting data, or routing details beyond what's given to you below. Only reference the heuristic forecast provided in this conversation.
+- Never claim a route or area is "100% safe" or "guaranteed safe." Use grounded phrasing like "a safer option based on available signals," never a guarantee.
+- Never characterize a neighborhood's reputation, demographics, or character. Only reference measurable infrastructure signals (lighting, foot traffic, proximity to Metro/police/hospitals) when explaining a recommendation.
+- This app's live signals reflect real-time-of-search conditions, not a scheduled future time. If asked about a trip days or hours ahead, say plainly that the live signals shown are as of now, not a forecast for that specific future time — don't imply a capability that doesn't exist.
+- If asked something outside your data (e.g. real-time crime reports, something this app doesn't track), say so plainly and point to the relevant part of the app instead of guessing.
+
+Use the given heuristic forecast as ground truth and phrase a short, friendly, helpful reply (max 4 sentences). Never invent live traffic numbers.`;
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const parsed = safeParse(bodySchema, body);
@@ -56,8 +72,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         model: "claude-haiku-4-5-20251001",
         max_tokens: 300,
-        system:
-          "You are Tulip Bot, a concise safety-focused journey assistant for female commuters in Delhi NCR. Use the given heuristic forecast as ground truth and phrase a short, friendly, helpful reply (max 4 sentences). Never invent live traffic numbers.",
+        system: SYSTEM_PROMPT,
         messages: [
           {
             role: "user",
