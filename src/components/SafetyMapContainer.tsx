@@ -1,8 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets } from "lucide-react";
+import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets, Compass, Loader2 } from "lucide-react";
 import { classifyRiskTier, RISK_TIER_COLOR } from "@/lib/riskTier";
+import type { AmenityPoint, AmenityType } from "@/lib/helpPoints";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 
 export interface MapPoint {
   latitude: number;
@@ -74,6 +77,16 @@ const MOCK_CORRIDORS: { name: string; latitude: number; longitude: number; densi
 const DENSITY_COLOR: Record<string, string> = { high: "#22c55e", moderate: "#eab308", low: "#ef4444" };
 const DENSITY_WEIGHT: Record<string, number> = { high: 0.9, moderate: 0.55, low: 0.25 };
 
+const EXPLORE_TYPES: AmenityType[] = ["washroom", "hospital", "police", "safe_zone"];
+const EXPLORE_MOVE_DEBOUNCE_MS = 500;
+
+/** Rounds a bounding box to a coarse grid so small pans/zooms within roughly the same area
+ * reuse a cached result instead of re-fetching — same idea as map tile coordinates. */
+function boundsCacheKey(bounds: { north: number; south: number; east: number; west: number }) {
+  const round = (n: number) => Math.round(n * 200) / 200; // ~0.005° grid, roughly 500m
+  return [round(bounds.north), round(bounds.south), round(bounds.east), round(bounds.west)].join(",");
+}
+
 export function SafetyMapContainer({ origin, destination, safetyIndex, amenities, routePolyline }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -87,6 +100,17 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
   const [showAmenities, setShowAmenities] = useState(true);
   const [locating, setLocating] = useState(false);
 
+  // --- Pan/zoom amenity exploration (separate from the route-linked `amenities` prop above) ---
+  const exploreClusterRef = useRef<import("leaflet").MarkerClusterGroup | null>(null);
+  const exploreCacheRef = useRef<Map<string, AmenityPoint[]>>(new Map());
+  const exploreAbortRef = useRef<AbortController | null>(null);
+  const exploreDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exploreRawRef = useRef<AmenityPoint[]>([]); // last fetched batch, before category filtering
+  const [exploreMode, setExploreMode] = useState(false);
+  const [exploreLoading, setExploreLoading] = useState(false);
+  const [exploreError, setExploreError] = useState<string | null>(null);
+  const [exploreFilters, setExploreFilters] = useState<Set<AmenityType>>(new Set(EXPLORE_TYPES));
+
   useEffect(() => {
     let cancelled = false;
 
@@ -94,6 +118,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
       const L = (await import("leaflet")).default;
       // @ts-expect-error -- leaflet.heat has no type declarations; it patches L.heatLayer at runtime
       await import("leaflet.heat");
+      await import("leaflet.markercluster"); // patches L.markerClusterGroup at runtime
       if (cancelled || !containerRef.current || mapRef.current) return;
 
       // Navigating away and back can leave Leaflet's internal id on a reused DOM node, which
@@ -152,6 +177,9 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
       routeLayerRef.current = L.layerGroup().addTo(map);
       userMarkerRef.current = L.layerGroup().addTo(map);
       amenityLayerRef.current = L.layerGroup().addTo(map);
+      // Not added to the map yet — only shown once "Explore Nearby" is toggled on, so it never
+      // costs anything (no listener, no markers) unless a user actually opts into it.
+      exploreClusterRef.current = L.markerClusterGroup({ maxClusterRadius: 60, disableClusteringAtZoom: 18 });
       mapRef.current = map;
     }
 
@@ -267,6 +295,128 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
     else map.removeLayer(amenityLayerRef.current);
   }, [showAmenities]);
 
+  /** Redraws the cluster group from the last fetched batch, applying the active category
+   * filters — called on every filter toggle without re-fetching, since Overpass is the slow
+   * part here, not rendering. */
+  async function renderExploreMarkers() {
+    if (!exploreClusterRef.current) return;
+    const L = (await import("leaflet")).default;
+    exploreClusterRef.current.clearLayers();
+
+    exploreRawRef.current
+      .filter((a) => exploreFiltersRef.current.has(a.type))
+      .forEach((a) => {
+        const color = AMENITY_COLOR[a.type];
+        const icon = L.divIcon({
+          className: "tulip-amenity-badge",
+          html: `<div style="width:22px;height:22px;background:${color};border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"><svg width="13" height="13" viewBox="0 0 24 24" fill="white">${AMENITY_GLYPH[a.type]}</svg></div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+        });
+        L.marker([a.latitude, a.longitude], { icon })
+          .bindPopup(`<strong>${a.name}</strong><br/>${AMENITY_LABEL[a.type]}`)
+          .addTo(exploreClusterRef.current!);
+      });
+  }
+
+  // Effects can't directly read state set after they were created without becoming a dependency
+  // (which would mean re-running the whole fetch/listener setup on every filter toggle) — a ref
+  // mirror lets the moveend/fetch handler always see the latest filter set without that. Synced
+  // in its own effect (not during render) since mutating a ref mid-render is unsafe.
+  const exploreFiltersRef = useRef(exploreFilters);
+  useEffect(() => {
+    exploreFiltersRef.current = exploreFilters;
+    renderExploreMarkers();
+  }, [exploreFilters]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    const cluster = exploreClusterRef.current;
+    if (!map || !cluster) return;
+
+    if (!exploreMode) {
+      // No setState here: the loading/error status panel is only ever rendered while
+      // exploreMode is true (see the JSX below), so there's nothing to visibly reset — it'll
+      // start fresh from fetchForCurrentView the next time explore mode is turned back on.
+      map.removeLayer(cluster);
+      exploreAbortRef.current?.abort();
+      if (exploreDebounceRef.current) clearTimeout(exploreDebounceRef.current);
+      return;
+    }
+
+    cluster.addTo(map);
+
+    async function fetchForCurrentView() {
+      const b = map!.getBounds();
+      const bounds = { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() };
+      const cacheKey = boundsCacheKey(bounds);
+
+      const cached = exploreCacheRef.current.get(cacheKey);
+      if (cached) {
+        exploreRawRef.current = cached;
+        setExploreError(null);
+        renderExploreMarkers();
+        return;
+      }
+
+      exploreAbortRef.current?.abort();
+      const controller = new AbortController();
+      exploreAbortRef.current = controller;
+
+      setExploreLoading(true);
+      setExploreError(null);
+      try {
+        const res = await fetch("/api/amenities/viewport", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bounds, types: EXPLORE_TYPES }),
+          signal: controller.signal,
+        });
+        const data = await res.json();
+        if (controller.signal.aborted) return; // superseded by a newer pan/zoom
+        if (!res.ok) {
+          setExploreError("Couldn't load amenities for this area.");
+          return;
+        }
+        if (data.areaTooLarge) {
+          setExploreError("Zoom in to explore amenities here.");
+          exploreRawRef.current = [];
+          renderExploreMarkers();
+          return;
+        }
+        exploreCacheRef.current.set(cacheKey, data.amenities);
+        exploreRawRef.current = data.amenities;
+        renderExploreMarkers();
+      } catch (err) {
+        if ((err as Error).name !== "AbortError") setExploreError("Couldn't load amenities for this area.");
+      } finally {
+        if (!controller.signal.aborted) setExploreLoading(false);
+      }
+    }
+
+    function onMoveEnd() {
+      if (exploreDebounceRef.current) clearTimeout(exploreDebounceRef.current);
+      exploreDebounceRef.current = setTimeout(fetchForCurrentView, EXPLORE_MOVE_DEBOUNCE_MS);
+    }
+
+    map.on("moveend", onMoveEnd);
+    fetchForCurrentView(); // load the current view immediately on enabling explore mode
+
+    return () => {
+      map.off("moveend", onMoveEnd);
+      if (exploreDebounceRef.current) clearTimeout(exploreDebounceRef.current);
+    };
+  }, [exploreMode]);
+
+  function toggleExploreFilter(type: AmenityType) {
+    setExploreFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  }
+
   async function recenterToGps() {
     if (!("geolocation" in navigator) || !mapRef.current) return;
     setLocating(true);
@@ -361,6 +511,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
         <ToggleBtn active={showHeatmap} onClick={() => setShowHeatmap((v) => !v)} icon={<Flame size={13} />} label="Night Heatmap" />
         <ToggleBtn active={showCorridors} onClick={() => setShowCorridors((v) => !v)} icon={<TrainFront size={13} />} label="Safety Corridors" />
         <ToggleBtn active={showAmenities} onClick={() => setShowAmenities((v) => !v)} icon={<Droplets size={13} />} label="Nearby Amenities" />
+        <ToggleBtn active={exploreMode} onClick={() => setExploreMode((v) => !v)} icon={<Compass size={13} />} label="Explore Nearby" />
         <button
           onClick={recenterToGps}
           disabled={locating}
@@ -397,6 +548,56 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
           <RotateCcw size={13} /> Reset View
         </button>
       </div>
+
+      {exploreMode && (
+        <div
+          className="glass"
+          style={{
+            position: "absolute",
+            bottom: 12,
+            left: 12,
+            right: 12,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            flexWrap: "wrap",
+            padding: "0.5rem 0.7rem",
+            borderRadius: "0.7rem",
+            fontSize: "0.72rem",
+          }}
+        >
+          {EXPLORE_TYPES.map((type) => (
+            <button
+              key={type}
+              onClick={() => toggleExploreFilter(type)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.3rem",
+                padding: "0.3rem 0.55rem",
+                borderRadius: "999px",
+                border: `1px solid ${AMENITY_COLOR[type]}`,
+                background: exploreFilters.has(type) ? AMENITY_COLOR[type] : "transparent",
+                color: exploreFilters.has(type) ? "white" : AMENITY_COLOR[type],
+                fontWeight: 700,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {AMENITY_LABEL[type].split(" (")[0]}
+            </button>
+          ))}
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "0.35rem", color: "var(--foreground-muted)" }}>
+            {exploreLoading && (
+              <>
+                <Loader2 size={12} className="animate-spin" /> Loading...
+              </>
+            )}
+            {!exploreLoading && exploreError && <span style={{ color: "#f59e0b" }}>{exploreError}</span>}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
