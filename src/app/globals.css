@@ -92,21 +92,21 @@ a {
   transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Dark mode: cute rounded tulip-stars, fixed in place, twinkling only — never falling/drifting. */
+/* Cute rounded tulip-stars, fixed in place, twinkling — now active in both themes. */
 .tulip-bg .star-tulip {
   position: absolute;
   width: var(--size, 14px);
   height: var(--size, 14px);
-  opacity: 0;
+  opacity: 0.85;
   animation: pulseTwinkle var(--duration, 4s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
   will-change: opacity, transform;
-  display: none;
+  display: block;
 }
 
-[data-theme="dark"] .tulip-bg .star-tulip {
-  display: block;
-  opacity: 0.85;
+/* Same neon pink/magenta/violet palette reads a bit softer against the light Garden sky. */
+:root:not([data-theme="dark"]) .tulip-bg .star-tulip {
+  opacity: 0.55;
 }
 
 .tulip-star-pink { color: #ff4d8d; filter: drop-shadow(0 0 4px #ff4d8d) drop-shadow(0 0 9px #ff4d8d); }
@@ -116,6 +116,27 @@ a {
 @keyframes pulseTwinkle {
   0%, 100% { opacity: 0.2; transform: scale(0.8); }
   50% { opacity: 0.95; transform: scale(1.15); }
+}
+
+/* Falling pink tulip petals, drifting down with a gentle side-to-side sway — active in both
+   themes, layered above the twinkling stars (and, in light mode, the growing garden blooms). */
+.tulip-bg .falling-petal {
+  position: absolute;
+  top: -10%;
+  width: var(--size, 14px);
+  height: var(--size, 14px);
+  opacity: 0;
+  animation: fallDrift var(--duration, 12s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  will-change: transform, opacity;
+}
+
+@keyframes fallDrift {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  8% { opacity: 0.85; }
+  50% { transform: translate(var(--drift, 20px), 55vh) rotate(180deg); }
+  92% { opacity: 0.85; }
+  100% { transform: translate(0, 115vh) rotate(360deg); opacity: 0; }
 }
 
 /* Light mode: tulips grow up from a garden bed along the bottom and gently unfold in place. */
@@ -145,8 +166,10 @@ a {
 
 @media (prefers-reduced-motion: reduce) {
   .tulip-bg .star-tulip,
-  .tulip-bg .garden-bloom {
+  .tulip-bg .garden-bloom,
+  .tulip-bg .falling-petal {
     animation: none;
+    display: none;
   }
 }
 
