@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
 import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
@@ -86,8 +86,13 @@ export function JourneyHome() {
   const [signals, setSignals] = useState<Record<string, unknown> | null>(null);
   const [amenities, setAmenities] = useState<RouteAmenity[]>([]);
   const [routePolyline, setRoutePolyline] = useState<[number, number][] | null>(null);
+  // Overpass can take several seconds (sometimes 10+, per earlier testing) to answer the
+  // slower "safe_zone" query. If the user searches again before that resolves, the stale
+  // response would otherwise land after the new search's reset and mix old-route amenities into
+  // the new one's pins. This counter lets each fetch recognize it's stale and ignore itself.
+  const amenityRequestIdRef = useRef(0);
 
-  async function fetchAmenityGroup(originPoint: MapPoint, destPoint: MapPoint, types: string[]) {
+  async function fetchAmenityGroup(originPoint: MapPoint, destPoint: MapPoint, types: string[], requestId: number) {
     try {
       const res = await fetch("/api/route-amenities", {
         method: "POST",
@@ -96,6 +101,7 @@ export function JourneyHome() {
       });
       if (!res.ok) return;
       const data = await res.json();
+      if (requestId !== amenityRequestIdRef.current) return; // a newer search has since started
       // Merge rather than replace — the other group's request is in flight independently and
       // may resolve before or after this one.
       setAmenities((prev) => [...prev, ...(data.amenities ?? [])]);
@@ -110,9 +116,10 @@ export function JourneyHome() {
    * requests instead of one combined call, so the fast group's pins can appear on the map right
    * away instead of all of them waiting on the slowest one. */
   async function fetchRouteAmenities(originPoint: MapPoint, destPoint: MapPoint) {
+    const requestId = ++amenityRequestIdRef.current;
     setAmenities([]);
-    fetchAmenityGroup(originPoint, destPoint, ["washroom", "hospital", "police"]);
-    fetchAmenityGroup(originPoint, destPoint, ["safe_zone"]);
+    fetchAmenityGroup(originPoint, destPoint, ["washroom", "hospital", "police"], requestId);
+    fetchAmenityGroup(originPoint, destPoint, ["safe_zone"], requestId);
   }
 
   async function runSearch(values: JourneySearchValues) {

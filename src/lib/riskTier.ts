@@ -44,7 +44,11 @@ interface SafetyExplanationInputs {
 export function explainSafety(inputs: SafetyExplanationInputs): string {
   const parts: string[] = [];
 
-  if (inputs.streetLightDataAvailable) {
+  // Street lighting is only a relevant safety factor once it's actually dark — mentioning "low
+  // lighting" as a reason on a route searched at 9 AM reads as nonsensical, even though the
+  // underlying signal is still (lightly) weighted into the score for the after-dark case where
+  // this same route might be searched again later.
+  if (inputs.afterSunset && inputs.streetLightDataAvailable) {
     parts.push(
       inputs.streetLightCount >= 8
         ? "well-lit streets along the route (dense mapped street-lighting)"
