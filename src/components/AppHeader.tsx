@@ -106,35 +106,52 @@ export function AppHeader() {
       </div>
 
       {menuOpen && (
-        <div
-          className="glass app-nav-mobile-panel"
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            display: "flex",
-            flexDirection: "column",
-            padding: "0.75rem 1.5rem 1.25rem",
-            gap: "0.9rem",
-            borderTop: "1px solid var(--border)",
-          }}
-        >
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setMenuOpen(false)}
-              style={{ fontSize: "1rem", color: "var(--foreground)", fontWeight: 600 }}
-            >
-              {link.label}
-            </Link>
-          ))}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.4rem", borderTop: "1px solid var(--border)" }}>
-            <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>Theme</span>
-            <ThemeToggle />
+        <>
+          <div
+            onClick={() => setMenuOpen(false)}
+            aria-hidden="true"
+            style={{
+              position: "fixed",
+              inset: 0,
+              top: "3.6rem",
+              background: "rgba(0, 0, 0, 0.55)",
+              zIndex: 39,
+            }}
+          />
+          <div
+            className="app-nav-mobile-panel"
+            style={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              right: 0,
+              zIndex: 41,
+              display: "flex",
+              flexDirection: "column",
+              padding: "0.75rem 1.5rem 1.25rem",
+              gap: "0.9rem",
+              background: "var(--background-solid)",
+              borderTop: "1px solid var(--border)",
+              borderBottom: "1px solid var(--border)",
+              boxShadow: "0 12px 24px rgba(0, 0, 0, 0.35)",
+            }}
+          >
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setMenuOpen(false)}
+                style={{ fontSize: "1rem", color: "var(--foreground)", fontWeight: 600 }}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.4rem", borderTop: "1px solid var(--border)" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>Theme</span>
+              <ThemeToggle />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </header>
   );
