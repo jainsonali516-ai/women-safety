@@ -13,7 +13,7 @@ export interface HelpPoint {
 
 export interface RouteAmenity {
   name: string;
-  type: "washroom" | "hospital" | "police";
+  type: "washroom" | "hospital" | "police" | "safe_zone";
   latitude: number;
   longitude: number;
   distanceFromRouteMeters: number;
@@ -110,11 +110,26 @@ function distanceToSegmentMeters(point: LatLng, a: LatLng, b: LatLng) {
  * map. Approximates "along the route" via perpendicular distance to the straight segment, since
  * the app doesn't load full turn-by-turn route geometry into the map (see SafetyMapContainer).
  */
-const AMENITY_OVERPASS_TAG: Record<RouteAmenity["type"], string> = {
-  washroom: "toilets",
-  hospital: "hospital",
-  police: "police",
-};
+// "safe_zone" covers pharmacies, malls, and restaurants/cafes — busy, well-lit places along a
+// route rather than a designated emergency-response point like a hospital or police station.
+// Needs an OR of several OSM tags, so it's a query-fragment builder rather than one flat tag.
+function overpassFilterFor(type: RouteAmenity["type"], searchRadius: number, mid: LatLng): string {
+  const around = `(around:${searchRadius},${mid.latitude},${mid.longitude})`;
+  if (type === "washroom") return `node["amenity"="toilets"]${around};`;
+  if (type === "hospital") return `node["amenity"="hospital"]${around};`;
+  if (type === "police") return `node["amenity"="police"]${around};`;
+  return `
+    node["amenity"~"pharmacy|restaurant|cafe"]${around};
+    node["shop"="mall"]${around};
+  `;
+}
+
+function defaultNameFor(type: RouteAmenity["type"]): string {
+  if (type === "washroom") return "Public Washroom";
+  if (type === "hospital") return "Hospital";
+  if (type === "police") return "Police Station";
+  return "Nearby Safe Zone";
+}
 
 async function fetchAmenitiesOfType(
   type: RouteAmenity["type"],
@@ -124,13 +139,14 @@ async function fetchAmenitiesOfType(
   destination: LatLng,
   bufferMeters: number
 ): Promise<RouteAmenity[]> {
-  // One lightweight query per amenity type — combining all 3 types (plus a high result cap)
-  // into a single query reliably timed out (504) under load on Overpass's shared public server;
-  // three small parallel queries succeed far more often, same lesson as the other Overpass
-  // calls in this app (see fetchStreetLightDensity/fetchFootTrafficScore in scoring.ts).
+  // One lightweight query per amenity type — combining all types (plus a high result cap) into
+  // a single query reliably timed out (504) under load on Overpass's shared public server;
+  // small parallel-in-spirit-but-sequential queries succeed far more often, same lesson as the
+  // other Overpass calls in this app (see fetchStreetLightDensity/fetchFootTrafficScore in
+  // scoring.ts).
   const query = `
     [out:json][timeout:12];
-    node["amenity"="${AMENITY_OVERPASS_TAG[type]}"](around:${searchRadius},${mid.latitude},${mid.longitude});
+    (${overpassFilterFor(type, searchRadius, mid)});
     out body 60;
   `;
 
@@ -153,7 +169,7 @@ async function fetchAmenitiesOfType(
         const tags = el.tags ?? {};
         const point = { latitude: el.lat, longitude: el.lon };
         return {
-          name: tags.name ?? (type === "washroom" ? "Public Washroom" : type === "hospital" ? "Hospital" : "Police Station"),
+          name: tags.name ?? defaultNameFor(type),
           type,
           latitude: el.lat,
           longitude: el.lon,
@@ -171,10 +187,10 @@ export async function fetchRouteAmenities(origin: LatLng, destination: LatLng, b
   const searchRadius = haversineMeters(origin, destination) / 2 + bufferMeters;
 
   // Sequential, not Promise.all: Overpass's public instance enforces a small concurrent-slot
-  // limit per client (commonly 2), so firing all 3 amenity-type queries at once reliably breaks
-  // whichever one lands third.
+  // limit per client (commonly 2), so firing all amenity-type queries at once reliably breaks
+  // whichever one lands third or later.
   const results: RouteAmenity[][] = [];
-  for (const type of ["washroom", "hospital", "police"] as const) {
+  for (const type of ["washroom", "hospital", "police", "safe_zone"] as const) {
     results.push(await fetchAmenitiesOfType(type, mid, searchRadius, origin, destination, bufferMeters));
   }
 

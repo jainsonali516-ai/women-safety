@@ -12,7 +12,7 @@ export interface MapPoint {
 
 export interface RouteAmenity {
   name: string;
-  type: "washroom" | "hospital" | "police";
+  type: "washroom" | "hospital" | "police" | "safe_zone";
   latitude: number;
   longitude: number;
   distanceFromRouteMeters: number;
@@ -29,16 +29,26 @@ interface Props {
 
 const AMENITY_COLOR: Record<RouteAmenity["type"], string> = {
   washroom: "#FF69B4",
-  hospital: "#9C27B0",
-  police: "#2196F3",
+  hospital: "#FF2E93",
+  police: "#EC4899",
+  safe_zone: "#F59E0B",
 };
 
 // Small inline SVG glyphs per amenity type — a hospital cross, a police shield, a washroom
-// figure — so each type reads as visually distinct on the map, not just by dot color.
+// figure, a shopping-bag for pharmacies/malls/restaurants — so each type reads as visually
+// distinct on the map, not just by dot color.
 const AMENITY_GLYPH: Record<RouteAmenity["type"], string> = {
   hospital: '<path d="M10 3h4v5h5v4h-5v5h-4v-5H5V8h5V3z"/>',
   police: '<path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z"/>',
   washroom: '<circle cx="12" cy="5" r="2.3"/><path d="M12 8.5c-2.2 0-4 1.6-4 3.6v4.4h1.6L10.4 22h3.2l.8-5.5h1.2l.8 5.5h3.2l-.8-5.5H20v-4.4c0-2-1.8-3.6-4-3.6h-4z"/>',
+  safe_zone: '<path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="white" stroke-width="1.6"/>',
+};
+
+const AMENITY_LABEL: Record<RouteAmenity["type"], string> = {
+  washroom: "Washroom",
+  hospital: "Hospital",
+  police: "Police Station",
+  safe_zone: "Safe Zone (pharmacy/mall/restaurant)",
 };
 
 const AMENITY_BUFFER_METERS = 1000;
@@ -242,7 +252,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
         });
         L.marker([a.latitude, a.longitude], { icon })
           .bindPopup(
-            `<strong>${a.name}</strong><br/>${a.type.charAt(0).toUpperCase() + a.type.slice(1)} — ${(a.distanceFromRouteMeters / 1000).toFixed(2)} km off route`
+            `<strong>${a.name}</strong><br/>${AMENITY_LABEL[a.type]} — ${(a.distanceFromRouteMeters / 1000).toFixed(2)} km off route`
           )
           .addTo(amenityLayerRef.current!);
       });
