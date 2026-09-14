@@ -41,6 +41,10 @@ function ContactsManager() {
   const [form, setForm] = useState({ name: "", phone: "", relationship: "" });
   const [reminderTime, setReminderTime] = useState("20:00");
   const [error, setError] = useState<string | null>(null);
+  const [addingContact, setAddingContact] = useState(false);
+  const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
+  const [addingReminder, setAddingReminder] = useState(false);
+  const [busyReminderId, setBusyReminderId] = useState<string | null>(null);
 
   async function loadContacts() {
     const res = await fetch("/api/contacts");
@@ -60,47 +64,97 @@ function ContactsManager() {
 
   async function addContact(e: React.FormEvent) {
     e.preventDefault();
+    if (addingContact) return; // guard against a double-tap firing two inserts on a slow network
     setError(null);
-    const res = await fetch("/api/contacts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setError(data.error);
-      return;
+    setAddingContact(true);
+    try {
+      const res = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error);
+        return;
+      }
+      setForm({ name: "", phone: "", relationship: "" });
+      // Append the row the server just returned instead of re-fetching the whole list — on a
+      // slow phone connection a second full round trip after the save is what made this feel
+      // like it was hanging.
+      setContacts((prev) => [...prev, data.contact]);
+    } catch {
+      setError("Network error while saving the contact. Please try again.");
+    } finally {
+      setAddingContact(false);
     }
-    setForm({ name: "", phone: "", relationship: "" });
-    loadContacts();
   }
 
   async function deleteContact(id: string) {
-    await fetch(`/api/contacts/${id}`, { method: "DELETE" });
-    loadContacts();
+    if (deletingContactId) return;
+    setDeletingContactId(id);
+    const previous = contacts;
+    setContacts((prev) => prev.filter((c) => c.id !== id)); // optimistic — feels instant on slow networks
+    try {
+      const res = await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+      if (!res.ok) setContacts(previous); // roll back on failure
+    } catch {
+      setContacts(previous);
+    } finally {
+      setDeletingContactId(null);
+    }
   }
 
   async function addReminder() {
-    await fetch("/api/reminders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ time_of_day: reminderTime, days_of_week: [1, 2, 3, 4, 5], label: "Share my location" }),
-    });
-    loadReminders();
+    if (addingReminder) return;
+    setAddingReminder(true);
+    try {
+      const res = await fetch("/api/reminders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ time_of_day: reminderTime, days_of_week: [1, 2, 3, 4, 5], label: "Share my location" }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setReminders((prev) => [...prev, data.reminder]);
+      }
+    } finally {
+      setAddingReminder(false);
+    }
   }
 
   async function toggleReminder(reminder: Reminder) {
-    await fetch(`/api/reminders/${reminder.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ enabled: !reminder.enabled }),
-    });
-    loadReminders();
+    if (busyReminderId) return;
+    setBusyReminderId(reminder.id);
+    const previous = reminders;
+    setReminders((prev) => prev.map((r) => (r.id === reminder.id ? { ...r, enabled: !r.enabled } : r)));
+    try {
+      const res = await fetch(`/api/reminders/${reminder.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: !reminder.enabled }),
+      });
+      if (!res.ok) setReminders(previous);
+    } catch {
+      setReminders(previous);
+    } finally {
+      setBusyReminderId(null);
+    }
   }
 
   async function deleteReminder(id: string) {
-    await fetch(`/api/reminders/${id}`, { method: "DELETE" });
-    loadReminders();
+    if (busyReminderId) return;
+    setBusyReminderId(id);
+    const previous = reminders;
+    setReminders((prev) => prev.filter((r) => r.id !== id));
+    try {
+      const res = await fetch(`/api/reminders/${id}`, { method: "DELETE" });
+      if (!res.ok) setReminders(previous);
+    } catch {
+      setReminders(previous);
+    } finally {
+      setBusyReminderId(null);
+    }
   }
 
   return (
@@ -113,8 +167,13 @@ function ContactsManager() {
             <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="field" style={inputStyle} />
             <input placeholder="+91 phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="field" style={inputStyle} />
             <input placeholder="Relationship" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} className="field" style={inputStyle} />
-            <button type="submit" className="btn-accent mobile-full field" style={{ ...smallBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem" }}>
-              <Plus size={16} /> Add
+            <button
+              type="submit"
+              disabled={addingContact}
+              className="btn-accent mobile-full field"
+              style={{ ...smallBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem", opacity: addingContact ? 0.7 : 1, cursor: addingContact ? "wait" : "pointer" }}
+            >
+              <Plus size={16} /> {addingContact ? "Adding..." : "Add"}
             </button>
           </form>
           {error && <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: "0.5rem" }}>{error}</p>}
@@ -131,7 +190,11 @@ function ContactsManager() {
                   <a href={`tel:${c.phone}`} style={iconBtn}>
                     <Phone size={16} />
                   </a>
-                  <button onClick={() => deleteContact(c.id)} style={iconBtn}>
+                  <button
+                    onClick={() => deleteContact(c.id)}
+                    disabled={deletingContactId === c.id}
+                    style={{ ...iconBtn, opacity: deletingContactId === c.id ? 0.5 : 1, cursor: deletingContactId === c.id ? "wait" : "pointer" }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </span>
@@ -156,8 +219,13 @@ function ContactsManager() {
           </p>
           <div className="mobile-stack" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="field" style={inputStyle} />
-            <button onClick={addReminder} className="btn-accent mobile-full field" style={smallBtn}>
-              Add Weekday Reminder
+            <button
+              onClick={addReminder}
+              disabled={addingReminder}
+              className="btn-accent mobile-full field"
+              style={{ ...smallBtn, opacity: addingReminder ? 0.7 : 1, cursor: addingReminder ? "wait" : "pointer" }}
+            >
+              {addingReminder ? "Adding..." : "Add Weekday Reminder"}
             </button>
           </div>
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -167,10 +235,18 @@ function ContactsManager() {
                   {r.time_of_day.slice(0, 5)} — {r.days_of_week.map((d) => DAY_LABELS[d]).join(", ")}
                 </span>
                 <span style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
-                  <button onClick={() => toggleReminder(r)} style={{ ...iconBtn, color: r.enabled ? "var(--accent-strong)" : "var(--foreground-muted)" }}>
+                  <button
+                    onClick={() => toggleReminder(r)}
+                    disabled={busyReminderId === r.id}
+                    style={{ ...iconBtn, color: r.enabled ? "var(--accent-strong)" : "var(--foreground-muted)", opacity: busyReminderId === r.id ? 0.5 : 1, cursor: busyReminderId === r.id ? "wait" : "pointer" }}
+                  >
                     {r.enabled ? "On" : "Off"}
                   </button>
-                  <button onClick={() => deleteReminder(r.id)} style={iconBtn}>
+                  <button
+                    onClick={() => deleteReminder(r.id)}
+                    disabled={busyReminderId === r.id}
+                    style={{ ...iconBtn, opacity: busyReminderId === r.id ? 0.5 : 1, cursor: busyReminderId === r.id ? "wait" : "pointer" }}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </span>
