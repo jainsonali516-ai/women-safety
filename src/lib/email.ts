@@ -8,17 +8,20 @@ const DEFAULT_FROM = "Tulip <onboarding@resend.dev>";
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
+  console.log("[email] RESEND_API_KEY present?", !!apiKey, "| from:", from, "| to:", to);
   if (!apiKey) {
     console.error("RESEND_API_KEY is not configured — cannot send password reset email.");
     return false;
   }
 
   try {
+    console.log("[email] calling Resend API...");
     const res = await fetch(RESEND_URL, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from: process.env.RESEND_FROM_EMAIL || DEFAULT_FROM,
+        from,
         to,
         subject: "Reset your Tulip password",
         html: `
@@ -29,10 +32,13 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       }),
       signal: AbortSignal.timeout(15000),
     });
+    console.log("[email] Resend responded with status:", res.status);
     if (!res.ok) {
       console.error("Resend API error:", res.status, await res.text().catch(() => ""));
       return false;
     }
+    const data = await res.json().catch(() => null);
+    console.log("[email] Resend success response:", data);
     return true;
   } catch (err) {
     console.error("Failed to send password reset email:", err);

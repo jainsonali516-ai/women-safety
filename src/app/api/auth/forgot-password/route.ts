@@ -15,29 +15,41 @@ const bodySchema = z.object({ email: emailSchema });
 const GENERIC_RESPONSE = { message: "If an account exists for that email, a reset link has been sent." };
 
 export async function POST(request: Request) {
+  console.log("[forgot-password] request received");
   const body = await request.json().catch(() => null);
   const parsed = safeParse(bodySchema, body);
-  if (!parsed.ok) return jsonError(parsed.error);
+  if (!parsed.ok) {
+    console.log("[forgot-password] body failed validation:", parsed.error);
+    return jsonError(parsed.error);
+  }
+  console.log("[forgot-password] looking up email:", parsed.data.email);
 
   const supabase = createAdminClient();
-  const { data: user } = await supabase.from("users").select("id, email").eq("email", parsed.data.email).maybeSingle();
+  const { data: user, error: lookupError } = await supabase.from("users").select("id, email").eq("email", parsed.data.email).maybeSingle();
+  if (lookupError) console.log("[forgot-password] user lookup error:", lookupError.message);
+  console.log("[forgot-password] user found?", !!user);
 
   if (user) {
     // Only one valid reset link per user at a time — older ones stop working once a new one is requested.
-    await supabase.from("password_resets").delete().eq("user_id", user.id);
+    const { error: deleteError } = await supabase.from("password_resets").delete().eq("user_id", user.id);
+    if (deleteError) console.log("[forgot-password] error clearing old tokens:", deleteError.message);
 
     const token = randomBytes(32).toString("hex");
     const tokenHash = createHash("sha256").update(token).digest("hex");
     const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
 
     const { error } = await supabase.from("password_resets").insert({ user_id: user.id, token_hash: tokenHash, expires_at: expiresAt });
+    if (error) console.log("[forgot-password] error inserting token:", error.message);
 
     if (!error) {
       const origin = new URL(request.url).origin;
       const resetUrl = `${origin}/auth/reset?token=${token}`;
-      await sendPasswordResetEmail(user.email, resetUrl);
+      console.log("[forgot-password] sending email to:", user.email, "with url:", resetUrl);
+      const sent = await sendPasswordResetEmail(user.email, resetUrl);
+      console.log("[forgot-password] email sent?", sent);
     }
   }
 
+  console.log("[forgot-password] returning generic response");
   return NextResponse.json(GENERIC_RESPONSE);
 }
