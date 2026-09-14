@@ -22,6 +22,7 @@ export function SosTracker() {
   const [error, setError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [copied, setCopied] = useState(false);
+  const [starting, setStarting] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lowPowerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const alertIdRef = useRef<string | null>(null);
@@ -108,6 +109,25 @@ export function SosTracker() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the power mode itself flips
   }, [lowPower]);
 
+  function getPositionWithReason(): Promise<{ position: GeolocationPosition | null; errorCode: number | null }> {
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({ position, errorCode: null }),
+        (err) => resolve({ position: null, errorCode: err.code }),
+        // A phone's first GPS fix (cold start) can genuinely take 15-20s, especially indoors —
+        // the old 10s timeout was cutting that off and mislabeling it as "permission denied".
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+      );
+    });
+  }
+
+  function messageForLocationError(errorCode: number | null): string {
+    if (errorCode === 1) return "Location permission denied — enable location access for this site and try again.";
+    if (errorCode === 3) return "Getting your location is taking too long. Try again, ideally outdoors or near a window.";
+    if (errorCode === 2) return "Couldn't get your location. Check your GPS/network and try again.";
+    return "Location permission denied.";
+  }
+
   async function startTracking() {
     setError(null);
     if (!("geolocation" in navigator)) {
@@ -115,19 +135,29 @@ export function SosTracker() {
       return;
     }
 
-    const getPosition = lowPower
-      ? getSinglePositionLowPower
-      : () =>
-          new Promise<GeolocationPosition | null>((resolve) => {
-            navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), { enableHighAccuracy: true, timeout: 10000 });
-          });
-
-    const position = await getPosition();
-    if (!position) {
-      setError("Location permission denied.");
-      return;
+    setStarting(true);
+    try {
+      if (lowPower) {
+        const position = await getSinglePositionLowPower();
+        if (!position) {
+          setError("Couldn't get your location. Check your GPS/network and try again.");
+          return;
+        }
+        await submitStart(position);
+      } else {
+        const { position, errorCode } = await getPositionWithReason();
+        if (!position) {
+          setError(messageForLocationError(errorCode));
+          return;
+        }
+        await submitStart(position);
+      }
+    } finally {
+      setStarting(false);
     }
+  }
 
+  async function submitStart(position: GeolocationPosition) {
     try {
       const res = await fetch("/api/sos", {
         method: "POST",
@@ -240,10 +270,21 @@ export function SosTracker() {
       {!alertId ? (
         <button
           onClick={startTracking}
+          disabled={starting}
           className="btn-accent"
-          style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem", padding: "0.7rem 1.1rem", borderRadius: "0.75rem", fontWeight: 600, border: "none", cursor: "pointer" }}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            padding: "0.7rem 1.1rem",
+            borderRadius: "0.75rem",
+            fontWeight: 600,
+            border: "none",
+            cursor: starting ? "wait" : "pointer",
+            opacity: starting ? 0.7 : 1,
+          }}
         >
-          <Radio size={16} /> Start Tracking
+          <Radio size={16} /> {starting ? "Getting your location..." : "Start Tracking"}
         </button>
       ) : (
         <button
