@@ -26,6 +26,7 @@ export function ChatbotWidget() {
     e.preventDefault();
     if (!input.trim()) return;
     const text = input.trim();
+    const history = messages.slice(-10);
     setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
     setLoading(true);
@@ -38,13 +39,20 @@ export function ChatbotWidget() {
           query: text,
           externalUserId: externalUserIdRef.current,
           sessionId: sessionIdRef.current ?? undefined,
+          history,
         }),
+        signal: AbortSignal.timeout(45000),
       });
       const data = await res.json();
       if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
-    } catch {
-      setMessages((m) => [...m, { role: "bot", text: "Sorry, something went wrong." }]);
+    } catch (err) {
+      console.error("Tulip Bot request failed:", err);
+      const timedOut = err instanceof DOMException && err.name === "TimeoutError";
+      setMessages((m) => [
+        ...m,
+        { role: "bot", text: timedOut ? "Tulip Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+      ]);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,11 @@ import { z } from "zod";
 import { jsonError } from "@/lib/api";
 import { freeTextSchema, safeParse } from "@/lib/validation";
 
+// on-demand.io's own session memory has proven unreliable in practice, so instead of trusting it
+// to recall earlier turns, the caller sends recent turns explicitly and this route folds them into
+// the query text itself — that way "does it remember" no longer depends on their infra.
+export const maxDuration = 60;
+
 const BASE_URL = "https://api.on-demand.io/chat/v1";
 
 // Same agent chain as the reference script — kept as server-side constants, not something a
@@ -22,6 +27,24 @@ const AGENT_IDS = [
 ];
 const ENDPOINT_ID = "predefined-gemini-3.5-flash-lite";
 
+const BUSY_MESSAGE = "Tulip Bot is a bit busy right now — please try again in a minute.";
+
+// on-demand.io's rate-limit errors have shown up both as a flat non-2xx response and as an event
+// inside the SSE stream, and the exact JSON shape isn't guaranteed — so this matches on the
+// wording rather than a specific field, to catch it either way.
+function looksLikeRateLimit(text: string): boolean {
+  return /rate.?limit|too many requests|TPM limit/i.test(text);
+}
+
+const historyTurnSchema = z.object({
+  role: z.enum(["user", "bot"]),
+  text: freeTextSchema(2000),
+});
+
+// Only the most recent turns are folded into the query — enough for real continuity without the
+// prompt growing without bound across a long conversation.
+const MAX_HISTORY_TURNS = 10;
+
 const bodySchema = z.object({
   query: freeTextSchema(1000),
   // Optional: lets a caller keep the same identity across multiple calls (on-demand.io's
@@ -31,7 +54,20 @@ const bodySchema = z.object({
   // chat widget) keeps context between messages, instead of the reference script's behavior of
   // starting a brand-new session — and therefore forgetting everything — on every single call.
   sessionId: z.string().trim().max(200).optional(),
+  // Prior turns of this conversation, oldest first. Sent explicitly because relying on
+  // on-demand.io's own session memory has proven unreliable — folding history into the query
+  // ourselves guarantees the agent actually sees it.
+  history: z.array(historyTurnSchema).max(MAX_HISTORY_TURNS).optional(),
 });
+
+function buildContextualQuery(history: { role: "user" | "bot"; text: string }[] | undefined, query: string): string {
+  if (!history || history.length === 0) return query;
+  const transcript = history
+    .slice(-MAX_HISTORY_TURNS)
+    .map((turn) => `${turn.role === "user" ? "User" : "Tulip Bot"}: ${turn.text}`)
+    .join("\n");
+  return `Here is the conversation so far, for context:\n${transcript}\n\nNow answer the user's latest message:\n${query}`;
+}
 
 interface CreateSessionResponse {
   data: {
@@ -72,8 +108,9 @@ export async function POST(request: Request) {
   const apiKey = process.env.ON_DEMAND_API_KEY;
   if (!apiKey) return jsonError("Chat isn't configured on this server yet.", 503);
 
-  const { query, externalUserId, sessionId: existingSessionId } = parsed.data;
+  const { query, externalUserId, sessionId: existingSessionId, history } = parsed.data;
   const userId = externalUserId ?? randomUUID();
+  const contextualQuery = buildContextualQuery(history, query);
 
   const sessionId = existingSessionId ?? (await createChatSession(apiKey, userId));
   if (!sessionId) return jsonError("Couldn't start a chat session.", 502);
@@ -85,7 +122,7 @@ export async function POST(request: Request) {
       headers: { apikey: apiKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         endpointId: ENDPOINT_ID,
-        query,
+        query: contextualQuery,
         agentIds: AGENT_IDS,
         skillNames: [],
         responseMode: "stream",
@@ -107,15 +144,8 @@ export async function POST(request: Request) {
 
   if (!queryRes.ok || !queryRes.body) {
     const text = await queryRes.text().catch(() => "");
-    const errorCode = (() => {
-      try {
-        return JSON.parse(text)?.errorCode as string | undefined;
-      } catch {
-        return undefined;
-      }
-    })();
-    if (errorCode === "rate_limit_exceeded") {
-      return jsonError("Tulip Bot is a bit busy right now — please try again in a minute.", 429);
+    if (looksLikeRateLimit(text)) {
+      return jsonError(BUSY_MESSAGE, 429);
     }
     return jsonError("Sorry, Tulip Bot couldn't respond right now. Please try again shortly.", 502);
   }
@@ -131,6 +161,7 @@ export async function POST(request: Request) {
   let fullAnswer = "";
   let finalSessionId = sessionId;
   let finalMessageId = "";
+  let streamRateLimited = false;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -143,17 +174,30 @@ export async function POST(request: Request) {
       if (!line.startsWith("data:")) continue;
       const dataStr = line.slice(5).trim();
       if (dataStr === "[DONE]") continue;
+      if (looksLikeRateLimit(dataStr)) {
+        streamRateLimited = true;
+        continue;
+      }
       try {
         const event = JSON.parse(dataStr);
         if (event.eventType === "fulfillment") {
           if (event.answer) fullAnswer += event.answer;
           if (event.sessionId) finalSessionId = event.sessionId;
           if (event.messageId) finalMessageId = event.messageId;
+        } else if (event.eventType === "error" || event.error) {
+          streamRateLimited = streamRateLimited || looksLikeRateLimit(JSON.stringify(event));
         }
       } catch {
         /* an incomplete/malformed SSE chunk — safe to skip */
       }
     }
+  }
+
+  if (!fullAnswer.trim() && streamRateLimited) {
+    return jsonError(BUSY_MESSAGE, 429);
+  }
+  if (!fullAnswer.trim()) {
+    return jsonError("Sorry, Tulip Bot couldn't respond right now. Please try again shortly.", 502);
   }
 
   return NextResponse.json({ sessionId: finalSessionId, messageId: finalMessageId, answer: fullAnswer });
