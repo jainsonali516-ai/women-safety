@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { MessageSquareText, X, Send } from "lucide-react";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 
@@ -13,10 +13,14 @@ export function ChatbotWidget() {
   const { active: lowPower } = useEmergencyMode();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Ask me about an upcoming trip and I'll forecast the safest, fastest mode for that time." },
+    { role: "bot", text: "Ask me anything." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Kept across the whole conversation (not per-message) so on-demand.io's session remembers
+  // earlier turns instead of starting fresh every time — generated once, lazily, on first send.
+  const sessionIdRef = useRef<string | null>(null);
+  const externalUserIdRef = useRef<string | null>(null);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -26,13 +30,19 @@ export function ChatbotWidget() {
     setInput("");
     setLoading(true);
     try {
-      const res = await fetch("/api/bot", {
+      if (!externalUserIdRef.current) externalUserIdRef.current = crypto.randomUUID();
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          query: text,
+          externalUserId: externalUserIdRef.current,
+          sessionId: sessionIdRef.current ?? undefined,
+        }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.reply : data.error }]);
+      if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
+      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch {
       setMessages((m) => [...m, { role: "bot", text: "Sorry, something went wrong." }]);
     } finally {
@@ -126,7 +136,7 @@ export function ChatbotWidget() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about a trip..."
+          placeholder="Ask Tulip Bot..."
           style={{ flex: 1, padding: "0.5rem 0.7rem", borderRadius: "0.6rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)", fontSize: "0.85rem" }}
         />
         <button type="submit" className="btn-accent" style={{ padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "none", cursor: "pointer" }}>

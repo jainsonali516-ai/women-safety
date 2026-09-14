@@ -20,7 +20,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 - Address search (Photon, Komoot's free OSM-based geocoder, forward + reverse), real road-distance/duration routing (OSRM), and both safety signals (street-light density + shop/amenity foot-traffic density, both via the OSM Overpass API) — all free, no API keys or billing account required. Switched from Nominatim after finding it doesn't do prefix/type-ahead matching — searches like "noid" (mid-way through typing "Noida") or many residential sector/colony names returned nothing; Photon is built for exactly this and is biased to the Delhi NCR bounding box
 - Metro fares follow DMRC's real distance slabs (₹10–₹60); DTC/Cluster bus fares follow the concession toggle — ₹0 with Pink Saheli active, or a standard ₹5–₹25 distance fare with it off; E-Rickshaw feeder fare (₹10–₹20 flat) shows up for short (≤3 km) trips
 - Uber & Ola deep links (native app URI + web fallback) pre-filled with pickup/drop-off coordinates
-- Tulip Bot: rule-based peak-hour commute forecasting, now also as a floating collapsible widget on every page, with an optional Claude-powered natural-language layer and optional rally/road-closure warnings
+- Tulip Bot: a general chat assistant (floating widget on every page, plus a full `/bot` page), backed by on-demand.io's multi-agent chat API (`/api/chat`) — session id is kept for the whole conversation so it remembers earlier turns instead of starting fresh on every message
 - Security: strict input validation (zod, including a stricter Indian-mobile regex) on every route, CSP/HSTS/X-Frame-Options headers, all third-party API calls proxied server-side so keys never reach the browser
 - Metro/Bus cards are upfront that **exact line, platform, and interchange details aren't available** — Delhi Metro/DTC don't publish a public real-time feed for this, so the app links to the official DMRC/DTC app instead of guessing (a wrong "board towards X" instruction in a safety app is worse than no instruction)
 - The map shows a single overall-route polyline with one uniform safety glow matching the route's risk badge (an earlier per-stretch "Safety Zone Breakdown" was tried and then removed by request in favor of this simpler, single overall score)
@@ -33,8 +33,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 | Feature | Needs |
 |---|---|
 | Automatic SMS delivery for "Share My Location" (instead of the manual SMS/WhatsApp fallback) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
-| Natural-language Tulip Bot replies | `ANTHROPIC_API_KEY` (falls back to rule-based replies without it) |
-| Rally/protest/road-closure warnings in Tulip Bot | `NEWS_API_KEY` (skipped without it — no warning shown, not a fabricated one) |
+| Tulip Bot chat replies | `ON_DEMAND_API_KEY` (without it, `/api/chat` returns a clear "not configured" error rather than crashing) |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light + shop/amenity density as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
 
@@ -84,5 +83,6 @@ Contact phone numbers rely on Supabase's infrastructure-level encryption at rest
 
 Auth: `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, `/api/auth/me` (guest vs signed-in check for client components)
 Safety: `/api/contacts`, `/api/contacts/:id`, `/api/location/share`, `/api/reminders`, `/api/reminders/:id`, `/api/sos*`, `/api/incidents*`
-Journey: `/api/geocode`, `/api/directions`, `/api/routes/plan`, `/api/bot`
+Journey: `/api/geocode`, `/api/directions`, `/api/routes/plan`, `/api/route-amenities`
+Chat: `/api/chat`
 `/api/health`

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Send } from "lucide-react";
 
@@ -11,13 +11,14 @@ interface ChatMessage {
 
 export default function BotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      role: "bot",
-      text: "Hi, I'm Tulip Bot. Tell me about an upcoming trip — e.g. \"Thursday 8:30 AM from Noida Sector 62 to Cyber Hub, Gurgaon\" — and I'll forecast the safest, fastest mode for that time.",
-    },
+    { role: "bot", text: "Hi, I'm Tulip Bot. Ask me anything." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  // Kept for the whole conversation so on-demand.io's session remembers earlier turns instead
+  // of starting fresh on every message — same pattern as the floating widget version.
+  const sessionIdRef = useRef<string | null>(null);
+  const externalUserIdRef = useRef<string | null>(null);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -27,13 +28,19 @@ export default function BotPage() {
     setInput("");
     setLoading(true);
     try {
-      const res = await fetch("/api/bot", {
+      if (!externalUserIdRef.current) externalUserIdRef.current = crypto.randomUUID();
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMessage }),
+        body: JSON.stringify({
+          query: userMessage,
+          externalUserId: externalUserIdRef.current,
+          sessionId: sessionIdRef.current ?? undefined,
+        }),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.reply : data.error }]);
+      if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
+      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch {
       setMessages((m) => [...m, { role: "bot", text: "Sorry, something went wrong." }]);
     } finally {
@@ -71,7 +78,7 @@ export default function BotPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about an upcoming trip..."
+            placeholder="Ask Tulip Bot..."
             style={{ flex: 1, padding: "0.7rem 0.9rem", borderRadius: "0.7rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)" }}
           />
           <button type="submit" className="btn-accent" style={{ padding: "0.7rem 1rem", borderRadius: "0.7rem", border: "none", cursor: "pointer" }}>
