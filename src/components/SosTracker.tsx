@@ -26,6 +26,12 @@ export function SosTracker() {
   const watchIdRef = useRef<number | null>(null);
   const lowPowerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const alertIdRef = useRef<string | null>(null);
+  // Mobile browsers throttle or fully pause GPS watching once the screen locks or the tab goes
+  // to the background — that's why a tracking session can silently stop updating even though it
+  // still shows "Active". The Wake Lock API keeps the screen on while tracking, which is the only
+  // thing a website (not a native app) can do to reduce that throttling — it doesn't help once the
+  // user switches to a different app, only screen-lock.
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
   useEffect(() => {
     function updateOnlineStatus() {
@@ -100,7 +106,35 @@ export function SosTracker() {
     watchIdRef.current = null;
     if (lowPowerIntervalRef.current !== null) clearInterval(lowPowerIntervalRef.current);
     lowPowerIntervalRef.current = null;
+    releaseWakeLock();
   }
+
+  async function acquireWakeLock() {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request("screen");
+    } catch {
+      /* not fatal — e.g. denied, or battery saver is on. Tracking still runs, just more likely to be throttled. */
+    }
+  }
+
+  function releaseWakeLock() {
+    wakeLockRef.current?.release().catch(() => {});
+    wakeLockRef.current = null;
+  }
+
+  // A wake lock is automatically released the moment the tab is hidden, and browsers don't
+  // re-acquire it for you — this re-requests it the moment the user comes back to the tab, so
+  // switching apps briefly and returning doesn't leave tracking without a wake lock indefinitely.
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible" && alertIdRef.current && !lowPower) {
+        acquireWakeLock();
+      }
+    }
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [lowPower]);
 
   function beginContinuousWatch(id: string) {
     watchIdRef.current = navigator.geolocation.watchPosition(
@@ -121,7 +155,10 @@ export function SosTracker() {
 
   function beginTracking(id: string) {
     if (lowPower) beginLowPowerPolling(id);
-    else beginContinuousWatch(id);
+    else {
+      beginContinuousWatch(id);
+      acquireWakeLock(); // low-power mode already polls infrequently by design, so it doesn't need the screen kept on
+    }
   }
 
   // If low-power mode toggles on/off mid-tracking, switch strategy without stopping the alert.
@@ -336,6 +373,14 @@ export function SosTracker() {
         >
           <Square size={16} /> Stop Tracking
         </button>
+      )}
+
+      {alertId && !lowPower && (
+        <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)", marginTop: "0.6rem" }}>
+          Keep this tab open and your screen on for location updates to keep flowing — phones pause
+          GPS in background tabs and when the screen locks, so a stale &quot;last updated&quot; time
+          usually means one of those, not a technical failure.
+        </p>
       )}
 
       {alertId && (
