@@ -187,12 +187,13 @@ function ContactsManager() {
                   </span>
                 </span>
                 <span style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
-                  <a href={`tel:${c.phone}`} style={iconBtn}>
+                  <a href={`tel:${c.phone}`} className="icon-btn" style={iconBtn}>
                     <Phone size={16} />
                   </a>
                   <button
                     onClick={() => deleteContact(c.id)}
                     disabled={deletingContactId === c.id}
+                    className="icon-btn"
                     style={{ ...iconBtn, opacity: deletingContactId === c.id ? 0.5 : 1, cursor: deletingContactId === c.id ? "wait" : "pointer" }}
                   >
                     <Trash2 size={16} />
@@ -238,6 +239,7 @@ function ContactsManager() {
                   <button
                     onClick={() => toggleReminder(r)}
                     disabled={busyReminderId === r.id}
+                    className="icon-btn"
                     style={{ ...iconBtn, color: r.enabled ? "var(--accent-strong)" : "var(--foreground-muted)", opacity: busyReminderId === r.id ? 0.5 : 1, cursor: busyReminderId === r.id ? "wait" : "pointer" }}
                   >
                     {r.enabled ? "On" : "Off"}
@@ -245,6 +247,7 @@ function ContactsManager() {
                   <button
                     onClick={() => deleteReminder(r.id)}
                     disabled={busyReminderId === r.id}
+                    className="icon-btn"
                     style={{ ...iconBtn, opacity: busyReminderId === r.id ? 0.5 : 1, cursor: busyReminderId === r.id ? "wait" : "pointer" }}
                   >
                     <Trash2 size={16} />

@@ -358,16 +358,13 @@ export function SosTracker() {
       ) : (
         <button
           onClick={stopTracking}
+          className="btn-secondary"
           style={{
             display: "inline-flex",
             alignItems: "center",
             gap: "0.5rem",
             padding: "0.7rem 1.1rem",
-            borderRadius: "0.75rem",
             fontWeight: 600,
-            border: "1px solid var(--border)",
-            background: "var(--surface)",
-            color: "var(--foreground)",
             cursor: "pointer",
           }}
         >
@@ -420,7 +417,8 @@ export function SosTracker() {
                   <span style={{ display: "flex", gap: "0.4rem" }}>
                     <a
                       href={`sms:${c.phone}?body=${encodeURIComponent(trackingMessage(alertId))}`}
-                      style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem", borderRadius: "0.5rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+                      className="icon-btn"
+                      style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem" }}
                     >
                       Text via SMS
                     </a>
@@ -452,22 +450,20 @@ export function SosTracker() {
               href={trackingUrl(alertId)}
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: "0.8rem", padding: "0.45rem 0.75rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+              className="icon-btn"
+              style={{ fontSize: "0.8rem", padding: "0.45rem 0.75rem" }}
             >
               Open link
             </a>
             <button
               onClick={copyTrackingLink}
+              className="icon-btn"
               style={{
                 display: "flex",
                 alignItems: "center",
                 gap: "0.35rem",
                 fontSize: "0.8rem",
                 padding: "0.45rem 0.75rem",
-                borderRadius: "0.6rem",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                color: "var(--foreground)",
                 cursor: "pointer",
               }}
             >
