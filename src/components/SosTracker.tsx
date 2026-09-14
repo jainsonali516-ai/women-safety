@@ -109,16 +109,25 @@ export function SosTracker() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when the power mode itself flips
   }, [lowPower]);
 
-  function getPositionWithReason(): Promise<{ position: GeolocationPosition | null; errorCode: number | null }> {
+  function getPositionOnce(options: PositionOptions): Promise<{ position: GeolocationPosition | null; errorCode: number | null }> {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (position) => resolve({ position, errorCode: null }),
         (err) => resolve({ position: null, errorCode: err.code }),
-        // A phone's first GPS fix (cold start) can genuinely take 15-20s, especially indoors —
-        // the old 10s timeout was cutting that off and mislabeling it as "permission denied".
-        { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 }
+        options
       );
     });
+  }
+
+  async function getPositionWithReason(): Promise<{ position: GeolocationPosition | null; errorCode: number | null }> {
+    // A phone's first *high-accuracy* GPS fix (cold start) can genuinely take 15-20s, especially
+    // indoors — that wait was making "Start Tracking" feel unresponsive. The continuous watch that
+    // begins right after this already upgrades to a precise fix within seconds, so the very first
+    // ping doesn't need to be perfect: try a fast, coarse (network/cell-based) fix first, and only
+    // fall back to the slow high-accuracy request if that genuinely fails.
+    const fast = await getPositionOnce({ enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 });
+    if (fast.position) return fast;
+    return getPositionOnce({ enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 });
   }
 
   function messageForLocationError(errorCode: number | null): string {
