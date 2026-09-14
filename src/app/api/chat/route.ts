@@ -107,7 +107,17 @@ export async function POST(request: Request) {
 
   if (!queryRes.ok || !queryRes.body) {
     const text = await queryRes.text().catch(() => "");
-    return jsonError(`Chat service error: ${text || queryRes.status}`, 502);
+    const errorCode = (() => {
+      try {
+        return JSON.parse(text)?.errorCode as string | undefined;
+      } catch {
+        return undefined;
+      }
+    })();
+    if (errorCode === "rate_limit_exceeded") {
+      return jsonError("Tulip Bot is a bit busy right now — please try again in a minute.", 429);
+    }
+    return jsonError("Sorry, Tulip Bot couldn't respond right now. Please try again shortly.", 502);
   }
 
   // on-demand.io streams Server-Sent Events; this buffers them into one assembled answer rather
