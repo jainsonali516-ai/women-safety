@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
 
 /** Shared login/signup form + submit logic — used standalone on the full /auth page and inside
@@ -100,6 +101,11 @@ export function AuthForm({ onSuccess }: { onSuccess?: () => void }) {
       <button type="submit" disabled={loading} className="btn-accent" style={buttonStyle}>
         {loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}
       </button>
+      {mode === "login" && (
+        <Link href="/auth/forgot" style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", textAlign: "center" }}>
+          Forgot password?
+        </Link>
+      )}
       <button
         type="button"
         onClick={() => {

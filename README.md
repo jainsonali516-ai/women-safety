@@ -34,6 +34,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 |---|---|
 | Automatic SMS delivery for "Share My Location" (instead of the manual SMS/WhatsApp fallback) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
 | Tulip Bot chat replies | `ON_DEMAND_API_KEY` (without it, `/api/chat` returns a clear "not configured" error rather than crashing) |
+| Forgot-password reset emails | `RESEND_API_KEY` (without it, `/api/auth/forgot-password` still responds normally, but no email actually goes out — check server logs). `RESEND_FROM_EMAIL` is optional and only needed once a custom domain is verified in Resend; until then the shared sandbox sender can only deliver to the email the Resend account itself was signed up with |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light + shop/amenity density as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
 
