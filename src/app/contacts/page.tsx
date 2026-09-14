@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { RequireAuthGate } from "@/components/RequireAuthGate";
 import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
+import { TulipBloom } from "@/components/TulipBloom";
 
 interface Contact {
   id: string;
@@ -160,9 +161,22 @@ function ContactsManager() {
   return (
     <>
       <section className="card" style={{ padding: "1.25rem" }}>
-          <h2 style={{ fontWeight: 700, marginBottom: "1rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Users size={18} style={{ color: "var(--accent-strong)" }} /> Trusted Contacts
-          </h2>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", marginBottom: "1rem" }}>
+            <TulipBloom
+              size={40}
+              openness={1}
+              petals={Math.max(3, Math.min(contacts.length, 10))}
+              title={`Your Trusted Circle — ${contacts.length} contact${contacts.length === 1 ? "" : "s"}`}
+            />
+            <div>
+              <h2 style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.1rem" }}>
+                <Users size={18} style={{ color: "var(--accent-strong)" }} /> Your Trusted Circle
+              </h2>
+              <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)" }}>
+                Every contact you add is another petal of protection around you.
+              </p>
+            </div>
+          </div>
           <form onSubmit={addContact} className="mobile-stack" style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
             <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="field" style={inputStyle} />
             <input placeholder="+91 phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="field" style={inputStyle} />

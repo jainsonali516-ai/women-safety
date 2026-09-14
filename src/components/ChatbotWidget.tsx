@@ -1,8 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { MessageSquareText, X, Send } from "lucide-react";
+import { X, Send } from "lucide-react";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
+import { TulipBloom } from "@/components/TulipBloom";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -82,7 +83,7 @@ export function ChatbotWidget() {
           zIndex: 2000,
         }}
       >
-        <MessageSquareText size={22} />
+        <TulipBloom size={26} openness={1} color="white" centerColor="white" title="Open Tulip Bot" />
       </button>
     );
   }
@@ -114,7 +115,10 @@ export function ChatbotWidget() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem", borderBottom: "1px solid var(--border)" }}>
-        <strong style={{ fontSize: "0.9rem" }}>Tulip Bot</strong>
+        <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+          <TulipBloom size={18} openness={1} animated={loading} title="Tulip Bot" />
+          <strong style={{ fontSize: "0.9rem" }}>Tulip Bot</strong>
+        </span>
         <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
           <X size={18} />
         </button>
@@ -138,7 +142,11 @@ export function ChatbotWidget() {
             {m.text}
           </div>
         ))}
-        {loading && <div style={{ fontSize: "0.75rem", color: "var(--foreground-muted)" }}>Thinking...</div>}
+        {loading && (
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--foreground-muted)" }}>
+            <TulipBloom size={16} openness={0.6} animated title="Thinking" /> Thinking...
+          </div>
+        )}
       </div>
       <form onSubmit={send} style={{ display: "flex", gap: "0.4rem", padding: "0.7rem", borderTop: "1px solid var(--border)" }}>
         <input

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Radio, WifiOff, Square, BatteryLow, Copy, Check, MessageCircle, Share2, UserPlus } from "lucide-react";
 import { enqueuePing, flushQueue, readQueue } from "@/lib/offlineQueue";
 import { useEmergencyMode, getSinglePositionLowPower } from "@/components/EmergencyModeProvider";
+import { TulipBloom } from "@/components/TulipBloom";
 
 const LOW_POWER_POLL_INTERVAL_MS = 5 * 60 * 1000; // one-shot fix every 5 min instead of continuous GPS
 
@@ -23,6 +24,9 @@ export function SosTracker() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [copied, setCopied] = useState(false);
   const [starting, setStarting] = useState(false);
+  // The one deliberate motion moment: a brief bloom-open confirmation right after tracking ends
+  // safely, instead of the card just silently disappearing back to "Start Tracking".
+  const [justArrived, setJustArrived] = useState(false);
   const watchIdRef = useRef<number | null>(null);
   const lowPowerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const alertIdRef = useRef<string | null>(null);
@@ -286,6 +290,8 @@ export function SosTracker() {
     alertIdRef.current = null;
     setContacts([]);
     setCachedCount(readQueue().length);
+    setJustArrived(true);
+    setTimeout(() => setJustArrived(false), 4000);
   }
 
   return (
@@ -335,6 +341,25 @@ export function SosTracker() {
       )}
 
       {error && <p style={{ fontSize: "0.85rem", color: "#ef4444", marginBottom: "0.6rem" }}>{error}</p>}
+
+      {justArrived && (
+        <div
+          className="tulip-bloom-open"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.6rem",
+            padding: "0.75rem 0.9rem",
+            borderRadius: "0.9rem",
+            background: "color-mix(in srgb, var(--accent-strong) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent-strong) 35%, transparent)",
+            marginBottom: "0.9rem",
+          }}
+        >
+          <TulipBloom size={28} openness={1} color="var(--accent-strong)" centerColor="var(--accent-strong)" title="Arrived safely" />
+          <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--accent-strong)" }}>Tracking ended — glad you made it safely.</span>
+        </div>
+      )}
 
       {!alertId ? (
         <button

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Fraunces, Sora } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
@@ -9,9 +9,18 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { EmergencyModeBanner } from "@/components/EmergencyModeBanner";
 import { AuthProvider } from "@/components/AuthProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Sora: geometric sans for all UI/data text — neutral and legible so the flower motif doesn't
+// compete with dense transit info. Fraunces: serif display for headlines — its curved, organic
+// letterforms are the typographic echo of the tulip's petal shapes.
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  style: ["normal", "italic"],
 });
 
 const geistMono = Geist_Mono({
@@ -40,7 +49,7 @@ const themeInitScript = `
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${sora.variable} ${fraunces.variable} ${geistMono.variable}`} suppressHydrationWarning>
       <body suppressHydrationWarning>
         <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <ThemeProvider>

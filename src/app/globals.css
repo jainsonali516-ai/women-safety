@@ -4,56 +4,68 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
+  /* Tulip palette — the flower itself, not a generic app palette. Petal coral is the one accent
+     used for primary actions/SOS across both themes; leaf teal is trust/verified; pollen amber is
+     caution. Only the surfaces (ivory vs. night aubergine) change between light and dark. */
+  --tulip-petal-coral: #e64f6c;
+  --tulip-aubergine-deep: #1b1420;
+  --tulip-aubergine-surface: #241a2b;
+  --tulip-leaf-teal: #2f7a6e;
+  --tulip-leaf-teal-light: #8fc9bc;
+  --tulip-pollen-amber: #e8a33d;
+  --tulip-ivory: #fbf6f1;
+
   /* Garden (light) theme */
-  --garden-green: #378261;
-  --garden-pistachio: #8bc46c;
-  --garden-pink: #e378b0;
-  --garden-gold: #eab308;
-  --garden-sky: #0ea5e9;
-  --garden-white: #ffffff;
+  --garden-green: var(--tulip-leaf-teal);
+  --garden-pistachio: var(--tulip-leaf-teal-light);
+  --garden-pink: var(--tulip-petal-coral);
+  --garden-gold: var(--tulip-pollen-amber);
+  --garden-sky: var(--tulip-leaf-teal-light);
+  --garden-white: var(--tulip-ivory);
 
   /* Galactic (dark) theme */
-  --galactic-deep: #0b0614;
-  --galactic-nebula: #1b0c37;
-  --galactic-neon-pink: #ff2fb2;
-  --galactic-violet: #7a1fd1;
-  --galactic-starlight: #f8fafc;
-  --galactic-jet: #05030a;
+  --galactic-deep: var(--tulip-aubergine-deep);
+  --galactic-nebula: var(--tulip-aubergine-surface);
+  --galactic-neon-pink: var(--tulip-petal-coral);
+  --galactic-violet: var(--tulip-leaf-teal);
+  --galactic-starlight: var(--tulip-ivory);
+  --galactic-jet: #0f0a14;
 
-  /* Dreamy pastel-sunset gradient with a soft pink ambient glow, lavender-blush to misty-rose. */
+  /* Ivory ground with a soft coral/amber ambient glow — petal-white space, not a generic pastel. */
   --background:
-    radial-gradient(circle at 22% 18%, rgba(255, 182, 213, 0.4), transparent 45%),
-    linear-gradient(160deg, #fff0f5 0%, #ffe4e1 100%);
-  --background-solid: #fff5f8;
-  --surface: var(--garden-white);
-  --surface-glass: rgba(255, 255, 255, 0.6);
-  --foreground: #143024;
-  --foreground-muted: #4b6358;
-  --accent: var(--garden-pink);
-  --accent-strong: var(--garden-green);
-  --border: #d8ead9;
+    radial-gradient(circle at 20% 15%, rgba(230, 79, 108, 0.10), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(232, 163, 61, 0.10), transparent 48%),
+    linear-gradient(160deg, #fffdfb 0%, var(--tulip-ivory) 100%);
+  --background-solid: var(--tulip-ivory);
+  --surface: #ffffff;
+  --surface-glass: rgba(255, 255, 255, 0.66);
+  --foreground: var(--tulip-aubergine-deep);
+  --foreground-muted: #6b5a68;
+  --accent: var(--tulip-petal-coral);
+  --accent-strong: var(--tulip-leaf-teal);
+  --border: #f0dbdf;
   --card-glow-border: transparent;
-  --card-border-pink: rgba(255, 105, 180, 0.4);
-  --card-shadow-pink: rgba(255, 105, 180, 0.18);
+  --card-border-pink: rgba(230, 79, 108, 0.28);
+  --card-shadow-pink: rgba(230, 79, 108, 0.14);
 }
 
 [data-theme="dark"] {
-  /* Deep midnight berry with soft pink ambient radial glows. */
+  /* Deep stem/night aubergine with soft coral + amber ambient glows. */
   --background:
-    radial-gradient(circle at 20% 20%, rgba(255, 119, 188, 0.16), transparent 42%),
-    radial-gradient(circle at 80% 70%, rgba(217, 70, 239, 0.13), transparent 48%),
-    radial-gradient(circle at top, #2d124d 0%, #1a0b2e 65%, #0d061a 100%);
-  --background-solid: var(--galactic-deep);
-  --surface: var(--galactic-nebula);
-  --surface-glass: rgba(27, 12, 55, 0.55);
-  --foreground: var(--galactic-starlight);
-  --foreground-muted: #c9b8e8;
-  --accent: var(--galactic-neon-pink);
-  --accent-strong: var(--galactic-violet);
-  --border: #33195c;
-  --card-glow-border: rgba(255, 47, 178, 0.35);
-  --card-border-pink: rgba(255, 47, 178, 0.4);
-  --card-shadow-pink: rgba(255, 47, 178, 0.22);
+    radial-gradient(circle at 20% 20%, rgba(230, 79, 108, 0.16), transparent 42%),
+    radial-gradient(circle at 80% 70%, rgba(232, 163, 61, 0.10), transparent 48%),
+    radial-gradient(circle at top, var(--tulip-aubergine-surface) 0%, var(--tulip-aubergine-deep) 65%, #0f0a14 100%);
+  --background-solid: var(--tulip-aubergine-deep);
+  --surface: var(--tulip-aubergine-surface);
+  --surface-glass: rgba(36, 26, 43, 0.6);
+  --foreground: var(--tulip-ivory);
+  --foreground-muted: #c7b3c0;
+  --accent: var(--tulip-petal-coral);
+  --accent-strong: var(--tulip-leaf-teal-light);
+  --border: #3a2b40;
+  --card-glow-border: rgba(230, 79, 108, 0.35);
+  --card-border-pink: rgba(230, 79, 108, 0.4);
+  --card-shadow-pink: rgba(230, 79, 108, 0.22);
 }
 
 html {
@@ -77,7 +89,7 @@ body {
   flex-direction: column;
   color: var(--foreground);
   background: var(--background-solid);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sora), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s ease;
@@ -87,11 +99,13 @@ body {
   box-sizing: border-box;
 }
 
-/* Tighter tracking + heavier weight on headings reads as more deliberate/designed than the
-   browser's flat default — small change, disproportionate effect on how "finished" the app feels. */
+/* Fraunces on headlines — curved, organic letterforms as the typographic echo of petal shapes.
+   Sora (the body font) stays on every dense/data screen so the brand voice doesn't compete with
+   transit info; this is the one deliberate exception, reserved for headline-weight text only. */
 h1, h2, h3 {
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   line-height: 1.15;
 }
 
@@ -100,6 +114,40 @@ h1, h2, h3 {
 .tulip-mono {
   font-family: var(--font-geist-mono), ui-monospace, "SF Mono", Consolas, monospace;
   font-variant-numeric: tabular-nums;
+}
+
+/* The slow petal-unfurl breathing loop used for TulipBloom's "thinking"/loading state — a gentle
+   scale pulse, not a spin, so it reads as organic rather than a generic spinner. */
+@keyframes tulip-bloom-breathe {
+  0%, 100% { transform: scale(0.85) rotate(0deg); opacity: 0.85; }
+  50% { transform: scale(1.05) rotate(8deg); opacity: 1; }
+}
+
+.tulip-bloom-breathe {
+  animation: tulip-bloom-breathe 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tulip-bloom-breathe {
+    animation: none;
+  }
+}
+
+/* The one deliberate motion moment in the app: a full bloom unfurl on safe arrival. */
+@keyframes tulip-bloom-open {
+  0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(4deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+.tulip-bloom-open {
+  animation: tulip-bloom-open 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tulip-bloom-open {
+    animation: none;
+  }
 }
 
 a {

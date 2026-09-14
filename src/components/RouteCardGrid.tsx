@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Clock, IndianRupee, Navigation, Shield, AlertTriangle, ExternalLink } from "lucide-react";
+import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle, ExternalLink } from "lucide-react";
 import { RISK_TIER_COLOR } from "@/lib/riskTier";
+import { TulipBloom } from "@/components/TulipBloom";
 
 export interface RouteOption {
   mode: string;
@@ -74,8 +75,15 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
               <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                 <IndianRupee size={14} /> {opt.fare_inr}
               </span>
-              <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                <Shield size={14} /> Safety {opt.safety_score}
+              <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }} title="A more open bloom means a higher safety score">
+                <TulipBloom
+                  size={18}
+                  openness={opt.safety_score / 100}
+                  color={tierStyle.bg}
+                  centerColor={tierStyle.bg}
+                  title={`Safety score ${opt.safety_score} of 100`}
+                />
+                Safety {opt.safety_score}
               </span>
             </div>
 
