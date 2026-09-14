@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Radio, WifiOff, Square, BatteryLow, Copy, Check, MessageCircle, Share2 } from "lucide-react";
+import Link from "next/link";
+import { Radio, WifiOff, Square, BatteryLow, Copy, Check, MessageCircle, Share2, UserPlus } from "lucide-react";
 import { enqueuePing, flushQueue, readQueue } from "@/lib/offlineQueue";
 import { useEmergencyMode, getSinglePositionLowPower } from "@/components/EmergencyModeProvider";
 
@@ -145,11 +146,9 @@ export function SosTracker() {
       setAlertId(data.alert.id);
       alertIdRef.current = data.alert.id;
       beginTracking(data.alert.id);
-
-      fetch("/api/contacts")
-        .then((r) => (r.ok ? r.json() : { contacts: [] }))
-        .then((d) => setContacts(d.contacts ?? []))
-        .catch(() => {});
+      // /api/sos already looked these up (scoped to this session's user_id) to build its
+      // notified_contacts response — reusing that instead of a second /api/contacts round trip.
+      setContacts(data.notified_contacts ?? []);
     } catch {
       setError("Network error while starting tracking.");
     }
@@ -267,43 +266,36 @@ export function SosTracker() {
       )}
 
       {alertId && (
-        <div style={{ marginTop: "1rem", paddingTop: "0.9rem", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-          <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 600 }}>
-            <Share2 size={15} /> Share this so someone can actually watch your location
+        <div
+          style={{
+            marginTop: "1rem",
+            padding: "0.9rem",
+            borderRadius: "0.75rem",
+            background: "rgba(239, 68, 68, 0.1)",
+            border: "1px solid rgba(239, 68, 68, 0.35)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.6rem",
+          }}
+        >
+          <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 700, color: "#ef4444" }}>
+            <Share2 size={15} /> Notify your trusted contacts now
           </p>
           <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)" }}>
-            Send this link to a trusted contact — it opens a live map that updates automatically until you stop tracking.
+            Tracking doesn&apos;t notify anyone by itself — tap SMS or WhatsApp below to actually send each contact
+            the live link, which updates automatically until you stop tracking.
           </p>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <a
-              href={trackingUrl(alertId)}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: "0.85rem", padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
-            >
-              Open link
-            </a>
-            <button
-              onClick={copyTrackingLink}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.35rem",
-                fontSize: "0.85rem",
-                padding: "0.5rem 0.8rem",
-                borderRadius: "0.6rem",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                color: "var(--foreground)",
-                cursor: "pointer",
-              }}
-            >
-              {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
-            </button>
-          </div>
 
-          {contacts.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem", marginTop: "0.2rem" }}>
+          {contacts.length === 0 ? (
+            <div className="empty-state" style={{ background: "var(--background-solid)" }}>
+              <UserPlus size={20} />
+              No trusted contacts saved yet — add one so there&apos;s someone to notify.
+              <Link href="/contacts" style={{ fontWeight: 700, color: "var(--accent-strong)" }}>
+                Add a contact
+              </Link>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
               {contacts.map((c) => (
                 <div key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
                   <span style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>{c.name}</span>
@@ -336,6 +328,34 @@ export function SosTracker() {
               ))}
             </div>
           )}
+
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", paddingTop: "0.3rem", borderTop: "1px solid var(--border)" }}>
+            <a
+              href={trackingUrl(alertId)}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: "0.8rem", padding: "0.45rem 0.75rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
+            >
+              Open link
+            </a>
+            <button
+              onClick={copyTrackingLink}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.8rem",
+                padding: "0.45rem 0.75rem",
+                borderRadius: "0.6rem",
+                border: "1px solid var(--border)",
+                background: "var(--surface)",
+                color: "var(--foreground)",
+                cursor: "pointer",
+              }}
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
+            </button>
+          </div>
         </div>
       )}
     </div>
