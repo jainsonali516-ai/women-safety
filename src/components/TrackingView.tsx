@@ -37,6 +37,12 @@ function LiveMap({ location }: { location: TrackingLocation }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const markerLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  // The map itself finishes initializing asynchronously (leaflet is dynamically imported), so the
+  // marker-drawing effect below can run once before mapRef/markerLayerRef exist yet and silently
+  // no-op. If the coordinates never change again (a stationary or slow-moving sharer), that effect
+  // never re-fires and the dot never appears even though the map loads fine. This flag makes the
+  // marker effect also re-run the moment the map becomes ready, not just when location changes.
+  const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,6 +68,7 @@ function LiveMap({ location }: { location: TrackingLocation }) {
 
       markerLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
+      if (!cancelled) setMapReady(true);
     }
     init();
     return () => {
@@ -101,7 +108,7 @@ function LiveMap({ location }: { location: TrackingLocation }) {
       mapRef.current.panTo([location.latitude, location.longitude]);
     }
     drawMarker();
-  }, [location.latitude, location.longitude]);
+  }, [location.latitude, location.longitude, mapReady]);
 
   return <div ref={containerRef} className="tulip-map-tiles" style={{ width: "100%", height: "100%" }} />;
 }
