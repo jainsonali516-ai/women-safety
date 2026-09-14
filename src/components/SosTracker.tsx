@@ -50,6 +50,29 @@ export function SosTracker() {
     };
   }, []);
 
+  // Reopening this page (a reload, a new tab, coming back later) used to always show "Start
+  // Tracking" even while an alert was still active server-side — there was no way to get back to
+  // its share link or stop it short of letting it expire. Resume the in-progress session instead.
+  useEffect(() => {
+    async function resumeActiveTracking() {
+      try {
+        const res = await fetch("/api/sos/active");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.alert) return;
+        setAlertId(data.alert.id);
+        alertIdRef.current = data.alert.id;
+        beginTracking(data.alert.id);
+        const contactsRes = await fetch("/api/contacts");
+        if (contactsRes.ok) setContacts((await contactsRes.json()).contacts);
+      } catch {
+        /* not fatal — worst case the user just sees "Start Tracking" and can start a new one */
+      }
+    }
+    resumeActiveTracking();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only
+  }, []);
+
   async function reportPosition(id: string, latitude: number, longitude: number) {
     if (!navigator.onLine) {
       enqueuePing({ alertId: id, latitude, longitude, timestamp: Date.now() });
