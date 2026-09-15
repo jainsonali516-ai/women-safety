@@ -17,7 +17,7 @@ const FAQ: FaqCategory[] = [
       },
       {
         q: "Does the app sell or share my location data?",
-        a: "No. Tulip doesn't sell, monetize, or share your location data with advertisers or any third party.",
+        a: "No. HerLane doesn't sell, monetize, or share your location data with advertisers or any third party.",
       },
       {
         q: "Is my location history kept after a trip ends?",
@@ -34,7 +34,7 @@ const FAQ: FaqCategory[] = [
       },
       {
         q: "Does a lower score mean an area is dangerous?",
-        a: "No — it means the live signals Tulip can find (mapped lighting, nearby shops/foot traffic) are weaker there, which isn't the same as confirmed danger. OpenStreetMap's lighting data is known to be incomplete in India, so \"nothing mapped\" is treated as inconclusive, not as proof a street is unlit.",
+        a: "No — it means the live signals HerLane can find (mapped lighting, nearby shops/foot traffic) are weaker there, which isn't the same as confirmed danger. OpenStreetMap's lighting data is known to be incomplete in India, so \"nothing mapped\" is treated as inconclusive, not as proof a street is unlit.",
       },
       {
         q: "Why might the score feel different from a place I know personally?",
@@ -68,7 +68,7 @@ const FAQ: FaqCategory[] = [
     items: [
       {
         q: "What happens when my battery drops to 5% or I lose connection?",
-        a: "Tulip switches to Low Power/Offline Mode: the map and background animation unmount, continuous location polling drops to one low-accuracy fix every 5 minutes, and the app shows turn-by-turn directions and nearby help points from a local cache saved the last time you were online.",
+        a: "HerLane switches to Low Power/Offline Mode: the map and background animation unmount, continuous location polling drops to one low-accuracy fix every 5 minutes, and the app shows turn-by-turn directions and nearby help points from a local cache saved the last time you were online.",
       },
       {
         q: "How does \"Check In Now\" work without internet?",
@@ -85,14 +85,14 @@ const FAQ: FaqCategory[] = [
     items: [
       {
         q: "How is this different from sharing my location on WhatsApp or Google Maps?",
-        a: "Those apps share a location pin and nothing else. Tulip actively scores each route and mode by lighting, foot traffic, and how monitored that mode is, keeps working with a fallback plan if you lose signal or battery, and can check in over plain SMS with zero mobile data.",
+        a: "Those apps share a location pin and nothing else. HerLane actively scores each route and mode by lighting, foot traffic, and how monitored that mode is, keeps working with a fallback plan if you lose signal or battery, and can check in over plain SMS with zero mobile data.",
       },
       {
         q: "What areas have active coverage?",
         a: "Delhi, Noida, Gurugram, Ghaziabad, and Faridabad, using free OpenStreetMap-based data. Coverage quality follows how thoroughly each specific area happens to be mapped on OpenStreetMap, which varies street to street.",
       },
       {
-        q: "Does Tulip have real per-station Delhi Metro or DTC bus routing?",
+        q: "Does HerLane have real per-station Delhi Metro or DTC bus routing?",
         a: "Not yet — neither DMRC nor DTC publishes a public live-routing feed, so Metro/bus legs are realistic distance-based time estimates, not real station-by-station directions. Route cards say this plainly and link to the official DMRC/DTC app for exact line, platform, and interchange details.",
       },
     ],
@@ -101,8 +101,8 @@ const FAQ: FaqCategory[] = [
     title: "Rally, Protest & Road-Closure Awareness",
     items: [
       {
-        q: "Does Tulip warn me about protests, rallies, or road closures?",
-        a: "Optionally. Tulip Bot can check recent news for rallies, protests, or road closures reported near Delhi NCR around your travel date, and will suggest Metro if one's found, to avoid surface-route disruption. It's a live news search, not a curated events calendar, and it's simply skipped — never faked — if that's not configured.",
+        q: "Does HerLane warn me about protests, rallies, or road closures?",
+        a: "Optionally. HerLane Bot can check recent news for rallies, protests, or road closures reported near Delhi NCR around your travel date, and will suggest Metro if one's found, to avoid surface-route disruption. It's a live news search, not a curated events calendar, and it's simply skipped — never faked — if that's not configured.",
       },
     ],
   },
@@ -124,9 +124,9 @@ export default async function AboutPage() {
       <main style={{ flex: 1, padding: "3rem 1.5rem", maxWidth: 760, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
         <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center" }}>
           <TulipLogo size={48} />
-          <h1 style={{ fontSize: "clamp(1.8rem, 5vw, 2.4rem)", fontWeight: 800 }}>About Tulip</h1>
+          <h1 style={{ fontSize: "clamp(1.8rem, 5vw, 2.4rem)", fontWeight: 800 }}>About HerLane</h1>
           <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6, maxWidth: 560 }}>
-            Tulip is a safety-first journey planner built for female commuters across Delhi, Noida,
+            HerLane is a safety-first journey planner built for female commuters across Delhi, Noida,
             Gurugram, Ghaziabad, and Faridabad — helping you get where you&apos;re going with a route
             that&apos;s not just fast, but genuinely safer.
           </p>
@@ -136,7 +136,7 @@ export default async function AboutPage() {
           <AboutCard icon={<MapPinned size={20} />} title="Safety-Scored Routing" desc="Routes across Metro, DTC buses, autos, and cabs are ranked using real street-light density and foot-traffic signals, not guesswork." />
           <AboutCard icon={<Shield size={20} />} title="Built for Emergencies" desc="One-tap SOS dialing, instant location sharing, and live journey tracking that keeps working even if your connection drops." />
           <AboutCard icon={<Users size={20} />} title="Your Trusted Circle" desc="Keep a list of emergency contacts you can reach — or who can reach you — in one tap." />
-          <AboutCard icon={<Bot size={20} />} title="Tulip Bot" desc="Ask about an upcoming trip and get a safety-aware forecast for the best time and mode to travel." />
+          <AboutCard icon={<Bot size={20} />} title="HerLane Bot" desc="Ask about an upcoming trip and get a safety-aware forecast for the best time and mode to travel." />
         </section>
 
         <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -144,9 +144,9 @@ export default async function AboutPage() {
             <Lock size={18} /> Built on free, transparent data
           </h2>
           <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>
-            Tulip&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
+            HerLane&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
             Overpass) — no paid API keys or billing accounts required to use the core app. Where a
-            feature depends on an optional service (like SMS delivery or Tulip Bot&apos;s natural-language
+            feature depends on an optional service (like SMS delivery or HerLane Bot&apos;s natural-language
             replies), it&apos;s clearly labeled and degrades gracefully rather than pretending to work
             when it can&apos;t.
           </p>

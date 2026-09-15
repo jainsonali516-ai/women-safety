@@ -20,7 +20,7 @@ export default function AuthPage() {
       <div className="card" style={{ padding: "2rem", width: "100%", maxWidth: 380 }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
           <TulipLogo size={40} />
-          <h1 style={{ fontWeight: 700, fontSize: "1.4rem" }}>Welcome to Tulip</h1>
+          <h1 style={{ fontWeight: 700, fontSize: "1.4rem" }}>Welcome to HerLane</h1>
           <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", textAlign: "center" }}>
             Safety-first journey planning for Delhi NCR
           </p>

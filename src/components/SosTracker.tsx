@@ -273,7 +273,7 @@ export function SosTracker() {
   }
 
   function trackingMessage(id: string) {
-    return `TULIP: I've started live journey tracking — watch my location here: ${trackingUrl(id)}`;
+    return `HERLANE: I've started live journey tracking — watch my location here: ${trackingUrl(id)}`;
   }
 
   async function stopTracking() {

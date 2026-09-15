@@ -27,7 +27,7 @@ const AGENT_IDS = [
 ];
 const ENDPOINT_ID = "predefined-gemini-3.5-flash-lite";
 
-const BUSY_MESSAGE = "Tulip Bot is a bit busy right now — please try again in a minute.";
+const BUSY_MESSAGE = "HerLane Bot is a bit busy right now — please try again in a minute.";
 
 // on-demand.io's rate-limit errors have shown up both as a flat non-2xx response and as an event
 // inside the SSE stream, and the exact JSON shape isn't guaranteed — so this matches on the
@@ -64,7 +64,7 @@ function buildContextualQuery(history: { role: "user" | "bot"; text: string }[] 
   if (!history || history.length === 0) return query;
   const transcript = history
     .slice(-MAX_HISTORY_TURNS)
-    .map((turn) => `${turn.role === "user" ? "User" : "Tulip Bot"}: ${turn.text}`)
+    .map((turn) => `${turn.role === "user" ? "User" : "HerLane Bot"}: ${turn.text}`)
     .join("\n");
   return `Here is the conversation so far, for context:\n${transcript}\n\nNow answer the user's latest message:\n${query}`;
 }
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
     if (looksLikeRateLimit(text)) {
       return jsonError(BUSY_MESSAGE, 429);
     }
-    return jsonError("Sorry, Tulip Bot couldn't respond right now. Please try again shortly.", 502);
+    return jsonError("Sorry, HerLane Bot couldn't respond right now. Please try again shortly.", 502);
   }
 
   // on-demand.io streams Server-Sent Events; this buffers them into one assembled answer rather
@@ -197,7 +197,7 @@ export async function POST(request: Request) {
     return jsonError(BUSY_MESSAGE, 429);
   }
   if (!fullAnswer.trim()) {
-    return jsonError("Sorry, Tulip Bot couldn't respond right now. Please try again shortly.", 502);
+    return jsonError("Sorry, HerLane Bot couldn't respond right now. Please try again shortly.", 502);
   }
 
   return NextResponse.json({ sessionId: finalSessionId, messageId: finalMessageId, answer: fullAnswer });

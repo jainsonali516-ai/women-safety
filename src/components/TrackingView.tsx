@@ -158,7 +158,7 @@ export function TrackingView({ alertId }: { alertId: string }) {
       >
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <TulipLogo size={26} />
-          <span style={{ fontWeight: 700, fontSize: "1.05rem", letterSpacing: "0.15em" }}>TULIP</span>
+          <span style={{ fontWeight: 700, fontSize: "1.05rem", letterSpacing: "0.15em" }}>HERLANE</span>
         </Link>
       </header>
 

@@ -48,11 +48,11 @@ export function ChatbotWidget() {
       if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch (err) {
-      console.error("Tulip Bot request failed:", err);
+      console.error("HerLane Bot request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Tulip Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "HerLane Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -66,7 +66,7 @@ export function ChatbotWidget() {
       <button
         onClick={() => setOpen(true)}
         className="btn-accent"
-        aria-label="Open Tulip Bot"
+        aria-label="Open HerLane Bot"
         style={{
           position: "fixed",
           bottom: "1.5rem",
@@ -83,7 +83,7 @@ export function ChatbotWidget() {
           zIndex: 2000,
         }}
       >
-        <TulipBloom size={26} openness={1} color="white" centerColor="white" title="Open Tulip Bot" />
+        <TulipBloom size={26} openness={1} color="white" centerColor="white" title="Open HerLane Bot" />
       </button>
     );
   }
@@ -116,8 +116,8 @@ export function ChatbotWidget() {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem", borderBottom: "1px solid var(--border)" }}>
         <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <TulipBloom size={18} openness={1} animated={loading} title="Tulip Bot" />
-          <strong style={{ fontSize: "0.9rem" }}>Tulip Bot</strong>
+          <TulipBloom size={18} openness={1} animated={loading} title="HerLane Bot" />
+          <strong style={{ fontSize: "0.9rem" }}>HerLane Bot</strong>
         </span>
         <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
           <X size={18} />
@@ -152,7 +152,7 @@ export function ChatbotWidget() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask Tulip Bot..."
+          placeholder="Ask HerLane Bot..."
           style={{ flex: 1, padding: "0.5rem 0.7rem", borderRadius: "0.6rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)", fontSize: "0.85rem" }}
         />
         <button type="submit" className="btn-accent" style={{ padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "none", cursor: "pointer" }}>

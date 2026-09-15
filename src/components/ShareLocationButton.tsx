@@ -130,7 +130,7 @@ export function ShareLocationButton() {
   }
 
   function smsMessage() {
-    return `TULIP EMERGENCY ALERT: Track my location: ${result?.mapsUrl}`;
+    return `HERLANE EMERGENCY ALERT: Track my location: ${result?.mapsUrl}`;
   }
 
   return (

@@ -2,9 +2,9 @@ const RESEND_URL = "https://api.resend.com/emails";
 
 // Resend's shared sandbox sender — works without verifying a custom domain, but Resend only
 // lets it deliver to the email address the Resend account itself was created with until a
-// domain is verified. Set RESEND_FROM_EMAIL (e.g. "Tulip <noreply@yourdomain.com>") once a
+// domain is verified. Set RESEND_FROM_EMAIL (e.g. "HerLane <noreply@yourdomain.com>") once a
 // domain is verified in the Resend dashboard so resets can reach any user.
-const DEFAULT_FROM = "Tulip <onboarding@resend.dev>";
+const DEFAULT_FROM = "HerLane <onboarding@resend.dev>";
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
@@ -23,9 +23,9 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
       body: JSON.stringify({
         from,
         to,
-        subject: "Reset your Tulip password",
+        subject: "Reset your HerLane password",
         html: `
-          <p>Someone (hopefully you) asked to reset the password on your Tulip account.</p>
+          <p>Someone (hopefully you) asked to reset the password on your HerLane account.</p>
           <p><a href="${resetUrl}">Click here to set a new password</a>. This link works once and expires in 30 minutes.</p>
           <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
         `,

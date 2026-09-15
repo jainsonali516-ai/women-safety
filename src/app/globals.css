@@ -361,6 +361,162 @@ a:focus-visible {
   opacity: 0.6;
 }
 
+/* ---------- Marketing homepage hero ---------- */
+.herlane-hero-grid {
+  position: relative;
+}
+
+.herlane-hero-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.herlane-hero-glow-a {
+  width: 420px;
+  height: 420px;
+  top: -10%;
+  right: 5%;
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  animation: herlane-glow-drift-a 14s ease-in-out infinite;
+}
+
+.herlane-hero-glow-b {
+  width: 320px;
+  height: 320px;
+  bottom: -5%;
+  left: 0%;
+  background: color-mix(in srgb, var(--accent-strong) 18%, transparent);
+  animation: herlane-glow-drift-b 18s ease-in-out infinite;
+}
+
+@keyframes herlane-glow-drift-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-20px, 25px) scale(1.08); }
+}
+
+@keyframes herlane-glow-drift-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(25px, -20px) scale(1.1); }
+}
+
+/* The route line "draws itself" in on load, then keeps a slow subtle glow pulse. */
+.herlane-route-path {
+  stroke-dasharray: 700;
+  stroke-dashoffset: 700;
+  animation: herlane-route-draw 2.4s ease-out 0.3s forwards, herlane-route-glow 3s ease-in-out 2.8s infinite;
+}
+
+@keyframes herlane-route-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes herlane-route-glow {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; filter: drop-shadow(0 0 6px var(--accent)); }
+}
+
+/* The commuter figure gets a very slow, subtle sway — movement without distraction. */
+.herlane-figure {
+  animation: herlane-figure-sway 6s ease-in-out infinite;
+  transform-origin: 150px 300px;
+}
+
+@keyframes herlane-figure-sway {
+  0%, 100% { transform: translate(150px, 190px) rotate(0deg) translateY(0); }
+  50% { transform: translate(150px, 190px) rotate(0.6deg) translateY(-3px); }
+}
+
+.herlane-skyline {
+  animation: herlane-skyline-drift 24s ease-in-out infinite;
+}
+
+@keyframes herlane-skyline-drift {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+/* The floating Route Intelligence card gently bobs, like it's alive/live-updating. */
+.herlane-float {
+  position: absolute;
+  top: 8%;
+  right: 0;
+  animation: herlane-card-float 5s ease-in-out infinite;
+}
+
+@keyframes herlane-card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Safety signal icons pulse in a staggered wave rather than all at once. */
+.herlane-signal-icon {
+  animation: herlane-signal-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes herlane-signal-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+.herlane-route-row {
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.herlane-route-row:hover {
+  transform: translateX(2px);
+}
+
+.herlane-bento-card {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.herlane-bento-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--accent);
+}
+
+.herlane-bento-cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.herlane-bento-card:hover .herlane-bento-cta-arrow {
+  transform: translateX(4px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .herlane-hero-glow-a,
+  .herlane-hero-glow-b,
+  .herlane-route-path,
+  .herlane-figure,
+  .herlane-skyline,
+  .herlane-float,
+  .herlane-signal-icon {
+    animation: none;
+  }
+  .herlane-route-path {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .herlane-hero-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .herlane-hero-visual {
+    order: -1;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .herlane-float {
+    position: static;
+    margin-top: 1rem;
+    animation: none;
+  }
+}
+
 /* Phone polish: bigger tap targets (44px+ is the usual comfortable minimum), a touch more
    breathing room between stacked sections, and full-width primary actions so buttons are easy
    to hit with a thumb instead of being squeezed into a wrapped inline row. */

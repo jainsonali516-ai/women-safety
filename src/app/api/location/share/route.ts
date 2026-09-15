@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, sms_sent: false, maps_url: mapsUrl, message: "No trusted contacts saved yet." });
   }
 
-  const message = `Tulip Safety Alert: I'm sharing my live location with you. View it here: ${mapsUrl}`;
+  const message = `HerLane Safety Alert: I'm sharing my live location with you. View it here: ${mapsUrl}`;
 
   const results = await Promise.allSettled(
     contacts.map((c) => sendSms(c.phone, message))

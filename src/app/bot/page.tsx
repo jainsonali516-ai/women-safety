@@ -12,7 +12,7 @@ interface ChatMessage {
 
 export default function BotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Hi, I'm Tulip Bot. Ask me anything." },
+    { role: "bot", text: "Hi, I'm HerLane Bot. Ask me anything." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,11 +46,11 @@ export default function BotPage() {
       if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch (err) {
-      console.error("Tulip Bot request failed:", err);
+      console.error("HerLane Bot request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Tulip Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "HerLane Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -62,7 +62,7 @@ export default function BotPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "1.5rem", maxWidth: 640, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <h1 style={{ fontSize: "1.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <TulipBloom size={26} openness={1} title="Tulip Bot" /> Tulip Bot
+          <TulipBloom size={26} openness={1} title="HerLane Bot" /> HerLane Bot
         </h1>
         <div className="card" style={{ flex: 1, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: 360 }}>
           {messages.map((m, i) => (
@@ -85,7 +85,7 @@ export default function BotPage() {
           ))}
           {loading && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-              <TulipBloom size={18} openness={0.6} animated title="Thinking" /> Tulip Bot is thinking...
+              <TulipBloom size={18} openness={0.6} animated title="Thinking" /> HerLane Bot is thinking...
             </div>
           )}
         </div>
@@ -93,7 +93,7 @@ export default function BotPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Tulip Bot..."
+            placeholder="Ask HerLane Bot..."
             style={{ flex: 1, padding: "0.7rem 0.9rem", borderRadius: "0.7rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)" }}
           />
           <button type="submit" className="btn-accent" style={{ padding: "0.7rem 1rem", borderRadius: "0.7rem", border: "none", cursor: "pointer" }}>

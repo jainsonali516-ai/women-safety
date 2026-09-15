@@ -12,7 +12,7 @@ const NAV_LINKS = [
   { href: "/journey", label: "Journey" },
   { href: "/safety", label: "Safety Tools" },
   { href: "/contacts", label: "Contacts" },
-  { href: "/bot", label: "Tulip Bot" },
+  { href: "/bot", label: "HerLane Bot" },
 ];
 
 export function AppHeader() {
@@ -36,7 +36,7 @@ export function AppHeader() {
     >
       <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.6rem" }} onClick={() => setMenuOpen(false)}>
         <TulipLogo size={28} />
-        <span style={{ fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.15em" }}>TULIP</span>
+        <span style={{ fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.15em" }}>HERLANE</span>
       </Link>
 
       <nav className="app-nav-desktop" style={{ alignItems: "center", gap: "1.1rem" }}>

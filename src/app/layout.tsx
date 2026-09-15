@@ -29,7 +29,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tulip — Safety & Journey Planner",
+  title: "HerLane — Safety & Journey Planner",
   description: "AI-powered safety and journey planner for female commuters in Delhi NCR.",
 };
 

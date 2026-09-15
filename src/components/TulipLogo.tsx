@@ -18,7 +18,7 @@ export function TulipLogo({ size = 32 }: { size?: number }) {
                  dark:bg-slate-950/80 dark:border-pink-500/40 dark:shadow-[0_0_15px_rgba(230,79,108,0.4)]"
       style={{ padding }}
     >
-      <TulipBloom size={size} openness={1} title="Tulip logo" />
+      <TulipBloom size={size} openness={1} title="HerLane logo" />
     </div>
   );
 }

@@ -3,38 +3,14 @@ import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { TulipLogo } from "@/components/TulipLogo";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
+import { MarketingHome } from "@/components/MarketingHome";
 import { Compass, ShieldCheck, Users, MessageSquareText } from "lucide-react";
 
 export default async function Home() {
   const user = await getSessionUser();
 
   if (!user) {
-    return (
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "1.25rem",
-          padding: "1.5rem",
-          textAlign: "center",
-        }}
-      >
-        <TulipLogo size={64} />
-        <h1 style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "0.08em" }}>TULIP</h1>
-        <p style={{ color: "var(--foreground-muted)", maxWidth: 460, fontSize: "1.05rem" }}>
-          AI-powered safety and journey planning for female commuters across Delhi NCR.
-        </p>
-        <Link href="/auth" className="btn-accent" style={{ padding: "0.9rem 2rem", borderRadius: "0.9rem", fontWeight: 600, fontSize: "1rem" }}>
-          Get Started
-        </Link>
-        <Link href="/about" style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", textDecoration: "underline" }}>
-          Learn more about Tulip
-        </Link>
-      </main>
-    );
+    return <MarketingHome />;
   }
 
   return (
@@ -53,7 +29,7 @@ export default async function Home() {
         <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620 }}>
           <TulipLogo size={56} />
           <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.02em" }}>
-            Welcome back to <span style={{ color: "var(--accent)" }}>Tulip</span>
+            Welcome back to <span style={{ color: "var(--accent)" }}>HerLane</span>
           </h1>
           <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6 }}>
             Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help
@@ -98,7 +74,7 @@ export default async function Home() {
           <HomeCard
             href="/bot"
             icon={<MessageSquareText size={22} />}
-            title="Tulip Bot"
+            title="HerLane Bot"
             desc="Ask about an upcoming trip and get a safety-aware forecast."
           />
         </section>

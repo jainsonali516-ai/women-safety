@@ -4,7 +4,7 @@ import { jsonError } from "@/lib/api";
 
 /**
  * Deliberately unauthenticated — this is what a trusted contact's shared tracking link hits.
- * They aren't a Tulip user, so there's no session to check; the alert's id (a random uuid) is
+ * They aren't a HerLane user, so there's no session to check; the alert's id (a random uuid) is
  * itself the access token, the same trust model as an "anyone with the link" share. Only the
  * minimum needed to show a live dot on a map is returned — no email, phone, or other account
  * details, even though the admin client bypasses RLS for this lookup.

@@ -55,7 +55,7 @@ export function AuthModal({ message, onClose }: Props) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem" }}>
           <TulipLogo size={36} />
           <h2 style={{ fontWeight: 700, fontSize: "1.25rem", textAlign: "center" }}>
-            {message ? "Sign in to continue" : "Welcome to Tulip"}
+            {message ? "Sign in to continue" : "Welcome to HerLane"}
           </h2>
           {message && (
             <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", textAlign: "center" }}>{message}</p>

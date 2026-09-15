@@ -272,7 +272,7 @@ function ContactsManager() {
             {reminders.length === 0 && (
               <div className="empty-state">
                 <BellOff size={22} />
-                No reminders set — add one so Tulip nudges you to share your location on a schedule.
+                No reminders set — add one so HerLane nudges you to share your location on a schedule.
               </div>
             )}
           </ul>
