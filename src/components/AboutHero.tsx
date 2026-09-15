@@ -6,6 +6,7 @@ import { ArrowRight, Zap, MapPin, Navigation, Calendar, Bus, Train, Car, Sparkle
 import { TrustBadges } from "@/components/TrustBadges";
 import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
 import { PlaceField, type Suggestion } from "@/components/JourneySearchHero";
+import { T } from "@/components/Translated";
 
 /**
  * The hero for the About page — same full-bleed photo treatment as the homepage (for a
@@ -26,18 +27,21 @@ export function AboutHero() {
           </span>
 
           <h1 className="herlane-hero-photo-title" style={{ maxWidth: 560 }}>
-            Smarter Routes.
+            <T>Smarter Routes.</T>
             <br />
-            <span style={{ color: "var(--brand-pink)" }}>Safer You.</span>
+            <span style={{ color: "var(--brand-pink)" }}>
+              <T>Safer You.</T>
+            </span>
           </h1>
 
           <p style={{ fontSize: "1.02rem", fontWeight: 700, color: "#fff", margin: 0 }}>
-            The fastest route is not always the right route.
+            <T>The fastest route is not always the right route.</T>
           </p>
 
           <p className="herlane-hero-photo-subtitle">
-            HerLane is an AI-powered journey companion that considers context, privacy, accessibility, and
-            real-time safety signals to help you travel with confidence.
+            <T>
+              {"HerLane is an AI-powered journey companion that considers context, privacy, accessibility, and real-time safety signals to help you travel with confidence."}
+            </T>
           </p>
 
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
@@ -46,10 +50,10 @@ export function AboutHero() {
               className="btn-accent"
               style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 1.5rem", fontWeight: 700, fontSize: "0.95rem", border: "none" }}
             >
-              Plan a Safer Route <ArrowRight size={17} />
+              <T>Plan a Safer Route</T> <ArrowRight size={17} />
             </Link>
             <Link href="#features" className="herlane-hero-btn-ghost" style={{ padding: "0.85rem 1.5rem", fontSize: "0.95rem" }}>
-              Explore HerLane
+              <T>Explore HerLane</T>
             </Link>
           </div>
 

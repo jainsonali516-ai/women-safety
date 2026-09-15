@@ -5,6 +5,7 @@ import { TrustBadges } from "@/components/TrustBadges";
 import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { Compass, ShieldCheck, Users, MessageSquareText, Zap, ArrowRight } from "lucide-react";
+import { T } from "@/components/Translated";
 
 export default async function Home() {
   const user = await getSessionUser();
@@ -22,13 +23,16 @@ export default async function Home() {
                 <Zap size={13} /> AI SAFETY &amp; JOURNEY PLANNER
               </span>
               <h1 className="herlane-hero-photo-title">
-                Walk your city,
+                <T>Walk your city,</T>
                 <br />
-                <span style={{ color: "var(--brand-pink)" }}>fearlessly.</span>
+                <span style={{ color: "var(--brand-pink)" }}>
+                  <T>fearlessly.</T>
+                </span>
               </h1>
               <p className="herlane-hero-photo-subtitle">
-                AI-powered safety and journey planning for female commuters across Delhi NCR —
-                safer routes, instant help, and your trusted circle always in the loop.
+                <T>
+                  {"AI-powered safety and journey planning for female commuters across Delhi NCR — safer routes, instant help, and your trusted circle always in the loop."}
+                </T>
               </p>
               <div style={{ display: "flex", gap: "0.9rem", flexWrap: "wrap", marginTop: "1.6rem" }}>
                 <Link
@@ -36,10 +40,10 @@ export default async function Home() {
                   className="btn-accent"
                   style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.95rem 2rem", fontWeight: 700, fontSize: "1rem", border: "none" }}
                 >
-                  Get Started <ArrowRight size={18} />
+                  <T>Get Started</T> <ArrowRight size={18} />
                 </Link>
                 <Link href="/about" className="herlane-hero-btn-ghost">
-                  Learn more
+                  <T>Learn more</T>
                 </Link>
               </div>
               <div style={{ marginTop: "1.6rem" }}>
@@ -61,18 +65,19 @@ export default async function Home() {
           <div className="herlane-photo-hero-content" style={{ justifyContent: "center" }}>
             <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620, margin: "0 auto" }}>
               <h1 className="herlane-hero-photo-title">
-                Welcome back to <span style={{ color: "var(--brand-pink)" }}>HerLane</span>
+                <T>Welcome back to</T> <span style={{ color: "var(--brand-pink)" }}>HerLane</span>
               </h1>
               <p className="herlane-hero-photo-subtitle">
-                Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help
-                instantly, and keep your trusted circle in the loop.
+                <T>
+                  {"Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help instantly, and keep your trusted circle in the loop."}
+                </T>
               </p>
               <Link
                 href="/journey"
                 className="btn-accent"
                 style={{ padding: "0.9rem 2.2rem", borderRadius: "0.9rem", fontWeight: 700, fontSize: "1rem", marginTop: "0.5rem" }}
               >
-                Plan a Journey
+                <T>Plan a Journey</T>
               </Link>
             </div>
           </div>
@@ -163,8 +168,12 @@ function HomeCard({
       >
         {icon}
       </div>
-      <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>{title}</h3>
-      <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>{desc}</p>
+      <h3 style={{ fontWeight: 700, fontSize: "1rem" }}>
+        <T>{title}</T>
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>
+        <T>{desc}</T>
+      </p>
     </Link>
   );
 }

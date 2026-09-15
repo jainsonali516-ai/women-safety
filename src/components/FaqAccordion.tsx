@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
+import { T } from "@/components/Translated";
 
 export interface FaqItem {
   q: string;
@@ -20,7 +21,9 @@ export function FaqAccordion({ categories }: { categories: FaqCategory[] }) {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       {categories.map((cat) => (
         <div key={cat.title}>
-          <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--accent-strong)", marginBottom: "0.6rem" }}>{cat.title}</h3>
+          <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--accent-strong)", marginBottom: "0.6rem" }}>
+            <T>{cat.title}</T>
+          </h3>
           <div className="card" style={{ padding: "0.25rem 1rem", display: "flex", flexDirection: "column" }}>
             {cat.items.map((item, i) => {
               const key = `${cat.title}-${i}`;
@@ -46,11 +49,13 @@ export function FaqAccordion({ categories }: { categories: FaqCategory[] }) {
                       cursor: "pointer",
                     }}
                   >
-                    {item.q}
+                    <T>{item.q}</T>
                     <ChevronDown size={16} style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
                   </button>
                   {open && (
-                    <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.6, paddingBottom: "0.9rem" }}>{item.a}</p>
+                    <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.6, paddingBottom: "0.9rem" }}>
+                      <T>{item.a}</T>
+                    </p>
                   )}
                 </div>
               );

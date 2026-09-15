@@ -2,6 +2,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { AboutHero } from "@/components/AboutHero";
 import { FaqAccordion, type FaqCategory } from "@/components/FaqAccordion";
 import { Shield, MapPinned, Users, Bot, Lock } from "lucide-react";
+import { T } from "@/components/Translated";
 
 // Every answer here is checked against what this app actually does — no mention of services
 // this app doesn't use (Mapbox, TomTom, Google Places, Earth Engine), no claimed features that
@@ -130,24 +131,26 @@ export default function AboutPage() {
         <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
           <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <Lock size={18} /> Built on free, transparent data
+              <Lock size={18} /> <T>Built on free, transparent data</T>
             </h2>
             <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>
-              HerLane&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
-              Overpass) — no paid API keys or billing accounts required to use the core app. Where a
-              feature depends on an optional service (like SMS delivery or Alley&apos;s natural-language
-              replies), it&apos;s clearly labeled and degrades gracefully rather than pretending to work
-              when it can&apos;t.
+              <T>
+                {`HerLane's routing and safety signals run on OpenStreetMap-based services (Photon, OSRM, Overpass) — no paid API keys or billing accounts required to use the core app. Where a feature depends on an optional service (like SMS delivery or Alley's natural-language replies), it's clearly labeled and degrades gracefully rather than pretending to work when it can't.`}
+              </T>
             </p>
           </section>
 
           <section>
-            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "1rem" }}>Frequently Asked Questions</h2>
+            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "1rem" }}>
+              <T>Frequently Asked Questions</T>
+            </h2>
             <FaqAccordion categories={FAQ} />
           </section>
 
           <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Credits &amp; Development Team</h2>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>
+              <T>Credits &amp; Development Team</T>
+            </h2>
             <ul style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.9rem" }}>
               {CREDITS.map((c) => (
                 <li key={c.name} style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
@@ -180,8 +183,12 @@ function AboutCard({ icon, title, desc }: { icon: React.ReactNode; title: string
       >
         {icon}
       </div>
-      <h3 style={{ fontWeight: 700, fontSize: "0.95rem" }}>{title}</h3>
-      <p style={{ fontSize: "0.82rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>{desc}</p>
+      <h3 style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+        <T>{title}</T>
+      </h3>
+      <p style={{ fontSize: "0.82rem", color: "var(--foreground-muted)", lineHeight: 1.5 }}>
+        <T>{desc}</T>
+      </p>
     </div>
   );
 }

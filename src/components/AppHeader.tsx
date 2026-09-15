@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { TulipLogo } from "./TulipLogo";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./LanguageToggle";
 import { ProfileMenu } from "./ProfileMenu";
 import { ShieldAlert, Menu, X } from "lucide-react";
+import { T } from "@/components/Translated";
 
 const NAV_LINKS = [
   { href: "/about", label: "About" },
@@ -59,7 +61,7 @@ export function AppHeader() {
                 transition: "background 0.15s ease, color 0.15s ease",
               }}
             >
-              {link.label}
+              <T>{link.label}</T>
             </Link>
           );
         })}
@@ -81,6 +83,7 @@ export function AppHeader() {
         >
           <ShieldAlert size={14} /> SOS
         </a>
+        <LanguageToggle />
         <ThemeToggle />
         <ProfileMenu />
       </nav>
@@ -174,12 +177,20 @@ export function AppHeader() {
                   width: "fit-content",
                 }}
               >
-                {link.label}
+                <T>{link.label}</T>
               </Link>
               );
             })}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.4rem", borderTop: "1px solid var(--border)" }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>Theme</span>
+              <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
+                <T>Language</T>
+              </span>
+              <LanguageToggle />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
+                <T>Theme</T>
+              </span>
               <ThemeToggle />
             </div>
           </div>
