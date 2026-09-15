@@ -1,4 +1,3 @@
-import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
 import { AboutHero } from "@/components/AboutHero";
 import { FaqAccordion, type FaqCategory } from "@/components/FaqAccordion";
@@ -115,15 +114,12 @@ const CREDITS = [
   { name: "Saanika Mishra", role: "Developer / Core Contributor" },
 ];
 
-export default async function AboutPage() {
-  const user = await getSessionUser();
-
+export default function AboutPage() {
   return (
     <>
-      {user && <AppHeader />}
+      <AppHeader />
+      <AboutHero />
       <main style={{ flex: 1, padding: "1.5rem 1.5rem 3rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
-        <AboutHero />
-
         <section id="features" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem" }}>
           <AboutCard icon={<MapPinned size={20} />} title="Safety-Scored Routing" desc="Routes across Metro, DTC buses, autos, and cabs are ranked using real street-light density and foot-traffic signals, not guesswork." />
           <AboutCard icon={<Shield size={20} />} title="Built for Emergencies" desc="One-tap SOS dialing, instant location sharing, and live journey tracking that keeps working even if your connection drops." />

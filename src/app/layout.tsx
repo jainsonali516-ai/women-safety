@@ -3,7 +3,6 @@ import { Geist_Mono, Fraunces, Sora } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { ConditionalBackground } from "@/components/ConditionalBackground";
 import { EmergencyModeProvider } from "@/components/EmergencyModeProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { EmergencyModeBanner } from "@/components/EmergencyModeBanner";
@@ -56,7 +55,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AuthProvider>
             <EmergencyModeProvider>
               <ServiceWorkerRegister />
-              <ConditionalBackground />
               <EmergencyModeBanner />
               {children}
             </EmergencyModeProvider>
