@@ -42,6 +42,7 @@ function ContactsManager() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [form, setForm] = useState({ name: "", phone: "", relationship: "" });
   const [reminderTime, setReminderTime] = useState("20:00");
+  const [reminderDays, setReminderDays] = useState<number[]>([1, 2, 3, 4, 5]); // defaults to weekdays, but every day is toggleable below
   const [error, setError] = useState<string | null>(null);
   const [addingContact, setAddingContact] = useState(false);
   const [deletingContactId, setDeletingContactId] = useState<string | null>(null);
@@ -107,14 +108,18 @@ function ContactsManager() {
     }
   }
 
+  function toggleReminderDay(day: number) {
+    setReminderDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()));
+  }
+
   async function addReminder() {
-    if (addingReminder) return;
+    if (addingReminder || reminderDays.length === 0) return;
     setAddingReminder(true);
     try {
       const res = await fetch("/api/reminders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ time_of_day: reminderTime, days_of_week: [1, 2, 3, 4, 5], label: "Share my location" }),
+        body: JSON.stringify({ time_of_day: reminderTime, days_of_week: reminderDays, label: "Share my location" }),
       });
       if (res.ok) {
         const data = await res.json();
@@ -232,17 +237,46 @@ function ContactsManager() {
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", marginBottom: "1rem" }}>
             <T>Reminds you to share your location at set times. You will always be asked for consent before anything is sent.</T>
           </p>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem", marginBottom: "0.75rem" }}>
+            {DAY_LABELS.map((label, day) => {
+              const active = reminderDays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => toggleReminderDay(day)}
+                  style={{
+                    padding: "0.4rem 0.7rem",
+                    borderRadius: "999px",
+                    border: "1px solid var(--border)",
+                    background: active ? "var(--accent)" : "var(--surface)",
+                    color: active ? "white" : "var(--foreground-muted)",
+                    fontSize: "0.78rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           <div className="mobile-stack" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="field" style={inputStyle} />
             <button
               onClick={addReminder}
-              disabled={addingReminder}
+              disabled={addingReminder || reminderDays.length === 0}
               className="btn-accent mobile-full field"
-              style={{ ...smallBtn, opacity: addingReminder ? 0.7 : 1, cursor: addingReminder ? "wait" : "pointer" }}
+              style={{ ...smallBtn, opacity: addingReminder || reminderDays.length === 0 ? 0.7 : 1, cursor: addingReminder || reminderDays.length === 0 ? "wait" : "pointer" }}
             >
-              <T>{addingReminder ? "Adding..." : "Add Weekday Reminder"}</T>
+              <T>{addingReminder ? "Adding..." : "Add Reminder"}</T>
             </button>
           </div>
+          {reminderDays.length === 0 && (
+            <p style={{ fontSize: "0.75rem", color: "#ef4444", marginTop: "-0.5rem", marginBottom: "0.75rem" }}>
+              <T>Pick at least one day.</T>
+            </p>
+          )}
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {reminders.map((r) => (
               <li key={r.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", padding: "0.7rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
