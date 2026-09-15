@@ -6,6 +6,7 @@ import { SosTracker } from "@/components/SosTracker";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { LowPowerToggle } from "@/components/LowPowerToggle";
 import { RequireAuthGate } from "@/components/RequireAuthGate";
+import { T } from "@/components/Translated";
 
 // Guest-accessible page — the emergency dial pad (100/112/1091/etc.) is public information that
 // needs no account. Only the actions that write to a personal account (sharing your live
@@ -16,9 +17,11 @@ export default function SafetyToolsPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "2rem 1.5rem", display: "flex", flexDirection: "column", gap: "2rem", maxWidth: 960, margin: "0 auto", width: "100%" }}>
         <section style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "1.5rem 0" }}>
-          <h1 style={{ fontSize: "clamp(1.6rem, 6vw, 2rem)", fontWeight: 800 }}>Safety Tools</h1>
+          <h1 style={{ fontSize: "clamp(1.6rem, 6vw, 2rem)", fontWeight: 800 }}>
+            <T>Safety Tools</T>
+          </h1>
           <p style={{ color: "var(--foreground-muted)", fontSize: "1rem", maxWidth: 560 }}>
-            Quick access to emergency help, live location sharing, and journey tracking.
+            <T>Quick access to emergency help, live location sharing, and journey tracking.</T>
           </p>
         </section>
 
@@ -46,8 +49,12 @@ export default function SafetyToolsPage() {
 function NavCard({ href, title, desc }: { href: string; title: string; desc: string }) {
   return (
     <Link href={href} className="card" style={{ padding: "1.5rem", display: "block" }}>
-      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--accent-strong)" }}>{title}</h3>
-      <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>{desc}</p>
+      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem", color: "var(--accent-strong)" }}>
+        <T>{title}</T>
+      </h3>
+      <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
+        <T>{desc}</T>
+      </p>
     </Link>
   );
 }

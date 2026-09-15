@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LogIn } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 import { AuthModal } from "@/components/AuthModal";
+import { T } from "@/components/Translated";
 
 /**
  * Wraps a safety action that needs an account (saving a contact, triggering SOS) — renders the
@@ -20,9 +21,11 @@ export function RequireAuthGate({ message, children }: { message: string; childr
   return (
     <div className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", textAlign: "center" }}>
       <LogIn size={22} color="var(--accent-strong)" />
-      <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", maxWidth: 340 }}>{message}</p>
+      <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", maxWidth: 340 }}>
+        <T>{message}</T>
+      </p>
       <button onClick={() => setShowModal(true)} className="btn-accent" style={{ padding: "0.6rem 1.2rem", border: "none", fontWeight: 700, cursor: "pointer" }}>
-        Sign In
+        <T>Sign In</T>
       </button>
       {showModal && <AuthModal message={message} onClose={() => setShowModal(false)} />}
     </div>

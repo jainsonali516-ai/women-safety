@@ -9,6 +9,7 @@ import { OfflineRouteView } from "@/components/OfflineRouteView";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
 import { computeFinalScore } from "@/lib/scoring";
+import { T } from "@/components/Translated";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -214,7 +215,11 @@ export function JourneyHome() {
       />
 
       <main style={{ padding: "0 1.5rem 2rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-        {error && <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>{error}</p>}
+        {error && (
+          <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>
+            <T>{error}</T>
+          </p>
+        )}
 
         <SafetyMapContainer
           origin={origin}
@@ -243,15 +248,16 @@ export function JourneyHome() {
                     textTransform: "capitalize",
                   }}
                 >
-                  {s === "balanced" ? "AI Balanced" : `${s} First`}
+                  <T>{s === "balanced" ? "AI Balanced" : `${s} First`}</T>
                 </button>
               ))}
             </div>
 
             {signals && (
               <p style={{ fontSize: "0.75rem", color: "var(--foreground-muted)" }}>
-                {signals.live_routing_available ? "Real road-distance routing used. " : "Routing service unavailable — using distance estimates. "}
-                {signals.street_light_data_available ? "Live OSM street-light data used." : "Street-light data unavailable."}
+                <T>
+                  {`${signals.live_routing_available ? "Real road-distance routing used. " : "Routing service unavailable — using distance estimates. "}${signals.street_light_data_available ? "Live OSM street-light data used." : "Street-light data unavailable."}`}
+                </T>
               </p>
             )}
 

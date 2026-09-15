@@ -2,6 +2,7 @@
 
 import { BatteryLow } from "lucide-react";
 import { useEmergencyMode } from "./EmergencyModeProvider";
+import { T } from "@/components/Translated";
 
 export function LowPowerToggle() {
   const { active, source, batterySupported, toggleManual } = useEmergencyMode();
@@ -26,12 +27,13 @@ export function LowPowerToggle() {
           <BatteryLow size={18} />
         </div>
         <div>
-          <h3 style={{ fontWeight: 700, fontSize: "0.95rem" }}>Low Power / Offline Mode</h3>
+          <h3 style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+            <T>Low Power / Offline Mode</T>
+          </h3>
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", lineHeight: 1.5, maxWidth: 420 }}>
-            Turns off the map, animations, and live location polling in favor of a lightweight
-            offline view with your last saved route, cached help points, and one-tap check-in.
-            Activates automatically when you lose connection{batterySupported ? " or your battery drops to 5%" : ""}.
-            {!batterySupported && " (Automatic battery detection isn't supported in this browser — toggle it manually if needed.)"}
+            <T>
+              {`Turns off the map, animations, and live location polling in favor of a lightweight offline view with your last saved route, cached help points, and one-tap check-in. Activates automatically when you lose connection${batterySupported ? " or your battery drops to 5%" : ""}.${!batterySupported ? " (Automatic battery detection isn't supported in this browser — toggle it manually if needed.)" : ""}`}
+            </T>
           </p>
         </div>
       </div>

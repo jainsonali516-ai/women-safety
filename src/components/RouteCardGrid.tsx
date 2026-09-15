@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle, ExternalLink } from "lucide-react";
 import { RISK_TIER_COLOR } from "@/lib/riskTier";
 import { TulipBloom } from "@/components/TulipBloom";
+import { T } from "@/components/Translated";
 
 export interface RouteOption {
   mode: string;
@@ -32,7 +33,11 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (options.length === 0) {
-    return <p style={{ color: "var(--foreground-muted)", fontSize: "0.9rem" }}>No routes match the selected filters.</p>;
+    return (
+      <p style={{ color: "var(--foreground-muted)", fontSize: "0.9rem" }}>
+        <T>No routes match the selected filters.</T>
+      </p>
+    );
   }
 
   return (
@@ -59,19 +64,19 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                   flexShrink: 0,
                 }}
               >
-                {opt.risk_label}
+                <T>{opt.risk_label}</T>
               </span>
             </div>
 
             {opt.risk_tier === "high" && (
               <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.75rem", fontWeight: 700, color: "#ef4444" }}>
-                <AlertTriangle size={13} /> {opt.risk_alert}
+                <AlertTriangle size={13} /> <T>{opt.risk_alert}</T>
               </div>
             )}
 
             <div style={{ display: "flex", gap: "1rem", fontSize: "0.85rem", color: "var(--foreground-muted)", flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                <Clock size={14} /> {opt.duration_min} min
+                <Clock size={14} /> {opt.duration_min} <T>min</T>
               </span>
               <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                 <IndianRupee size={14} /> {opt.fare_inr}
@@ -84,7 +89,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                   centerColor={tierStyle.bg}
                   title={`Safety score ${opt.safety_score} of 100`}
                 />
-                Safety {opt.safety_score}
+                <T>Safety</T> {opt.safety_score}
               </span>
             </div>
 
@@ -104,27 +109,27 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                 alignSelf: "flex-start",
               }}
             >
-              Why this route? <ChevronDown size={14} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
+              <T>Why this route?</T> <ChevronDown size={14} style={{ transform: isOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s ease" }} />
             </button>
 
             {isOpen && (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.78rem", color: "var(--foreground-muted)", background: "var(--background-solid)", padding: "0.75rem", borderRadius: "0.6rem", border: "1px solid var(--border)" }}>
-                <p><strong style={{ color: "var(--foreground)" }}>Safety:</strong> {opt.why.safety}</p>
-                <p><strong style={{ color: "var(--foreground)" }}>Cost:</strong> {opt.why.cost}</p>
-                <p><strong style={{ color: "var(--foreground)" }}>Speed:</strong> {opt.why.speed}</p>
+                <p><strong style={{ color: "var(--foreground)" }}><T>Safety:</T></strong> <T>{opt.why.safety}</T></p>
+                <p><strong style={{ color: "var(--foreground)" }}><T>Cost:</T></strong> <T>{opt.why.cost}</T></p>
+                <p><strong style={{ color: "var(--foreground)" }}><T>Speed:</T></strong> <T>{opt.why.speed}</T></p>
                 {(opt.mode === "metro" || opt.mode === "bus") && (
                   <p style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)" }}>
-                    <strong style={{ color: "var(--foreground)" }}>Line / platform / interchange details:</strong> not
-                    available here — Delhi Metro and DTC don&apos;t publish a public real-time feed for this. Use the{" "}
+                    <strong style={{ color: "var(--foreground)" }}><T>Line / platform / interchange details:</T></strong>{" "}
+                    <T>{"not available here — Delhi Metro and DTC don't publish a public real-time feed for this. Use the"}</T>{" "}
                     <a
                       href={opt.mode === "metro" ? "https://www.delhimetrorail.com" : "https://dtc.delhi.gov.in"}
                       target="_blank"
                       rel="noreferrer"
                       style={{ color: "var(--accent-strong)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.2rem" }}
                     >
-                      official {opt.mode === "metro" ? "DMRC" : "DTC"} app/site <ExternalLink size={11} />
+                      <T>{`official ${opt.mode === "metro" ? "DMRC" : "DTC"} app/site`}</T> <ExternalLink size={11} />
                     </a>{" "}
-                    for exact line, platform, and direction.
+                    <T>for exact line, platform, and direction.</T>
                   </p>
                 )}
               </div>
@@ -138,7 +143,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                 className="btn-accent"
                 style={{ alignSelf: "flex-start", padding: "0.5rem 1rem", borderRadius: "0.6rem", fontSize: "0.8rem", fontWeight: 600, display: "flex", alignItems: "center", gap: "0.4rem" }}
               >
-                <Navigation size={14} /> Book {opt.label}
+                <Navigation size={14} /> <T>Book</T> {opt.label}
               </a>
             )}
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Phone } from "lucide-react";
+import { T } from "@/components/Translated";
 
 const EMERGENCY_NUMBERS = [
   { label: "Women Helpline", number: "1091" },
@@ -13,7 +14,9 @@ const EMERGENCY_NUMBERS = [
 export function QuickDial() {
   return (
     <div className="card" style={{ padding: "1.25rem" }}>
-      <h3 style={{ fontWeight: 600, marginBottom: "0.75rem" }}>Emergency SOS Quick Dial</h3>
+      <h3 style={{ fontWeight: 600, marginBottom: "0.75rem" }}>
+        <T>Emergency SOS Quick Dial</T>
+      </h3>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "0.6rem" }}>
         {EMERGENCY_NUMBERS.map((e) => (
           <a
@@ -31,7 +34,7 @@ export function QuickDial() {
             }}
           >
             <Phone size={16} />
-            {e.label} ({e.number})
+            <T>{e.label}</T> ({e.number})
           </a>
         ))}
       </div>

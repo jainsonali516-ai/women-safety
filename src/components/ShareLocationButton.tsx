@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MapPin, Loader2, Copy, Check, MessageCircle } from "lucide-react";
+import { T } from "@/components/Translated";
 
 interface Contact {
   id: string;
@@ -135,9 +136,11 @@ export function ShareLocationButton() {
 
   return (
     <div className="card" style={{ padding: "1.25rem" }}>
-      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Share My Location</h3>
+      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem" }}>
+        <T>Share My Location</T>
+      </h3>
       <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", marginBottom: "0.9rem" }}>
-        Generates a Google Maps link from your current GPS position that you can send to trusted contacts.
+        <T>Generates a Google Maps link from your current GPS position that you can send to trusted contacts.</T>
       </p>
       <button
         onClick={handleShare}
@@ -155,15 +158,19 @@ export function ShareLocationButton() {
         }}
       >
         {status === "locating" || status === "sending" ? <Loader2 size={16} className="animate-spin" /> : <MapPin size={16} />}
-        {status === "locating" ? "Getting location..." : status === "sending" ? "Generating link..." : "Share my location now"}
+        <T>{status === "locating" ? "Getting location..." : status === "sending" ? "Generating link..." : "Share my location now"}</T>
       </button>
 
-      {errorMessage && <p style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#ef4444" }}>{errorMessage}</p>}
+      {errorMessage && (
+        <p style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#ef4444" }}>
+          <T>{errorMessage}</T>
+        </p>
+      )}
 
       {needsManualLocation && (
         <form onSubmit={useManualLandmark} style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-            Location permission denied or weak GPS signal. Enter your current landmark or Metro station instead:
+            <T>Location permission denied or weak GPS signal. Enter your current landmark or Metro station instead:</T>
           </p>
           <div style={{ display: "flex", gap: "0.5rem" }}>
             <input
@@ -181,7 +188,7 @@ export function ShareLocationButton() {
               }}
             />
             <button type="submit" className="btn-accent" style={{ padding: "0.55rem 0.9rem", borderRadius: "0.5rem", border: "none", fontWeight: 600, fontSize: "0.85rem", cursor: "pointer" }}>
-              Use this
+              <T>Use this</T>
             </button>
           </div>
         </form>
@@ -191,11 +198,11 @@ export function ShareLocationButton() {
         <div style={{ marginTop: "0.9rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           {result.smsSent ? (
             <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>
-              SMS sent automatically to {result.sent}/{result.contacts} trusted contact(s).
+              <T>{`SMS sent automatically to ${result.sent}/${result.contacts} trusted contact(s).`}</T>
             </p>
           ) : (
             <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-              {result.note ?? "Automatic SMS isn't set up — send it yourself below, free, right from your phone."}
+              <T>{result.note ?? "Automatic SMS isn't set up — send it yourself below, free, right from your phone."}</T>
             </p>
           )}
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
@@ -205,7 +212,7 @@ export function ShareLocationButton() {
               rel="noreferrer"
               style={{ fontSize: "0.85rem", padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
             >
-              Open in Maps
+              <T>Open in Maps</T>
             </a>
             <button
               onClick={copyLink}
@@ -222,7 +229,7 @@ export function ShareLocationButton() {
                 cursor: "pointer",
               }}
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
+              {copied ? <Check size={14} /> : <Copy size={14} />} <T>{copied ? "Copied" : "Copy link"}</T>
             </button>
           </div>
 
@@ -236,7 +243,7 @@ export function ShareLocationButton() {
                       href={`sms:${c.phone}?body=${encodeURIComponent(smsMessage())}`}
                       style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem", borderRadius: "0.5rem", border: "1px solid var(--border)", color: "var(--foreground)" }}
                     >
-                      Text via SMS
+                      <T>Text via SMS</T>
                     </a>
                     <a
                       href={`https://wa.me/${c.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(smsMessage())}`}
@@ -253,7 +260,7 @@ export function ShareLocationButton() {
                         color: "#25d366",
                       }}
                     >
-                      <MessageCircle size={13} /> WhatsApp
+                      <MessageCircle size={13} /> <T>WhatsApp</T>
                     </a>
                   </span>
                 </div>

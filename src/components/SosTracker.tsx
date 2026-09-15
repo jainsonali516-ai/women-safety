@@ -6,6 +6,7 @@ import { Radio, WifiOff, Square, BatteryLow, Copy, Check, MessageCircle, Share2,
 import { enqueuePing, flushQueue, readQueue } from "@/lib/offlineQueue";
 import { useEmergencyMode, getSinglePositionLowPower } from "@/components/EmergencyModeProvider";
 import { TulipBloom } from "@/components/TulipBloom";
+import { T } from "@/components/Translated";
 
 const LOW_POWER_POLL_INTERVAL_MS = 5 * 60 * 1000; // one-shot fix every 5 min instead of continuous GPS
 
@@ -296,10 +297,13 @@ export function SosTracker() {
 
   return (
     <div className="card" style={{ padding: "1.25rem" }}>
-      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem" }}>Live Journey Tracking</h3>
+      <h3 style={{ fontWeight: 600, marginBottom: "0.5rem" }}>
+        <T>Live Journey Tracking</T>
+      </h3>
       <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", marginBottom: "0.9rem" }}>
-        Pings your location periodically while active. If your connection drops, pings are cached on your device and
-        sent automatically once you&apos;re back online.
+        <T>
+          {"Pings your location periodically while active. If your connection drops, pings are cached on your device and sent automatically once you're back online."}
+        </T>
       </p>
 
       {lowPower && (
@@ -317,7 +321,7 @@ export function SosTracker() {
             marginBottom: "0.75rem",
           }}
         >
-          <BatteryLow size={14} /> Low Power Mode — checking position every 5 min instead of continuously
+          <BatteryLow size={14} /> <T>Low Power Mode — checking position every 5 min instead of continuously</T>
         </div>
       )}
 
@@ -336,11 +340,15 @@ export function SosTracker() {
             marginBottom: "0.75rem",
           }}
         >
-          <WifiOff size={14} /> Offline Mode — Route Cached Locally {cachedCount > 0 ? `(${cachedCount} pending)` : ""}
+          <WifiOff size={14} /> <T>Offline Mode — Route Cached Locally</T> {cachedCount > 0 ? `(${cachedCount} pending)` : ""}
         </div>
       )}
 
-      {error && <p style={{ fontSize: "0.85rem", color: "#ef4444", marginBottom: "0.6rem" }}>{error}</p>}
+      {error && (
+        <p style={{ fontSize: "0.85rem", color: "#ef4444", marginBottom: "0.6rem" }}>
+          <T>{error}</T>
+        </p>
+      )}
 
       {justArrived && (
         <div
@@ -357,7 +365,9 @@ export function SosTracker() {
           }}
         >
           <TulipBloom size={28} openness={1} color="var(--accent-strong)" centerColor="var(--accent-strong)" title="Arrived safely" />
-          <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--accent-strong)" }}>Tracking ended — glad you made it safely.</span>
+          <span style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--accent-strong)" }}>
+            <T>Tracking ended — glad you made it safely.</T>
+          </span>
         </div>
       )}
 
@@ -378,7 +388,7 @@ export function SosTracker() {
             opacity: starting ? 0.7 : 1,
           }}
         >
-          <Radio size={16} /> {starting ? "Getting your location..." : "Start Tracking"}
+          <Radio size={16} /> <T>{starting ? "Getting your location..." : "Start Tracking"}</T>
         </button>
       ) : (
         <button
@@ -393,15 +403,15 @@ export function SosTracker() {
             cursor: "pointer",
           }}
         >
-          <Square size={16} /> Stop Tracking
+          <Square size={16} /> <T>Stop Tracking</T>
         </button>
       )}
 
       {alertId && !lowPower && (
         <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)", marginTop: "0.6rem" }}>
-          Keep this tab open and your screen on for location updates to keep flowing — phones pause
-          GPS in background tabs and when the screen locks, so a stale &quot;last updated&quot; time
-          usually means one of those, not a technical failure.
+          <T>
+            {'Keep this tab open and your screen on for location updates to keep flowing — phones pause GPS in background tabs and when the screen locks, so a stale "last updated" time usually means one of those, not a technical failure.'}
+          </T>
         </p>
       )}
 
@@ -419,19 +429,20 @@ export function SosTracker() {
           }}
         >
           <p style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", fontWeight: 700, color: "#ef4444" }}>
-            <Share2 size={15} /> Notify your trusted contacts now
+            <Share2 size={15} /> <T>Notify your trusted contacts now</T>
           </p>
           <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)" }}>
-            Tracking doesn&apos;t notify anyone by itself — tap SMS or WhatsApp below to actually send each contact
-            the live link, which updates automatically until you stop tracking.
+            <T>
+              {"Tracking doesn't notify anyone by itself — tap SMS or WhatsApp below to actually send each contact the live link, which updates automatically until you stop tracking."}
+            </T>
           </p>
 
           {contacts.length === 0 ? (
             <div className="empty-state" style={{ background: "var(--background-solid)" }}>
               <UserPlus size={20} />
-              No trusted contacts saved yet — add one so there&apos;s someone to notify.
+              <T>No trusted contacts saved yet — add one so there&apos;s someone to notify.</T>
               <Link href="/contacts" style={{ fontWeight: 700, color: "var(--accent-strong)" }}>
-                Add a contact
+                <T>Add a contact</T>
               </Link>
             </div>
           ) : (
@@ -445,7 +456,7 @@ export function SosTracker() {
                       className="icon-btn"
                       style={{ fontSize: "0.78rem", padding: "0.4rem 0.7rem" }}
                     >
-                      Text via SMS
+                      <T>Text via SMS</T>
                     </a>
                     <a
                       href={`https://wa.me/${c.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(trackingMessage(alertId))}`}
@@ -462,7 +473,7 @@ export function SosTracker() {
                         color: "#25d366",
                       }}
                     >
-                      <MessageCircle size={13} /> WhatsApp
+                      <MessageCircle size={13} /> <T>WhatsApp</T>
                     </a>
                   </span>
                 </div>
@@ -478,7 +489,7 @@ export function SosTracker() {
               className="icon-btn"
               style={{ fontSize: "0.8rem", padding: "0.45rem 0.75rem" }}
             >
-              Open link
+              <T>Open link</T>
             </a>
             <button
               onClick={copyTrackingLink}
@@ -492,7 +503,7 @@ export function SosTracker() {
                 cursor: "pointer",
               }}
             >
-              {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? "Copied" : "Copy link"}
+              {copied ? <Check size={14} /> : <Copy size={14} />} <T>{copied ? "Copied" : "Copy link"}</T>
             </button>
           </div>
         </div>

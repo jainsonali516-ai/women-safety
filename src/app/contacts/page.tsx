@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { RequireAuthGate } from "@/components/RequireAuthGate";
 import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
+import { T } from "@/components/Translated";
 
 interface Contact {
   id: string;
@@ -165,10 +166,10 @@ function ContactsManager() {
             <TulipLogo size={40} />
             <div>
               <h2 style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.1rem" }}>
-                <Users size={18} style={{ color: "var(--accent-strong)" }} /> Your Trusted Circle
+                <Users size={18} style={{ color: "var(--accent-strong)" }} /> <T>Your Trusted Circle</T>
               </h2>
               <p style={{ fontSize: "0.78rem", color: "var(--foreground-muted)" }}>
-                Every contact you add is another petal of protection around you.
+                <T>Every contact you add is another petal of protection around you.</T>
               </p>
             </div>
           </div>
@@ -182,10 +183,14 @@ function ContactsManager() {
               className="btn-accent mobile-full field"
               style={{ ...smallBtn, display: "flex", alignItems: "center", justifyContent: "center", gap: "0.3rem", opacity: addingContact ? 0.7 : 1, cursor: addingContact ? "wait" : "pointer" }}
             >
-              <Plus size={16} /> {addingContact ? "Adding..." : "Add"}
+              <Plus size={16} /> <T>{addingContact ? "Adding..." : "Add"}</T>
             </button>
           </form>
-          {error && <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: "0.5rem" }}>{error}</p>}
+          {error && (
+            <p style={{ color: "#ef4444", fontSize: "0.8rem", marginBottom: "0.5rem" }}>
+              <T>{error}</T>
+            </p>
+          )}
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {contacts.map((c) => (
               <li key={c.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", padding: "0.7rem 0.8rem", border: "1px solid var(--border)", borderRadius: "0.6rem" }}>
@@ -213,7 +218,7 @@ function ContactsManager() {
             {contacts.length === 0 && (
               <div className="empty-state">
                 <Users size={22} />
-                No contacts yet — add someone you trust so you can reach them fast in an emergency.
+                <T>No contacts yet — add someone you trust so you can reach them fast in an emergency.</T>
               </div>
             )}
           </ul>
@@ -222,10 +227,10 @@ function ContactsManager() {
         <section className="card" style={{ padding: "1.25rem" }}>
           <h2 style={{ fontWeight: 700, marginBottom: "0.5rem" }}>
             <Bell size={16} style={{ display: "inline", marginRight: "0.4rem" }} />
-            Location Reminders (Alarm)
+            <T>Location Reminders (Alarm)</T>
           </h2>
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", marginBottom: "1rem" }}>
-            Reminds you to share your location at set times. You will always be asked for consent before anything is sent.
+            <T>Reminds you to share your location at set times. You will always be asked for consent before anything is sent.</T>
           </p>
           <div className="mobile-stack" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
             <input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="field" style={inputStyle} />
@@ -235,7 +240,7 @@ function ContactsManager() {
               className="btn-accent mobile-full field"
               style={{ ...smallBtn, opacity: addingReminder ? 0.7 : 1, cursor: addingReminder ? "wait" : "pointer" }}
             >
-              {addingReminder ? "Adding..." : "Add Weekday Reminder"}
+              <T>{addingReminder ? "Adding..." : "Add Weekday Reminder"}</T>
             </button>
           </div>
           <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -251,7 +256,7 @@ function ContactsManager() {
                     className="icon-btn"
                     style={{ ...iconBtn, color: r.enabled ? "var(--accent-strong)" : "var(--foreground-muted)", opacity: busyReminderId === r.id ? 0.5 : 1, cursor: busyReminderId === r.id ? "wait" : "pointer" }}
                   >
-                    {r.enabled ? "On" : "Off"}
+                    <T>{r.enabled ? "On" : "Off"}</T>
                   </button>
                   <button
                     onClick={() => deleteReminder(r.id)}
@@ -267,7 +272,7 @@ function ContactsManager() {
             {reminders.length === 0 && (
               <div className="empty-state">
                 <BellOff size={22} />
-                No reminders set — add one so HerLane nudges you to share your location on a schedule.
+                <T>No reminders set — add one so HerLane nudges you to share your location on a schedule.</T>
               </div>
             )}
           </ul>
