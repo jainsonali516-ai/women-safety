@@ -55,31 +55,27 @@ export default async function Home() {
   return (
     <>
       <AppHeader />
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: "3rem",
-          padding: "3.5rem 1.5rem 3rem",
-        }}
-      >
-        <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620 }}>
-          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
-            Welcome back to <span style={{ color: "var(--accent)" }}>HerLane</span>
-          </h1>
-          <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6 }}>
-            Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help
-            instantly, and keep your trusted circle in the loop.
-          </p>
-          <Link
-            href="/journey"
-            className="btn-accent"
-            style={{ padding: "0.9rem 2.2rem", borderRadius: "0.9rem", fontWeight: 700, fontSize: "1rem", marginTop: "0.5rem" }}
-          >
-            Plan a Journey
-          </Link>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <section className="herlane-photo-hero herlane-photo-hero--compact">
+          <PhotoHeroBackground objectPosition="70% 40%" />
+          <div className="herlane-photo-hero-content" style={{ justifyContent: "center" }}>
+            <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620, margin: "0 auto" }}>
+              <h1 className="herlane-hero-photo-title">
+                Welcome back to <span style={{ color: "var(--brand-pink)" }}>HerLane</span>
+              </h1>
+              <p className="herlane-hero-photo-subtitle">
+                Your safety-first companion for getting around Delhi NCR — plan safer routes, reach help
+                instantly, and keep your trusted circle in the loop.
+              </p>
+              <Link
+                href="/journey"
+                className="btn-accent"
+                style={{ padding: "0.9rem 2.2rem", borderRadius: "0.9rem", fontWeight: 700, fontSize: "1rem", marginTop: "0.5rem" }}
+              >
+                Plan a Journey
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section
@@ -89,6 +85,8 @@ export default async function Home() {
             gap: "1.25rem",
             width: "100%",
             maxWidth: 1000,
+            margin: "0 auto",
+            padding: "2.5rem 1.5rem",
           }}
         >
           <HomeCard
