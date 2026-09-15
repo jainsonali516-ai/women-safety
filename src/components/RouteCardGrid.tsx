@@ -43,7 +43,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
         return (
           <div key={opt.mode} className="card route-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
-              <strong style={{ fontSize: "0.95rem" }}>{opt.label}</strong>
+              <strong style={{ fontSize: "0.95rem", flex: 1, minWidth: 0 }}>{opt.label}</strong>
               <span
                 style={{
                   fontSize: "0.68rem",
@@ -56,6 +56,7 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                   textTransform: "uppercase",
                   letterSpacing: "0.02em",
                   boxShadow: `0 0 10px ${tierStyle.bg}99`,
+                  flexShrink: 0,
                 }}
               >
                 {opt.risk_label}
