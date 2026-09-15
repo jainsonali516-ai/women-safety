@@ -30,9 +30,25 @@ const historyTurnSchema = z.object({
 // without bound across a long conversation.
 const MAX_HISTORY_TURNS = 10;
 
+// Told to Gemini by name rather than by its raw BCP-47 code (e.g. "hi-IN") — the model follows a
+// plain language name far more reliably than a locale code, which it sometimes echoes back
+// literally instead of treating as an instruction.
+const LANGUAGE_NAMES: Record<string, string> = {
+  "hi-IN": "Hindi",
+  "bn-IN": "Bengali",
+  "ta-IN": "Tamil",
+  "te-IN": "Telugu",
+  "mr-IN": "Marathi",
+  "gu-IN": "Gujarati",
+  "kn-IN": "Kannada",
+  "ml-IN": "Malayalam",
+  "pa-IN": "Punjabi",
+};
+
 const bodySchema = z.object({
   query: freeTextSchema(1000),
   history: z.array(historyTurnSchema).max(MAX_HISTORY_TURNS).optional(),
+  language: z.string().max(10).optional(),
 });
 
 interface GeminiPart {
@@ -62,7 +78,12 @@ export async function POST(request: Request) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return jsonError("Ally isn't configured on this server yet.", 503);
 
-  const { query, history } = parsed.data;
+  const { query, history, language } = parsed.data;
+
+  const languageName = language ? LANGUAGE_NAMES[language] : undefined;
+  const systemInstruction = languageName
+    ? `${SYSTEM_PROMPT}\n\nRespond in ${languageName}, regardless of what language the user writes in. Keep "HerLane" and "Ally" themselves in English — they're names, not words to translate.`
+    : SYSTEM_PROMPT;
 
   const contents = [
     ...(history ?? []).map((turn) => ({
@@ -79,7 +100,7 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents,
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        systemInstruction: { parts: [{ text: systemInstruction }] },
         generationConfig: { temperature: 0.7 },
       }),
       signal: AbortSignal.timeout(30000),

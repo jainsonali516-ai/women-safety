@@ -4,15 +4,22 @@ import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Send } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
+import { T } from "@/components/Translated";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ChatMessage {
   role: "user" | "bot";
   text: string;
+  // true only for hardcoded UI copy (the seed greeting, a client-side error fallback) — the
+  // user's own typed text and Ally's answer (already generated in the selected language server-
+  // side, see /api/chat) render as-is instead of being run back through the Sarvam translator.
+  translatable?: boolean;
 }
 
 export default function BotPage() {
+  const { language } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Hi, I'm Ally. Ask me anything." },
+    { role: "bot", text: "Hi, I'm Ally. Ask me anything.", translatable: true },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -31,17 +38,17 @@ export default function BotPage() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: userMessage, history }),
+        body: JSON.stringify({ query: userMessage, history, language }),
         signal: AbortSignal.timeout(45000),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
+      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error, translatable: !res.ok }]);
     } catch (err) {
       console.error("Ally request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Ally is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "Ally is taking a while, please try again." : "Sorry, something went wrong. Please try again.", translatable: true },
       ]);
     } finally {
       setLoading(false);
@@ -71,7 +78,7 @@ export default function BotPage() {
                 whiteSpace: "pre-wrap",
               }}
             >
-              {m.text}
+              {m.translatable ? <T>{m.text}</T> : m.text}
             </div>
           ))}
           {loading && (
@@ -79,7 +86,7 @@ export default function BotPage() {
               <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
                 <TulipLogo size={18} />
               </span>{" "}
-              Ally is thinking...
+              <T>Ally is thinking...</T>
             </div>
           )}
         </div>

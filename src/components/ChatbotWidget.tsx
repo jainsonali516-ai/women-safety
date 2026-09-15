@@ -4,17 +4,24 @@ import { useState } from "react";
 import { X, Send } from "lucide-react";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { TulipLogo } from "@/components/TulipLogo";
+import { T } from "@/components/Translated";
+import { useLanguage } from "@/components/LanguageProvider";
 
 interface ChatMessage {
   role: "user" | "bot";
   text: string;
+  // true only for hardcoded UI copy (the seed greeting, a client-side error fallback) — the
+  // user's own typed text and Ally's answer (already generated in the selected language server-
+  // side, see /api/chat) render as-is instead of being run back through the Sarvam translator.
+  translatable?: boolean;
 }
 
 export function ChatbotWidget() {
   const { active: lowPower } = useEmergencyMode();
+  const { language } = useLanguage();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Ask me anything." },
+    { role: "bot", text: "Ask me anything.", translatable: true },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,17 +40,17 @@ export function ChatbotWidget() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: text, history }),
+        body: JSON.stringify({ query: text, history, language }),
         signal: AbortSignal.timeout(45000),
       });
       const data = await res.json();
-      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
+      setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error, translatable: !res.ok }]);
     } catch (err) {
       console.error("Ally request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Ally is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "Ally is taking a while, please try again." : "Sorry, something went wrong. Please try again.", translatable: true },
       ]);
     } finally {
       setLoading(false);
@@ -136,7 +143,7 @@ export function ChatbotWidget() {
               whiteSpace: "pre-wrap",
             }}
           >
-            {m.text}
+            {m.translatable ? <T>{m.text}</T> : m.text}
           </div>
         ))}
         {loading && (
@@ -144,7 +151,7 @@ export function ChatbotWidget() {
             <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
               <TulipLogo size={16} />
             </span>{" "}
-            Thinking...
+            <T>Thinking...</T>
           </div>
         )}
       </div>
