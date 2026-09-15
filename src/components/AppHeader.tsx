@@ -20,6 +20,7 @@ const NAV_LINKS: { href: string; label: string; translateSource?: string; transl
   { href: "/safety", label: "Safety Tools" },
   { href: "/contacts", label: "Contacts" },
   { href: "/bot", label: "Ally", translatable: false },
+  { href: "/feedback", label: "Feedback" },
 ];
 
 export function AppHeader() {
