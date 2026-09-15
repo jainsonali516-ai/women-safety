@@ -594,8 +594,11 @@ a:focus-visible {
   font-size: clamp(2.4rem, 6vw, 4rem);
   /* line-height must be looser than a tight Latin default — Devanagari and other Indic scripts
      have matras/conjuncts that extend above and below the Latin em box, and a tight line-height
-     visually clips them against the next line instead of just looking "close together". */
-  line-height: 1.3;
+     visually clips them against the line above instead of just looking "close together". A little
+     top padding on top of that gives the very first line's marks room too, since line-height alone
+     only adds space between lines, not above the first one. */
+  line-height: 1.45;
+  padding-top: 0.15em;
   margin: 1.1rem 0 0.9rem;
   max-width: 640px;
 }

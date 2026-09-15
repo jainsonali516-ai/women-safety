@@ -221,7 +221,10 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
           </span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black leading-[1.3] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-pink-100 dark:to-rose-200">
+        <h1
+          className="text-4xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-pink-100 dark:to-rose-200"
+          style={{ lineHeight: 1.45, paddingTop: "0.15em" }}
+        >
           {language === 'en' ? (
             <>
               Navigate Delhi NCR with <br />
