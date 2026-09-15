@@ -227,7 +227,7 @@ function ContactsManager() {
         <section className="card" style={{ padding: "1.25rem" }}>
           <h2 style={{ fontWeight: 700, marginBottom: "0.5rem" }}>
             <Bell size={16} style={{ display: "inline", marginRight: "0.4rem" }} />
-            <T>Location Reminders (Alarm)</T>
+            <T>Location Reminders</T>
           </h2>
           <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", marginBottom: "1rem" }}>
             <T>Reminds you to share your location at set times. You will always be asked for consent before anything is sent.</T>
