@@ -1,39 +1,54 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
-import { TulipLogo } from "@/components/TulipLogo";
+import { TrustBadges } from "@/components/TrustBadges";
+import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
-import { Compass, ShieldCheck, Users, MessageSquareText } from "lucide-react";
+import { Compass, ShieldCheck, Users, MessageSquareText, Zap, ArrowRight } from "lucide-react";
 
 export default async function Home() {
   const user = await getSessionUser();
 
   if (!user) {
     return (
-      <main
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "1.25rem",
-          padding: "1.5rem",
-          textAlign: "center",
-        }}
-      >
-        <TulipLogo size={64} />
-        <h1 style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "0.08em" }}>HERLANE</h1>
-        <p style={{ color: "var(--foreground-muted)", maxWidth: 460, fontSize: "1.05rem" }}>
-          AI-powered safety and journey planning for female commuters across Delhi NCR.
-        </p>
-        <Link href="/auth" className="btn-accent" style={{ padding: "0.9rem 2rem", borderRadius: "0.9rem", fontWeight: 600, fontSize: "1rem" }}>
-          Get Started
-        </Link>
-        <Link href="/about" style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", textDecoration: "underline" }}>
-          Learn more about HerLane
-        </Link>
-      </main>
+      <>
+        <AppHeader />
+        <main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <section className="herlane-photo-hero">
+            <PhotoHeroBackground />
+
+            <div className="herlane-photo-hero-content">
+              <span className="herlane-hero-eyebrow">
+                <Zap size={13} /> AI SAFETY &amp; JOURNEY PLANNER
+              </span>
+              <h1 className="herlane-hero-photo-title">
+                Walk your city,
+                <br />
+                <span style={{ color: "var(--brand-pink)" }}>fearlessly.</span>
+              </h1>
+              <p className="herlane-hero-photo-subtitle">
+                AI-powered safety and journey planning for female commuters across Delhi NCR —
+                safer routes, instant help, and your trusted circle always in the loop.
+              </p>
+              <div style={{ display: "flex", gap: "0.9rem", flexWrap: "wrap", marginTop: "1.6rem" }}>
+                <Link
+                  href="/auth"
+                  className="btn-accent"
+                  style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.95rem 2rem", fontWeight: 700, fontSize: "1rem", border: "none" }}
+                >
+                  Get Started <ArrowRight size={18} />
+                </Link>
+                <Link href="/about" className="herlane-hero-btn-ghost">
+                  Learn more
+                </Link>
+              </div>
+              <div style={{ marginTop: "1.6rem" }}>
+                <TrustBadges tone="onPhoto" />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
     );
   }
 
@@ -51,8 +66,7 @@ export default async function Home() {
         }}
       >
         <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620 }}>
-          <TulipLogo size={56} />
-          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)", fontWeight: 800, letterSpacing: "-0.02em" }}>
+          <h1 style={{ fontSize: "clamp(2rem, 5vw, 2.8rem)" }}>
             Welcome back to <span style={{ color: "var(--accent)" }}>HerLane</span>
           </h1>
           <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6 }}>
@@ -82,24 +96,28 @@ export default async function Home() {
             icon={<Compass size={22} />}
             title="Plan a Journey"
             desc="Safety-scored routes across Metro, bus, auto & cabs, with a live corridor map."
+            gradient="linear-gradient(135deg, var(--accent), var(--accent-strong))"
           />
           <HomeCard
             href="/safety"
             icon={<ShieldCheck size={22} />}
             title="Safety Tools"
             desc="SOS quick-dial, share your live location, and journey tracking."
+            gradient="linear-gradient(135deg, var(--accent-strong), var(--accent-violet))"
           />
           <HomeCard
             href="/contacts"
             icon={<Users size={22} />}
             title="Trusted Contacts"
             desc="Manage emergency contacts and location-reminder alarms."
+            gradient="linear-gradient(135deg, var(--accent-amber), var(--accent))"
           />
           <HomeCard
             href="/bot"
             icon={<MessageSquareText size={22} />}
             title="HerLane Bot"
             desc="Ask about an upcoming trip and get a safety-aware forecast."
+            gradient="linear-gradient(135deg, var(--accent-violet), var(--accent))"
           />
         </section>
       </main>
@@ -108,7 +126,19 @@ export default async function Home() {
   );
 }
 
-function HomeCard({ href, icon, title, desc }: { href: string; icon: React.ReactNode; title: string; desc: string }) {
+function HomeCard({
+  href,
+  icon,
+  title,
+  desc,
+  gradient,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  gradient: string;
+}) {
   return (
     <Link
       href={href}
@@ -125,11 +155,11 @@ function HomeCard({ href, icon, title, desc }: { href: string; icon: React.React
         style={{
           width: 42,
           height: 42,
-          borderRadius: "0.75rem",
+          borderRadius: "var(--radius-sm)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, var(--accent), var(--accent-strong))",
+          background: gradient,
           color: "white",
         }}
       >

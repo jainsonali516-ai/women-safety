@@ -4,75 +4,83 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-  /* Tulip palette — the flower itself, not a generic app palette. Petal coral is the one accent
-     used for primary actions/SOS across both themes; leaf teal is trust/verified; pollen amber is
-     caution. Only the surfaces (ivory vs. night aubergine) change between light and dark. */
-  --tulip-petal-coral: #e64f6c;
-  --tulip-aubergine-deep: #1b1420;
-  --tulip-aubergine-surface: #241a2b;
-  --tulip-leaf-teal: #2f7a6e;
-  --tulip-leaf-teal-light: #8fc9bc;
-  --tulip-pollen-amber: #e8a33d;
-  --tulip-ivory: #fbf6f1;
+  /* HerLane brand palette (2026 refresh) — a multi-color system over a 3-tier surface hierarchy,
+     replacing the earlier single-hue tulip palette for a bolder, more editorial feel. Pink stays
+     the primary action color (brand continuity); violet marks AI/tech touches; teal is trust/
+     verified; amber is caution. */
+  --brand-pink: #ff4d6d;
+  --brand-pink-strong: #e83a5a;
+  --brand-violet: #6c63ff;
+  --brand-teal: #00d4aa;
+  --brand-amber: #f0a500;
 
-  /* Garden (light) theme */
-  --garden-green: var(--tulip-leaf-teal);
-  --garden-pistachio: var(--tulip-leaf-teal-light);
-  --garden-pink: var(--tulip-petal-coral);
-  --garden-gold: var(--tulip-pollen-amber);
-  --garden-sky: var(--tulip-leaf-teal-light);
-  --garden-white: var(--tulip-ivory);
+  /* Light "Garden" surfaces — soft warm-white tiers instead of one flat white. */
+  --surface-0-light: #fff9fb;
+  --surface-1-light: #ffffff;
+  --surface-2-light: #fdf1f4;
+  --surface-3-light: #f7e0e8;
 
-  /* Galactic (dark) theme */
-  --galactic-deep: var(--tulip-aubergine-deep);
-  --galactic-nebula: var(--tulip-aubergine-surface);
-  --galactic-neon-pink: var(--tulip-petal-coral);
-  --galactic-violet: var(--tulip-leaf-teal);
-  --galactic-starlight: var(--tulip-ivory);
-  --galactic-jet: #0f0a14;
+  /* Dark "Galactic" surfaces — near-black tiers instead of one flat aubergine. */
+  --surface-0-dark: #0a0a0f;
+  --surface-1-dark: #13131a;
+  --surface-2-dark: #1a1a26;
+  --surface-3-dark: #2a2a3e;
 
-  /* Ivory ground with a soft coral/amber ambient glow — petal-white space, not a generic pastel. */
+  /* Radius scale, reused by .card/.field/.icon-btn etc. instead of one-off hardcoded values. */
+  --radius-sm: 0.75rem;
+  --radius-md: 1rem;
+  --radius-lg: 1.5rem;
+  --radius-xl: 2rem;
+
   --background:
-    radial-gradient(circle at 20% 15%, rgba(230, 79, 108, 0.10), transparent 45%),
-    radial-gradient(circle at 85% 75%, rgba(232, 163, 61, 0.10), transparent 48%),
-    linear-gradient(160deg, #fffdfb 0%, var(--tulip-ivory) 100%);
-  --background-solid: var(--tulip-ivory);
-  --surface: #ffffff;
-  --surface-glass: rgba(255, 255, 255, 0.66);
-  --foreground: var(--tulip-aubergine-deep);
+    radial-gradient(circle at 20% 15%, rgba(255, 77, 109, 0.10), transparent 45%),
+    radial-gradient(circle at 85% 75%, rgba(108, 99, 255, 0.08), transparent 48%),
+    linear-gradient(160deg, #fffdfb 0%, var(--surface-2-light) 100%);
+  --background-solid: var(--surface-0-light);
+  --surface: var(--surface-1-light);
+  --surface-raised: var(--surface-2-light);
+  --surface-hover: var(--surface-3-light);
+  --surface-glass: rgba(255, 255, 255, 0.7);
+  --foreground: #1b1420;
   --foreground-muted: #6b5a68;
-  --accent: var(--tulip-petal-coral);
-  --accent-strong: var(--tulip-leaf-teal);
-  /* Neutral, whisper-thin borders by default — coral is reserved for emphasis (an active state, a
-     highlighted route, a focus ring), not painted around every card. A coral border on every
-     surface reads as "the whole page is pink"; a neutral one with coral used sparingly reads as
-     restrained/premium with red as a deliberate accent. */
+  --accent: var(--brand-pink);
+  --accent-strong: var(--brand-teal);
+  --accent-violet: var(--brand-violet);
+  --accent-amber: var(--brand-amber);
+  /* Neutral, whisper-thin borders by default — pink is reserved for emphasis (an active state, a
+     highlighted route, a focus ring), not painted around every card. A pink border on every
+     surface reads as "the whole page is pink"; a neutral one with pink used sparingly reads as
+     restrained/premium with pink as a deliberate accent. */
   --border: rgba(15, 23, 42, 0.08);
   --card-glow-border: transparent;
   --card-border-pink: rgba(15, 23, 42, 0.08);
-  --card-shadow-pink: rgba(230, 79, 108, 0.07);
+  --card-shadow-pink: rgba(255, 77, 109, 0.08);
 }
 
 [data-theme="dark"] {
-  /* Deep stem/night aubergine with soft coral + amber ambient glows. */
+  /* Near-black base with soft pink + violet ambient glows. */
   --background:
-    radial-gradient(circle at 20% 20%, rgba(230, 79, 108, 0.16), transparent 42%),
-    radial-gradient(circle at 80% 70%, rgba(232, 163, 61, 0.10), transparent 48%),
-    radial-gradient(circle at top, var(--tulip-aubergine-surface) 0%, var(--tulip-aubergine-deep) 65%, #0f0a14 100%);
-  --background-solid: var(--tulip-aubergine-deep);
-  --surface: var(--tulip-aubergine-surface);
-  --surface-glass: rgba(36, 26, 43, 0.6);
-  --foreground: var(--tulip-ivory);
-  --foreground-muted: #c7b3c0;
-  --accent: var(--tulip-petal-coral);
-  --accent-strong: var(--tulip-leaf-teal-light);
+    radial-gradient(circle at 20% 20%, rgba(255, 77, 109, 0.16), transparent 42%),
+    radial-gradient(circle at 80% 70%, rgba(108, 99, 255, 0.12), transparent 48%),
+    radial-gradient(circle at top, var(--surface-2-dark) 0%, var(--surface-0-dark) 65%, #050508 100%);
+  --background-solid: var(--surface-0-dark);
+  --surface: var(--surface-1-dark);
+  --surface-raised: var(--surface-2-dark);
+  --surface-hover: var(--surface-3-dark);
+  --surface-glass: rgba(26, 26, 38, 0.65);
+  --foreground: #fbf6f1;
+  --foreground-muted: #b8aebf;
+  --accent: var(--brand-pink);
+  --accent-strong: var(--brand-teal);
+  --accent-violet: var(--brand-violet);
+  --accent-amber: var(--brand-amber);
   /* Neutral rgba(255,255,255,0.08) borders — the signature dark surface stays sophisticated
-     black/charcoal, with a low-key crimson glow only in the card shadow (a whisper, not a halo)
-     and a stronger coral glow reserved for .route-card, which is meant to draw the eye. */
+     black/charcoal, with a low-key pink glow only in the card shadow (a whisper, not a halo)
+     and a stronger pink glow reserved for .route-card, which is meant to draw the eye. */
   --border: rgba(255, 255, 255, 0.08);
-  --card-glow-border: rgba(230, 79, 108, 0.22);
+  --card-glow-border: rgba(255, 77, 109, 0.24);
   --card-border-pink: rgba(255, 255, 255, 0.08);
-  --card-shadow-pink: rgba(230, 79, 108, 0.1);
+  --card-shadow-pink: rgba(255, 77, 109, 0.12);
 }
 
 html {
@@ -105,7 +113,7 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--foreground);
-  background: var(--background-solid);
+  background: var(--background) fixed;
   font-family: var(--font-sora), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -116,14 +124,14 @@ body {
   box-sizing: border-box;
 }
 
-/* Fraunces on headlines — curved, organic letterforms as the typographic echo of petal shapes.
-   Sora (the body font) stays on every dense/data screen so the brand voice doesn't compete with
-   transit info; this is the one deliberate exception, reserved for headline-weight text only. */
+/* Bold Sora headlines — a confident, modern sans instead of the earlier decorative serif, for a
+   more professional/editorial read. Sora is already the body font, so this is zero extra
+   font-loading cost, just a heavier weight + tighter tracking reserved for headline-weight text. */
 h1, h2, h3 {
-  font-family: var(--font-fraunces), Georgia, serif;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
+  font-family: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 /* Numeric/technical readouts (timestamps, distances, coordinates, tracking IDs) in the monospace
@@ -172,21 +180,6 @@ a {
   text-decoration: none;
 }
 
-/* ---------- Animated background ----------
-   The actual petal/star/transport-icon animation is a <canvas> painted in JS
-   (src/components/BackgroundCanvas.tsx) — this class only supplies the theme-reactive gradient,
-   full-viewport fixed positioning, and the negative z-index + pointer-events:none that keep it
-   strictly behind and out of the way of every real UI element on the page. */
-.tulip-bg {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  background: var(--background);
-  transition: background 0.7s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
 /* Ultra-cute rounded glassmorphic cards — soft translucent surface, blur, and a subtle pink
    glow border, used for every card-style surface in the app. The shadow is layered (a tight,
    dark contact shadow plus a wider soft glow) rather than one flat blur — that's what reads as
@@ -196,7 +189,7 @@ a {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--card-border-pink);
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.06),
     0 12px 28px var(--card-shadow-pink);
@@ -209,7 +202,7 @@ a {
 .field {
   background: var(--background-solid);
   border: 1.5px solid var(--border);
-  border-radius: 0.7rem;
+  border-radius: var(--radius-md);
   color: var(--foreground);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
@@ -244,14 +237,14 @@ a:focus-visible {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--card-border-pink);
-  border-radius: 1.5rem;
+  border-radius: var(--radius-xl);
   box-shadow: 0 8px 25px var(--card-shadow-pink);
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 [data-theme="dark"] .route-card {
   border-color: var(--card-glow-border);
-  box-shadow: 0 0 16px rgba(230, 79, 108, 0.14), 0 0 28px rgba(47, 122, 110, 0.08);
+  box-shadow: 0 0 16px rgba(255, 77, 109, 0.14), 0 0 28px rgba(0, 212, 170, 0.08);
 }
 
 /* Fake an industrial/blueprint dark map style on free, no-key OpenStreetMap tiles via a CSS
@@ -379,109 +372,9 @@ a:focus-visible {
 }
 
 /* ---------- Marketing homepage hero ---------- */
-.herlane-hero-grid {
-  position: relative;
-}
-
-/* Grid items default to min-width:auto, which sizes them to their content's max-content width
-   (e.g. a paragraph's `max-width: 520px`) rather than shrinking to the actual column width. On a
-   390px viewport that pushed the whole grid wider than the screen, silently clipped by body's
-   overflow-x:hidden — text and buttons were being cut off mid-word, not actually wrapping. */
-.herlane-hero-grid > * {
-  min-width: 0 !important;
-}
-
-/* Belt-and-suspenders against any remaining intrinsic-sizing overflow: the headline is the
-   widest unbreakable run of text in the hero (each line has no natural break point), so on a
-   narrow phone it's allowed to break even mid-word rather than forcing its container wider. */
-.herlane-hero-grid h1,
-.herlane-hero-grid p {
-  overflow-wrap: anywhere;
-}
-
-/* Contains the glow blobs to the hero's own bounds — without this, a percentage-based offset on
-   a very tall section could push a blob into unrelated empty space below the fold, rendering as
-   a flat, oddly-shaped blur rather than a contained ambient highlight. */
-.herlane-hero-grid {
-  overflow: hidden;
-}
-
-.herlane-hero-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(80px);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.herlane-hero-glow-a {
-  width: 380px;
-  height: 380px;
-  top: -60px;
-  right: -40px;
-  background: color-mix(in srgb, var(--accent) 20%, transparent);
-  animation: herlane-glow-drift-a 14s ease-in-out infinite;
-}
-
-.herlane-hero-glow-b {
-  width: 300px;
-  height: 300px;
-  bottom: -60px;
-  left: -60px;
-  background: color-mix(in srgb, var(--accent-strong) 14%, transparent);
-  animation: herlane-glow-drift-b 18s ease-in-out infinite;
-}
-
-@keyframes herlane-glow-drift-a {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-20px, 25px) scale(1.08); }
-}
-
-@keyframes herlane-glow-drift-b {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(25px, -20px) scale(1.1); }
-}
-
-/* The route line "draws itself" in on load, then keeps a slow subtle glow pulse. */
-.herlane-route-path {
-  stroke-dasharray: 700;
-  stroke-dashoffset: 700;
-  animation: herlane-route-draw 2.4s ease-out 0.3s forwards, herlane-route-glow 3s ease-in-out 2.8s infinite;
-}
-
-@keyframes herlane-route-draw {
-  to { stroke-dashoffset: 0; }
-}
-
-@keyframes herlane-route-glow {
-  0%, 100% { opacity: 0.85; }
-  50% { opacity: 1; filter: drop-shadow(0 0 6px var(--accent)); }
-}
-
-/* The commuter figure gets a very slow, subtle sway — movement without distraction. */
-.herlane-figure {
-  animation: herlane-figure-sway 6s ease-in-out infinite;
-  transform-origin: 180px 430px;
-}
-
-@keyframes herlane-figure-sway {
-  0%, 100% { transform: translate(180px, 320px) rotate(0deg) translateY(0); }
-  50% { transform: translate(180px, 320px) rotate(0.5deg) translateY(-2px); }
-}
-
-.herlane-skyline {
-  animation: herlane-skyline-drift 24s ease-in-out infinite;
-}
-
-@keyframes herlane-skyline-drift {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-4px); }
-}
-
-/* The Route Intelligence card gently bobs in place, like it's alive/live-updating — kept in
-   normal document flow (not absolutely overlapping the illustration) so its real height is
-   always accounted for in the layout; a mismatched absolute overlap was previously leaving a
-   large empty gap in the shorter text column, exposing the ambient glow as a flat grey block. */
+/* The floating hero card (About page's journey-planner preview) gently bobs in place, like it's
+   alive/live-updating — kept in normal document flow (not absolutely overlapping the photo) so
+   its real height is always accounted for in the layout. */
 .herlane-float {
   animation: herlane-card-float 5s ease-in-out infinite;
 }
@@ -489,24 +382,6 @@ a:focus-visible {
 @keyframes herlane-card-float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-8px); }
-}
-
-/* Safety signal icons pulse in a staggered wave rather than all at once. */
-.herlane-signal-icon {
-  animation: herlane-signal-pulse 2.6s ease-in-out infinite;
-}
-
-@keyframes herlane-signal-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.06); opacity: 1; }
-}
-
-.herlane-route-row {
-  transition: transform 0.15s ease, border-color 0.15s ease;
-}
-
-.herlane-route-row:hover {
-  transform: translateX(2px);
 }
 
 .herlane-bento-card {
@@ -536,35 +411,151 @@ a:focus-visible {
   transform: translateX(4px);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .herlane-hero-glow-a,
-  .herlane-hero-glow-b,
-  .herlane-route-path,
-  .herlane-figure,
-  .herlane-skyline,
-  .herlane-float,
-  .herlane-signal-icon {
-    animation: none;
-  }
-  .herlane-route-path {
-    stroke-dashoffset: 0;
-  }
+/* ---------- Homepage photo hero ---------- */
+/* A full-bleed photo hero (theme-swapped via the same data-theme attribute everything else
+   uses — set pre-hydration, so there's no flash of the wrong image). Hero text is always white
+   regardless of theme: both photos are dark/moody enough at the text side that white-on-photo is
+   the one styling choice that reads correctly in both Garden and Galactic, the same reasoning
+   most photo-background heroes use rather than trying to theme text color over a photograph. */
+.herlane-photo-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 82vh;
+  display: flex;
+  align-items: center;
+}
+
+.herlane-photo-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  transition: opacity 0.4s ease;
+}
+
+.herlane-photo-hero-bg-dark {
+  display: none;
+}
+
+[data-theme="dark"] .herlane-photo-hero-bg-light {
+  display: none;
+}
+
+[data-theme="dark"] .herlane-photo-hero-bg-dark {
+  display: block;
+}
+
+.herlane-photo-hero-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* The top band is intentionally strong and full-width (not just the left side, where the
+     horizontal scrim already helps) — both source photos have a small baked-in mock nav/wordmark
+     right at the top from the original reference shots, and it needs to disappear under the real
+     AppHeader regardless of viewport aspect ratio / crop, not just be dimmed. */
+  background:
+    linear-gradient(100deg, rgba(8, 6, 10, 0.85) 0%, rgba(8, 6, 10, 0.5) 42%, rgba(8, 6, 10, 0.12) 68%),
+    linear-gradient(180deg, rgba(8, 6, 10, 0.96) 0%, rgba(8, 6, 10, 0.92) 8%, rgba(8, 6, 10, 0.55) 16%, rgba(8, 6, 10, 0.15) 24%, transparent 32%, transparent 76%, rgba(8, 6, 10, 0.45) 100%);
+}
+
+.herlane-photo-hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 6rem 1.5rem;
+}
+
+.herlane-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: fit-content;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.herlane-hero-photo-title {
+  color: #fff;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+  margin: 1.1rem 0 0.9rem;
+  max-width: 640px;
+}
+
+.herlane-hero-photo-subtitle {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.05rem;
+  line-height: 1.65;
+  max-width: 520px;
+  margin: 0;
+}
+
+.herlane-hero-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.95rem 2rem;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.herlane-hero-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.03);
 }
 
 @media (max-width: 860px) {
-  .herlane-hero-grid {
-    grid-template-columns: 1fr !important;
+  .herlane-photo-hero {
+    min-height: 74vh;
   }
-  /* Headline stays first on mobile (not the illustration) — the first viewport must communicate
-     the HerLane name and headline immediately, which a visual-first order buried below a tall
-     illustration+card block. */
-  .herlane-hero-visual {
-    max-width: 320px !important;
-    margin: 1.5rem auto 0 !important;
+  .herlane-photo-hero-content {
+    padding: 4.5rem 1.25rem;
   }
+}
+
+@media (max-width: 640px) {
+  .herlane-photo-hero {
+    min-height: 68vh;
+  }
+}
+
+/* About page's hero carries a floating card alongside the headline rather than standing alone,
+   so it needs less vertical real estate than the homepage splash. */
+.herlane-photo-hero--compact {
+  min-height: auto;
+  padding: 6rem 0 5rem;
+}
+
+.herlane-photo-hero--compact .herlane-photo-hero-content {
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.85fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: center;
+}
+
+@media (max-width: 860px) {
+  .herlane-photo-hero--compact .herlane-photo-hero-content {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .herlane-float {
-    position: static;
-    margin-top: 1rem;
     animation: none;
   }
 }
@@ -601,14 +592,14 @@ a:focus-visible {
   background: linear-gradient(135deg, var(--accent), var(--accent-strong));
   color: white;
   border-radius: 999px !important;
-  box-shadow: 0 8px 25px rgba(255, 105, 180, 0.25);
+  box-shadow: 0 8px 25px rgba(255, 77, 109, 0.25);
   transition: filter 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .btn-accent:hover {
   filter: brightness(1.08);
   transform: scale(1.05);
-  box-shadow: 0 10px 30px rgba(255, 105, 180, 0.35);
+  box-shadow: 0 10px 30px rgba(255, 77, 109, 0.35);
 }
 
 .btn-accent:active {
@@ -649,7 +640,7 @@ a:focus-visible {
   align-items: center;
   justify-content: center;
   border: 1.5px solid var(--border);
-  border-radius: 0.6rem;
+  border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--foreground);
   transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, color 0.15s ease;
