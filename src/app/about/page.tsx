@@ -1,6 +1,6 @@
 import { getSessionUser } from "@/lib/auth";
 import { AppHeader } from "@/components/AppHeader";
-import { TulipLogo } from "@/components/TulipLogo";
+import { AboutHero } from "@/components/AboutHero";
 import { FaqAccordion, type FaqCategory } from "@/components/FaqAccordion";
 import { Shield, MapPinned, Users, Bot, Lock } from "lucide-react";
 
@@ -121,53 +121,47 @@ export default async function AboutPage() {
   return (
     <>
       {user && <AppHeader />}
-      <main style={{ flex: 1, padding: "3rem 1.5rem", maxWidth: 760, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
-        <section style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem", textAlign: "center" }}>
-          <TulipLogo size={48} />
-          <h1 style={{ fontSize: "clamp(1.8rem, 5vw, 2.4rem)", fontWeight: 800 }}>About HerLane</h1>
-          <p style={{ color: "var(--foreground-muted)", fontSize: "1.05rem", lineHeight: 1.6, maxWidth: 560 }}>
-            HerLane is a safety-first journey planner built for female commuters across Delhi, Noida,
-            Gurugram, Ghaziabad, and Faridabad — helping you get where you&apos;re going with a route
-            that&apos;s not just fast, but genuinely safer.
-          </p>
-        </section>
+      <main style={{ flex: 1, padding: "1.5rem 1.5rem 3rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+        <AboutHero />
 
-        <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem" }}>
+        <section id="features" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1.25rem" }}>
           <AboutCard icon={<MapPinned size={20} />} title="Safety-Scored Routing" desc="Routes across Metro, DTC buses, autos, and cabs are ranked using real street-light density and foot-traffic signals, not guesswork." />
           <AboutCard icon={<Shield size={20} />} title="Built for Emergencies" desc="One-tap SOS dialing, instant location sharing, and live journey tracking that keeps working even if your connection drops." />
           <AboutCard icon={<Users size={20} />} title="Your Trusted Circle" desc="Keep a list of emergency contacts you can reach — or who can reach you — in one tap." />
           <AboutCard icon={<Bot size={20} />} title="HerLane Bot" desc="Ask about an upcoming trip and get a safety-aware forecast for the best time and mode to travel." />
         </section>
 
-        <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <Lock size={18} /> Built on free, transparent data
-          </h2>
-          <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>
-            HerLane&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
-            Overpass) — no paid API keys or billing accounts required to use the core app. Where a
-            feature depends on an optional service (like SMS delivery or HerLane Bot&apos;s natural-language
-            replies), it&apos;s clearly labeled and degrades gracefully rather than pretending to work
-            when it can&apos;t.
-          </p>
-        </section>
+        <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
+          <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Lock size={18} /> Built on free, transparent data
+            </h2>
+            <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>
+              HerLane&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
+              Overpass) — no paid API keys or billing accounts required to use the core app. Where a
+              feature depends on an optional service (like SMS delivery or HerLane Bot&apos;s natural-language
+              replies), it&apos;s clearly labeled and degrades gracefully rather than pretending to work
+              when it can&apos;t.
+            </p>
+          </section>
 
-        <section>
-          <h2 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "1rem" }}>Frequently Asked Questions</h2>
-          <FaqAccordion categories={FAQ} />
-        </section>
+          <section>
+            <h2 style={{ fontSize: "1.3rem", fontWeight: 800, marginBottom: "1rem" }}>Frequently Asked Questions</h2>
+            <FaqAccordion categories={FAQ} />
+          </section>
 
-        <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-          <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Credits &amp; Development Team</h2>
-          <ul style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.9rem" }}>
-            {CREDITS.map((c) => (
-              <li key={c.name} style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
-                <span style={{ fontWeight: 600 }}>{c.name}</span>
-                <span style={{ color: "var(--foreground-muted)" }}>{c.role}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+          <section className="card" style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            <h2 style={{ fontSize: "1.1rem", fontWeight: 700 }}>Credits &amp; Development Team</h2>
+            <ul style={{ display: "flex", flexDirection: "column", gap: "0.4rem", fontSize: "0.9rem" }}>
+              {CREDITS.map((c) => (
+                <li key={c.name} style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                  <span style={{ fontWeight: 600 }}>{c.name}</span>
+                  <span style={{ color: "var(--foreground-muted)" }}>{c.role}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </main>
     </>
   );

@@ -1,115 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import {
-  ArrowRight,
-  Lock,
-  Brain,
-  MapPin,
-  Zap,
-  Shield,
-  Leaf,
-  Lightbulb,
-  Users2,
-  Building2,
-  CheckCircle2,
-  ArrowLeftRight,
-  GraduationCap,
-  Bell,
-  UserPlus,
-  Radio,
-  ShieldCheck,
-} from "lucide-react";
-import { TulipLogo } from "@/components/TulipLogo";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { ArrowRight, Lock, Brain, MapPin, Zap, Shield, Leaf, Lightbulb, Users2, Building2, CheckCircle2, ArrowLeftRight } from "lucide-react";
 
 /**
- * The logged-out landing page. Kept separate from AppHeader/the logged-in home dashboard
- * (src/app/page.tsx) since this is a different audience (a visitor deciding whether to sign up)
- * with a different job: sell the product, not act as an in-app dashboard. Every "route",
- * "signal", and safety claim shown here is clearly labeled as illustrative — this page has no
- * live data of its own, unlike the real /journey planner it links to.
+ * The hero for the About page — headline, an illustrated commuter+route visual, and a sample
+ * "Route Intelligence" card. Every route/signal shown in that card is explicitly labeled
+ * "sample"/"illustrative": this component has no live data of its own, unlike the real /journey
+ * planner its primary CTA links to.
  */
-export function MarketingHome() {
-  return (
-    <div style={{ width: "100%", maxWidth: "100vw", overflowX: "clip" }}>
-      <MarketingNav />
-      <Hero />
-      <FeatureBento />
-    </div>
-  );
-}
-
-function MarketingNav() {
-  return (
-    <header
-      className="glass"
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 40,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "0.9rem 1.5rem",
-        borderLeft: "none",
-        borderRight: "none",
-        borderTop: "none",
-      }}
-    >
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
-        <TulipLogo size={30} />
-        <span style={{ display: "flex", flexDirection: "column", lineHeight: 1.1 }}>
-          <span style={{ fontWeight: 800, fontSize: "1.15rem", letterSpacing: "0.02em" }}>HerLane</span>
-          <span style={{ fontSize: "0.62rem", color: "var(--foreground-muted)", fontWeight: 600 }}>
-            Safer journeys. Stronger you.
-          </span>
-        </span>
-      </Link>
-
-      <nav className="app-nav-desktop" style={{ alignItems: "center", gap: "1.4rem" }}>
-        <Link href="#features" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
-          Features
-        </Link>
-        <Link href="/safety" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
-          Safety
-        </Link>
-        <Link href="/about" style={{ fontSize: "0.9rem", color: "var(--foreground-muted)" }}>
-          About
-        </Link>
-        <ThemeToggle />
-        <Link
-          href="/auth"
-          className="btn-accent"
-          style={{ display: "flex", alignItems: "center", gap: "0.4rem", padding: "0.6rem 1.1rem", fontWeight: 700, fontSize: "0.85rem", border: "none" }}
-        >
-          Open App <ArrowRight size={15} />
-        </Link>
-      </nav>
-
-      <div className="app-nav-mobile-controls" style={{ alignItems: "center", gap: "0.6rem" }}>
-        <ThemeToggle />
-        <Link href="/auth" className="btn-accent" style={{ padding: "0.5rem 0.9rem", fontWeight: 700, fontSize: "0.8rem", border: "none" }}>
-          Open App
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-function Hero() {
+export function AboutHero() {
   return (
     <section
       style={{
         position: "relative",
         overflow: "hidden",
-        padding: "clamp(2.5rem, 6vw, 5rem) 1.5rem",
+        padding: "clamp(1.5rem, 5vw, 3rem) 0",
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)",
         gap: "clamp(2rem, 5vw, 4rem)",
         alignItems: "center",
-        maxWidth: 1280,
-        margin: "0 auto",
       }}
       className="herlane-hero-grid"
     >
@@ -137,13 +47,13 @@ function Hero() {
           <Zap size={13} color="var(--accent)" /> AI SAFETY &amp; JOURNEY PLANNER
         </span>
 
-        <h1 style={{ fontSize: "clamp(2.3rem, 6vw, 3.6rem)", lineHeight: 1.05, margin: 0 }}>
+        <h1 style={{ fontSize: "clamp(2.1rem, 5.5vw, 3.2rem)", lineHeight: 1.05, margin: 0 }}>
           Smarter Routes.
           <br />
           <span style={{ color: "var(--accent)" }}>Safer You.</span>
         </h1>
 
-        <p style={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--accent)", margin: 0 }}>
+        <p style={{ fontSize: "1.02rem", fontWeight: 700, color: "var(--accent)", margin: 0 }}>
           The fastest route is not always the right route.
         </p>
 
@@ -154,7 +64,7 @@ function Hero() {
 
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
           <Link
-            href="/auth"
+            href="/journey"
             className="btn-accent"
             style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.85rem 1.5rem", fontWeight: 700, fontSize: "0.95rem", border: "none" }}
           >
@@ -375,109 +285,5 @@ function RouteIntelligenceCard() {
         ))}
       </div>
     </div>
-  );
-}
-
-interface BentoItem {
-  title: string;
-  desc: string;
-  icon: React.ReactNode;
-  href: string;
-  cta: string;
-  large?: boolean;
-}
-
-const BENTO_ITEMS: BentoItem[] = [
-  {
-    title: "AI-Aware Safety Route Planner",
-    desc: "Route recommendations that weigh lighting, foot traffic, and how monitored each mode is — not just travel time.",
-    icon: <Brain size={20} />,
-    href: "/journey",
-    cta: "Explore Route Intelligence",
-    large: true,
-  },
-  {
-    title: "Smarter Campus Safety",
-    desc: "Context-aware support for students navigating campus routes and daily commutes.",
-    icon: <GraduationCap size={20} />,
-    href: "/about",
-    cta: "Learn more",
-  },
-  {
-    title: "Emergency Assistance",
-    desc: "One-tap SOS with live location shared straight to your trusted circle.",
-    icon: <Bell size={20} />,
-    href: "/safety",
-    cta: "See safety tools",
-  },
-  {
-    title: "Trusted Contacts",
-    desc: "Build your circle of protection — notified instantly the moment you need them.",
-    icon: <UserPlus size={20} />,
-    href: "/contacts",
-    cta: "Add contacts",
-  },
-  {
-    title: "Live Journey Signals",
-    desc: "Real-time tracking your circle can follow, for as long as you choose to share it.",
-    icon: <Radio size={20} />,
-    href: "/safety",
-    cta: "Start tracking",
-  },
-  {
-    title: "Privacy-first AI",
-    desc: "Your location is never sold or shared with advertisers — full stop.",
-    icon: <ShieldCheck size={20} />,
-    href: "/about",
-    cta: "Read our privacy stance",
-  },
-];
-
-function FeatureBento() {
-  return (
-    <section id="features" style={{ padding: "1rem 1.5rem clamp(3rem, 6vw, 5rem)", maxWidth: 1280, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: "1rem",
-        }}
-      >
-        {BENTO_ITEMS.map((item) => (
-          <Link
-            key={item.title}
-            href={item.href}
-            className={`card herlane-bento-card${item.large ? " herlane-bento-large" : ""}`}
-            style={{
-              padding: item.large ? "2rem" : "1.5rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.75rem",
-            }}
-          >
-            <span
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: "color-mix(in srgb, var(--accent) 14%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--accent) 35%, transparent)",
-                color: "var(--accent)",
-              }}
-            >
-              {item.icon}
-            </span>
-            <h3 style={{ fontSize: item.large ? "1.3rem" : "1.05rem", margin: 0 }}>{item.title}</h3>
-            <p style={{ fontSize: "0.85rem", color: "var(--foreground-muted)", lineHeight: 1.55, margin: 0, flex: 1 }}>{item.desc}</p>
-            <span className="herlane-bento-cta" style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.82rem", fontWeight: 700, color: "var(--accent)" }}>
-              {item.cta} <ArrowRight size={14} className="herlane-bento-cta-arrow" />
-            </span>
-          </Link>
-        ))}
-      </div>
-    </section>
   );
 }
