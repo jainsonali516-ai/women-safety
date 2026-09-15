@@ -9,6 +9,7 @@ import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { EmergencyModeBanner } from "@/components/EmergencyModeBanner";
 import { AmbientBackground } from "@/components/AmbientBackground";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ReminderChecker } from "@/components/ReminderChecker";
 
 // Sora: geometric sans for all UI/data text — neutral and legible so the flower motif doesn't
 // compete with dense transit info. Fraunces: serif display for headlines — its curved, organic
@@ -60,6 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <ServiceWorkerRegister />
                 <AmbientBackground />
                 <EmergencyModeBanner />
+                <ReminderChecker />
                 {children}
               </EmergencyModeProvider>
             </AuthProvider>
