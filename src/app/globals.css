@@ -448,6 +448,19 @@ a:focus-visible {
   display: block;
 }
 
+/* Same theme-swap mechanism as the photo hero, applied to the small circular logo badge. */
+.herlane-logo-dark {
+  display: none;
+}
+
+[data-theme="dark"] .herlane-logo-light {
+  display: none;
+}
+
+[data-theme="dark"] .herlane-logo-dark {
+  display: block;
+}
+
 .herlane-photo-hero-scrim {
   position: absolute;
   inset: 0;
