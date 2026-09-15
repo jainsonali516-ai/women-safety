@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Calendar,
 } from 'lucide-react';
-import { T } from '@/components/Translated';
+import { T, useTranslated } from '@/components/Translated';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export interface Coords {
   latitude: number;
@@ -148,6 +149,14 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
 
   const [selectedModes, setSelectedModes] = useState<string[]>(['metro', 'dtc_bus', 'cab']);
 
+  const { language } = useLanguage();
+  // Translated as one sentence rather than two independently-translated fragments (which is what
+  // the two-tone color split below would otherwise require) — machine translation loses the
+  // grammatical link between "with" and its object when they're sent as separate strings, which
+  // is what made the Hindi/etc. output read as broken. English skips this (no MT involved) and
+  // keeps the original two-tone split for free.
+  const translatedHeadline = useTranslated('Navigate Delhi NCR with Confidence & Peace of Mind');
+
   const handleDetectLocation = () => {
     setGpsLoading(true);
     setGpsStatus('idle');
@@ -212,11 +221,17 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
           </span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-pink-100 dark:to-rose-200">
-          <T>Navigate Delhi NCR with</T> <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-rose-500 to-red-600 dark:from-pink-400 dark:via-rose-400 dark:to-red-500">
-            <T>Confidence &amp; Peace of Mind</T>
-          </span>
+        <h1 className="text-4xl sm:text-6xl font-black leading-[1.3] tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-pink-100 dark:to-rose-200">
+          {language === 'en' ? (
+            <>
+              Navigate Delhi NCR with <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-rose-500 to-red-600 dark:from-pink-400 dark:via-rose-400 dark:to-red-500">
+                Confidence &amp; Peace of Mind
+              </span>
+            </>
+          ) : (
+            translatedHeadline
+          )}
         </h1>
 
         <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-600 dark:text-slate-300 font-normal leading-relaxed">

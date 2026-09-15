@@ -38,15 +38,45 @@ function chunkTextBySentence(text: string, maxLength: number = MAX_CHUNK_LENGTH)
   return chunks;
 }
 
+async function translateOne(text: string, targetLanguageCode: string, sourceLanguageCode: string | undefined, apiKey: string): Promise<string> {
+  const chunks = chunkTextBySentence(text);
+
+  // Translate all chunks in parallel using Promise.all to prevent high latency
+  const translatedChunks = await Promise.all(
+    chunks.map(async (chunk) => {
+      const res = await fetch(SARVAM_TRANSLATE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-subscription-key": apiKey,
+        },
+        body: JSON.stringify({
+          input: chunk,
+          source_language_code: sourceLanguageCode ?? "auto",
+          target_language_code: targetLanguageCode,
+          mode: "formal", // Optional Sarvam translation mode
+        }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Sarvam API returned status ${res.status}: ${errText}`);
+      }
+
+      const data = await res.json();
+      return data.translated_text as string;
+    })
+  );
+
+  return translatedChunks.join(" ");
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { text, targetLanguageCode, sourceLanguageCode } = await req.json();
+    const { text, texts, targetLanguageCode, sourceLanguageCode } = await req.json();
 
-    if (!text || typeof text !== "string" || !targetLanguageCode) {
-      return NextResponse.json(
-        { error: "Missing or invalid 'text' or 'targetLanguageCode'." },
-        { status: 400 }
-      );
+    if (!targetLanguageCode) {
+      return NextResponse.json({ error: "Missing 'targetLanguageCode'." }, { status: 400 });
     }
 
     const apiKey = process.env.SARVAM_API_KEY;
@@ -57,36 +87,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const chunks = chunkTextBySentence(text);
+    // Batch mode: a page can have dozens of distinct strings to translate at once — sending them
+    // as one request with many strings in flight server-side is far faster than the client firing
+    // one HTTP round trip per string, which is what made switching languages feel slow.
+    if (Array.isArray(texts)) {
+      if (texts.some((t) => typeof t !== "string")) {
+        return NextResponse.json({ error: "'texts' must be an array of strings." }, { status: 400 });
+      }
+      const translatedTexts = await Promise.all(
+        texts.map((t: string) => translateOne(t, targetLanguageCode, sourceLanguageCode, apiKey))
+      );
+      return NextResponse.json({ translatedTexts });
+    }
 
-    // Translate all chunks in parallel using Promise.all to prevent high latency
-    const translatedChunks = await Promise.all(
-      chunks.map(async (chunk) => {
-        const res = await fetch(SARVAM_TRANSLATE_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "api-subscription-key": apiKey,
-          },
-          body: JSON.stringify({
-            input: chunk,
-            source_language_code: sourceLanguageCode ?? "auto",
-            target_language_code: targetLanguageCode,
-            mode: "formal", // Optional Sarvam translation mode
-          }),
-        });
+    if (!text || typeof text !== "string") {
+      return NextResponse.json(
+        { error: "Missing or invalid 'text' or 'texts'." },
+        { status: 400 }
+      );
+    }
 
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Sarvam API returned status ${res.status}: ${errText}`);
-        }
-
-        const data = await res.json();
-        return data.translated_text as string;
-      })
-    );
-
-    return NextResponse.json({ translatedText: translatedChunks.join(" ") });
+    const translatedText = await translateOne(text, targetLanguageCode, sourceLanguageCode, apiKey);
+    return NextResponse.json({ translatedText });
   } catch (err) {
     console.error("Sarvam Translation API error:", err);
     return NextResponse.json(

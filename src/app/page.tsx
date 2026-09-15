@@ -6,6 +6,7 @@ import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
 import { Compass, ShieldCheck, Users, MessageSquareText, Zap, ArrowRight } from "lucide-react";
 import { T } from "@/components/Translated";
+import { HomeHeroHeadline } from "@/components/HomeHeroHeadline";
 
 export default async function Home() {
   const user = await getSessionUser();
@@ -23,11 +24,7 @@ export default async function Home() {
                 <Zap size={13} /> AI SAFETY &amp; JOURNEY PLANNER
               </span>
               <h1 className="herlane-hero-photo-title">
-                <T>Walk your city,</T>
-                <br />
-                <span style={{ color: "var(--brand-pink)" }}>
-                  <T>fearlessly.</T>
-                </span>
+                <HomeHeroHeadline />
               </h1>
               <p className="herlane-hero-photo-subtitle">
                 <T>

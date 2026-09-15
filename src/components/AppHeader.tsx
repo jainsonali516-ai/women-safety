@@ -10,12 +10,16 @@ import { ProfileMenu } from "./ProfileMenu";
 import { ShieldAlert, Menu, X } from "lucide-react";
 import { T } from "@/components/Translated";
 
-const NAV_LINKS = [
-  { href: "/about", label: "About" },
+// "About" alone is genuinely ambiguous to a generic MT model without context (it can come back
+// meaning "approximately" rather than a page name) — translateSource gives the translator a
+// fuller, unambiguous phrase while English still shows the short label. "Alley" is the bot's
+// brand name, not a describable word, so — same treatment as "HerLane" — it's never translated.
+const NAV_LINKS: { href: string; label: string; translateSource?: string; translatable?: boolean }[] = [
+  { href: "/about", label: "About", translateSource: "About Us" },
   { href: "/journey", label: "Journey" },
   { href: "/safety", label: "Safety Tools" },
   { href: "/contacts", label: "Contacts" },
-  { href: "/bot", label: "Alley" },
+  { href: "/bot", label: "Alley", translatable: false },
 ];
 
 export function AppHeader() {
@@ -61,7 +65,7 @@ export function AppHeader() {
                 transition: "background 0.15s ease, color 0.15s ease",
               }}
             >
-              <T>{link.label}</T>
+              {link.translatable === false ? link.label : <T source={link.translateSource}>{link.label}</T>}
             </Link>
           );
         })}
@@ -177,7 +181,7 @@ export function AppHeader() {
                   width: "fit-content",
                 }}
               >
-                <T>{link.label}</T>
+                {link.translatable === false ? link.label : <T source={link.translateSource}>{link.label}</T>}
               </Link>
               );
             })}
