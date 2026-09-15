@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { MessageSquareQuote, Send } from "lucide-react";
 import { T } from "@/components/Translated";
+import { TestimonialCarousel } from "@/components/TestimonialCarousel";
 
 interface FeedbackItem {
   id: string;
@@ -143,19 +144,7 @@ export function FeedbackSection() {
         <h3 style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--foreground-muted)" }}>
           <T>What people are saying</T>
         </h3>
-        {!loadingItems && items.length === 0 && (
-          <p style={{ fontSize: "0.82rem", color: "var(--foreground-muted)" }}>
-            <T>No testimonials yet — be the first to share your experience.</T>
-          </p>
-        )}
-        <ul style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          {items.map((item) => (
-            <li key={item.id} style={{ padding: "0.7rem 0.9rem", border: "1px solid var(--border)", borderRadius: "0.6rem", background: "var(--background-solid)" }}>
-              <p style={{ fontSize: "0.85rem", color: "var(--foreground)", lineHeight: 1.5, marginBottom: "0.3rem" }}>“{item.message}”</p>
-              <p style={{ fontSize: "0.75rem", color: "var(--foreground-muted)", fontWeight: 600 }}>— {item.name}</p>
-            </li>
-          ))}
-        </ul>
+        {!loadingItems && <TestimonialCarousel items={items} />}
       </div>
     </section>
   );
