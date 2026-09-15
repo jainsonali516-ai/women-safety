@@ -32,11 +32,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
  */
 export function MarketingHome() {
   return (
-    <>
+    <div style={{ width: "100%", maxWidth: "100vw", overflowX: "clip" }}>
       <MarketingNav />
       <Hero />
       <FeatureBento />
-    </>
+    </div>
   );
 }
 
@@ -189,7 +189,7 @@ function Hero() {
 
 function HeroVisual() {
   return (
-    <div className="herlane-hero-visual" style={{ position: "relative", zIndex: 1, minHeight: 420 }}>
+    <div className="herlane-hero-visual" style={{ position: "relative", zIndex: 1, maxWidth: 330, margin: "0 0 0 auto" }}>
       <svg
         viewBox="0 0 420 480"
         role="img"
@@ -212,48 +212,58 @@ function HeroVisual() {
           </linearGradient>
         </defs>
 
-        <circle cx="150" cy="150" r="190" fill="url(#herlane-sky)" />
+        <circle cx="180" cy="240" r="210" fill="url(#herlane-sky)" />
 
-        {/* City skyline silhouette */}
-        <g opacity="0.55" fill="var(--foreground)" className="herlane-skyline">
+        {/* City skyline silhouette — sits behind her, all flush to one street-level baseline */}
+        <g opacity="0.45" fill="var(--foreground)" className="herlane-skyline">
           {[
-            [0, 340, 40, 140],
-            [45, 300, 35, 180],
-            [85, 360, 30, 120],
-            [120, 280, 45, 200],
-            [170, 320, 32, 160],
-            [205, 260, 40, 220],
-            [250, 350, 34, 130],
-            [288, 300, 45, 180],
-            [336, 330, 38, 150],
-            [378, 290, 42, 190],
+            [0, 300, 38, 180],
+            [40, 260, 34, 220],
+            [78, 330, 30, 150],
+            [280, 270, 34, 210],
+            [318, 320, 40, 160],
+            [362, 250, 30, 230],
+            [396, 300, 24, 180],
           ].map(([x, y, w, h], i) => (
-            <rect key={i} x={x} y={y} width={w} height={h} rx="2" opacity={0.5 + (i % 3) * 0.1} />
+            <rect key={i} x={x} y={y} width={w} height={h} rx="2" opacity={0.45 + (i % 3) * 0.1} />
           ))}
         </g>
 
-        {/* Animated route line — a curved stem, not a straight polyline */}
+        {/* Ground line — the one consistent baseline everything (buildings, figure, route) stands on */}
+        <line x1="0" y1="480" x2="420" y2="480" stroke="var(--foreground)" strokeOpacity="0.12" strokeWidth="1.5" />
+
+        {/* Animated route line — a curved stem at street level, leading right to her feet */}
         <path
           id="herlane-route-path"
-          d="M20,460 C110,430 130,340 100,280 C70,220 160,210 190,150 C215,100 270,110 300,60"
+          d="M10,472 C60,458 88,440 112,458 C138,477 160,462 172,438"
           fill="none"
           stroke="url(#herlane-route-line)"
-          strokeWidth="3.5"
+          strokeWidth="5"
           strokeLinecap="round"
+          opacity="0.95"
           className="herlane-route-path"
         />
 
-        {/* Commuter silhouette: ponytail, torso, backpack, legs — simple and confident, not detailed photorealism */}
-        <g className="herlane-figure" transform="translate(150 190)">
-          <ellipse cx="0" cy="0" rx="17" ry="19" fill="url(#herlane-figure)" />
-          <path d="M14,-6 Q34,10 22,46 Q16,60 10,44" fill="url(#herlane-figure)" opacity="0.9" />
+        {/* Commuter silhouette, standing at street level (feet on the same baseline as the
+            skyline and the route line) rather than floating above the buildings — confident,
+            walking posture, backpack, ponytail catching a bit of motion. */}
+        <g className="herlane-figure" transform="translate(180 320)">
+          {/* back leg (mid-stride) */}
+          <path d="M-6,118 C-10,140 -14,160 -20,178 L-10,178 C-4,160 2,140 4,118 Z" fill="url(#herlane-figure)" opacity="0.85" />
+          {/* front leg */}
+          <path d="M6,118 C8,142 8,162 6,180 L16,180 C20,160 18,138 14,118 Z" fill="url(#herlane-figure)" />
+          {/* torso + skirt-coat silhouette */}
           <path
-            d="M-14,18 C-20,40 -18,80 -10,120 L-2,120 C-6,86 -4,54 4,26 C12,54 16,86 12,120 L20,120 C24,80 22,42 14,18 Z"
+            d="M-15,20 C-19,45 -18,78 -8,118 L14,118 C16,80 15,46 13,20 C13,8 10,-2 0,-4 C-9,-2 -14,8 -15,20 Z"
             fill="url(#herlane-figure)"
           />
-          <rect x="-16" y="20" width="22" height="34" rx="8" fill="var(--accent)" opacity="0.85" />
-          <rect x="-5" y="118" width="9" height="46" rx="4" fill="url(#herlane-figure)" />
-          <rect x="9" y="118" width="9" height="46" rx="4" fill="url(#herlane-figure)" opacity="0.85" />
+          {/* backpack */}
+          <rect x="-16" y="18" width="20" height="32" rx="7" fill="var(--accent)" opacity="0.9" />
+          {/* far arm, slightly swinging */}
+          <path d="M11,22 Q26,38 20,64" fill="none" stroke="url(#herlane-figure)" strokeWidth="7" strokeLinecap="round" opacity="0.9" />
+          {/* head + ponytail */}
+          <ellipse cx="0" cy="-16" rx="15" ry="17" fill="url(#herlane-figure)" />
+          <path d="M11,-22 Q30,-8 20,24 Q15,36 9,22" fill="url(#herlane-figure)" opacity="0.85" />
         </g>
       </svg>
 
@@ -276,7 +286,7 @@ function RouteIntelligenceCard() {
   ];
 
   return (
-    <div className="card herlane-float" style={{ padding: "1.1rem", maxWidth: 300, position: "relative", zIndex: 2 }}>
+    <div className="card herlane-float" style={{ padding: "1.1rem", marginTop: "-1.5rem", position: "relative", zIndex: 2 }}>
       <p style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--foreground-muted)", marginBottom: "0.6rem" }}>
         ROUTE INTELLIGENCE <span style={{ opacity: 0.6, fontWeight: 600 }}>· sample</span>
       </p>
@@ -437,10 +447,9 @@ function FeatureBento() {
           <Link
             key={item.title}
             href={item.href}
-            className="card herlane-bento-card"
+            className={`card herlane-bento-card${item.large ? " herlane-bento-large" : ""}`}
             style={{
               padding: item.large ? "2rem" : "1.5rem",
-              gridColumn: item.large ? "span 2" : undefined,
               display: "flex",
               flexDirection: "column",
               gap: "0.75rem",

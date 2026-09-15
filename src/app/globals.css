@@ -43,10 +43,14 @@
   --foreground-muted: #6b5a68;
   --accent: var(--tulip-petal-coral);
   --accent-strong: var(--tulip-leaf-teal);
-  --border: #f0dbdf;
+  /* Neutral, whisper-thin borders by default — coral is reserved for emphasis (an active state, a
+     highlighted route, a focus ring), not painted around every card. A coral border on every
+     surface reads as "the whole page is pink"; a neutral one with coral used sparingly reads as
+     restrained/premium with red as a deliberate accent. */
+  --border: rgba(15, 23, 42, 0.08);
   --card-glow-border: transparent;
-  --card-border-pink: rgba(230, 79, 108, 0.28);
-  --card-shadow-pink: rgba(230, 79, 108, 0.14);
+  --card-border-pink: rgba(15, 23, 42, 0.08);
+  --card-shadow-pink: rgba(230, 79, 108, 0.07);
 }
 
 [data-theme="dark"] {
@@ -62,10 +66,13 @@
   --foreground-muted: #c7b3c0;
   --accent: var(--tulip-petal-coral);
   --accent-strong: var(--tulip-leaf-teal-light);
-  --border: #3a2b40;
-  --card-glow-border: rgba(230, 79, 108, 0.35);
-  --card-border-pink: rgba(230, 79, 108, 0.4);
-  --card-shadow-pink: rgba(230, 79, 108, 0.22);
+  /* Neutral rgba(255,255,255,0.08) borders — the signature dark surface stays sophisticated
+     black/charcoal, with a low-key crimson glow only in the card shadow (a whisper, not a halo)
+     and a stronger coral glow reserved for .route-card, which is meant to draw the eye. */
+  --border: rgba(255, 255, 255, 0.08);
+  --card-glow-border: rgba(230, 79, 108, 0.22);
+  --card-border-pink: rgba(255, 255, 255, 0.08);
+  --card-shadow-pink: rgba(230, 79, 108, 0.1);
 }
 
 html {
@@ -81,6 +88,16 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+/* Flex and grid items default to min-width:auto, which sizes them to their content's max-content
+   width (e.g. one un-wrappable heading, or a nested flex/grid child with the same quirk one level
+   deeper) rather than shrinking to the track's actual available space. That's a frequent, easy-to-
+   miss cause of a narrow phone silently rendering a wider page that gets clipped by the rule
+   above instead of actually wrapping — confirmed happening on multiple unrelated pages, not just
+   one component, so fixed once here rather than chased site-wide file by file. */
+*, *::before, *::after {
+  min-width: 0;
 }
 
 body {
@@ -234,7 +251,7 @@ a:focus-visible {
 
 [data-theme="dark"] .route-card {
   border-color: var(--card-glow-border);
-  box-shadow: 0 0 18px rgba(255, 47, 178, 0.15), 0 0 32px rgba(168, 85, 247, 0.08);
+  box-shadow: 0 0 16px rgba(230, 79, 108, 0.14), 0 0 28px rgba(47, 122, 110, 0.08);
 }
 
 /* Fake an industrial/blueprint dark map style on free, no-key OpenStreetMap tiles via a CSS
@@ -366,29 +383,52 @@ a:focus-visible {
   position: relative;
 }
 
+/* Grid items default to min-width:auto, which sizes them to their content's max-content width
+   (e.g. a paragraph's `max-width: 520px`) rather than shrinking to the actual column width. On a
+   390px viewport that pushed the whole grid wider than the screen, silently clipped by body's
+   overflow-x:hidden — text and buttons were being cut off mid-word, not actually wrapping. */
+.herlane-hero-grid > * {
+  min-width: 0 !important;
+}
+
+/* Belt-and-suspenders against any remaining intrinsic-sizing overflow: the headline is the
+   widest unbreakable run of text in the hero (each line has no natural break point), so on a
+   narrow phone it's allowed to break even mid-word rather than forcing its container wider. */
+.herlane-hero-grid h1,
+.herlane-hero-grid p {
+  overflow-wrap: anywhere;
+}
+
+/* Contains the glow blobs to the hero's own bounds — without this, a percentage-based offset on
+   a very tall section could push a blob into unrelated empty space below the fold, rendering as
+   a flat, oddly-shaped blur rather than a contained ambient highlight. */
+.herlane-hero-grid {
+  overflow: hidden;
+}
+
 .herlane-hero-glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
+  filter: blur(80px);
   pointer-events: none;
   z-index: 0;
 }
 
 .herlane-hero-glow-a {
-  width: 420px;
-  height: 420px;
-  top: -10%;
-  right: 5%;
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  width: 380px;
+  height: 380px;
+  top: -60px;
+  right: -40px;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
   animation: herlane-glow-drift-a 14s ease-in-out infinite;
 }
 
 .herlane-hero-glow-b {
-  width: 320px;
-  height: 320px;
-  bottom: -5%;
-  left: 0%;
-  background: color-mix(in srgb, var(--accent-strong) 18%, transparent);
+  width: 300px;
+  height: 300px;
+  bottom: -60px;
+  left: -60px;
+  background: color-mix(in srgb, var(--accent-strong) 14%, transparent);
   animation: herlane-glow-drift-b 18s ease-in-out infinite;
 }
 
@@ -421,12 +461,12 @@ a:focus-visible {
 /* The commuter figure gets a very slow, subtle sway — movement without distraction. */
 .herlane-figure {
   animation: herlane-figure-sway 6s ease-in-out infinite;
-  transform-origin: 150px 300px;
+  transform-origin: 180px 430px;
 }
 
 @keyframes herlane-figure-sway {
-  0%, 100% { transform: translate(150px, 190px) rotate(0deg) translateY(0); }
-  50% { transform: translate(150px, 190px) rotate(0.6deg) translateY(-3px); }
+  0%, 100% { transform: translate(180px, 320px) rotate(0deg) translateY(0); }
+  50% { transform: translate(180px, 320px) rotate(0.5deg) translateY(-2px); }
 }
 
 .herlane-skyline {
@@ -438,11 +478,11 @@ a:focus-visible {
   50% { transform: translateX(-4px); }
 }
 
-/* The floating Route Intelligence card gently bobs, like it's alive/live-updating. */
+/* The Route Intelligence card gently bobs in place, like it's alive/live-updating — kept in
+   normal document flow (not absolutely overlapping the illustration) so its real height is
+   always accounted for in the layout; a mismatched absolute overlap was previously leaving a
+   large empty gap in the shorter text column, exposing the ambient glow as a flat grey block. */
 .herlane-float {
-  position: absolute;
-  top: 8%;
-  right: 0;
   animation: herlane-card-float 5s ease-in-out infinite;
 }
 
@@ -471,6 +511,16 @@ a:focus-visible {
 
 .herlane-bento-card {
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Only spans 2 tracks once the grid actually has room for 2+ minmax(260px,1fr) tracks (2*260 +
+   gap ≈ 536px) — applying "grid-column: span 2" unconditionally forced a second track to exist
+   even in a single-column mobile layout, which widened the whole page past the viewport and
+   clipped text/buttons in every section above it. */
+@media (min-width: 560px) {
+  .herlane-bento-large {
+    grid-column: span 2;
+  }
 }
 
 .herlane-bento-card:hover {
@@ -505,10 +555,12 @@ a:focus-visible {
   .herlane-hero-grid {
     grid-template-columns: 1fr !important;
   }
+  /* Headline stays first on mobile (not the illustration) — the first viewport must communicate
+     the HerLane name and headline immediately, which a visual-first order buried below a tall
+     illustration+card block. */
   .herlane-hero-visual {
-    order: -1;
-    max-width: 320px;
-    margin: 0 auto;
+    max-width: 320px !important;
+    margin: 1.5rem auto 0 !important;
   }
   .herlane-float {
     position: static;
