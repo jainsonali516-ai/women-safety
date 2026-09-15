@@ -14,12 +14,12 @@ import {
   Calendar,
 } from 'lucide-react';
 
-interface Coords {
+export interface Coords {
   latitude: number;
   longitude: number;
 }
 
-interface Suggestion extends Coords {
+export interface Suggestion extends Coords {
   name: string;
 }
 
@@ -44,7 +44,7 @@ interface HeroProps {
 }
 
 
-function PlaceField({
+export function PlaceField({
   label,
   placeholder,
   value,

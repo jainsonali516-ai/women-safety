@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Zap, MapPin, Navigation, Calendar, Bus, Train, Car, Sparkles } from "lucide-react";
 import { TrustBadges } from "@/components/TrustBadges";
 import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
+import { PlaceField, type Suggestion } from "@/components/JourneySearchHero";
 
 /**
  * The hero for the About page — same full-bleed photo treatment as the homepage (for a
@@ -66,12 +67,14 @@ export function AboutHero() {
 function JourneyPreviewCard() {
   const [origin, setOrigin] = useState("");
   const [destination, setDestination] = useState("");
+  const [pinkSaheliActive, setPinkSaheliActive] = useState(true);
 
   // Filling both fields here and hitting the button takes you straight to the real planner with
   // a search already running, instead of landing on an empty form and having to retype everything.
+  // The Pink Saheli choice made here carries over too, instead of always defaulting once you land.
   const journeyHref =
     origin.trim() && destination.trim()
-      ? `/journey?origin=${encodeURIComponent(origin.trim())}&destination=${encodeURIComponent(destination.trim())}`
+      ? `/journey?origin=${encodeURIComponent(origin.trim())}&destination=${encodeURIComponent(destination.trim())}&concession=${pinkSaheliActive}`
       : "/journey";
 
   return (
@@ -80,19 +83,23 @@ function JourneyPreviewCard() {
         JOURNEY PLANNER <span style={{ opacity: 0.6, fontWeight: 600 }}>· preview</span>
       </p>
 
-      <PreviewField
+      <PlaceField
         label="Starting Point / Current Location"
         placeholder="Enter station or landmark..."
-        icon={<MapPin size={15} color="var(--accent)" />}
         value={origin}
         onChange={setOrigin}
+        onSelect={(s: Suggestion) => setOrigin(s.name)}
+        icon={<MapPin className="absolute left-4 w-5 h-5 pointer-events-none" style={{ color: "var(--accent)" }} />}
+        ringColor="focus:ring-pink-500/50"
       />
-      <PreviewField
+      <PlaceField
         label="Destination Point"
         placeholder="Where are you heading?"
-        icon={<Navigation size={15} color="var(--accent-violet)" />}
         value={destination}
         onChange={setDestination}
+        onSelect={(s: Suggestion) => setDestination(s.name)}
+        icon={<Navigation className="absolute left-4 w-5 h-5 pointer-events-none" style={{ color: "var(--accent-violet)" }} />}
+        ringColor="focus:ring-rose-500/50"
       />
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.72rem", color: "var(--foreground-muted)", fontWeight: 600, paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
@@ -100,6 +107,7 @@ function JourneyPreviewCard() {
       </div>
 
       <div
+        onClick={() => setPinkSaheliActive((v) => !v)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -109,17 +117,31 @@ function JourneyPreviewCard() {
           borderRadius: "var(--radius-md)",
           background: "color-mix(in srgb, var(--accent) 10%, transparent)",
           border: "1px solid color-mix(in srgb, var(--accent) 25%, transparent)",
+          cursor: "pointer",
         }}
       >
         <span style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <Bus size={15} color="var(--accent)" />
           <span>
             <span style={{ display: "block", fontSize: "0.72rem", fontWeight: 700 }}>Pink Saheli Smart Card</span>
-            <span style={{ display: "block", fontSize: "0.62rem", color: "var(--foreground-muted)" }}>₹0 Fare active for DTC Buses</span>
+            <span style={{ display: "block", fontSize: "0.62rem", color: "var(--foreground-muted)" }}>
+              {pinkSaheliActive ? "₹0 Fare active for DTC Buses" : "Standard DTC Fare applied"}
+            </span>
           </span>
         </span>
-        <span style={{ width: 32, height: 18, borderRadius: 999, background: "var(--accent)", position: "relative", flexShrink: 0 }}>
-          <span style={{ position: "absolute", top: 2, right: 2, width: 14, height: 14, borderRadius: "50%", background: "#fff" }} />
+        <span style={{ width: 32, height: 18, borderRadius: 999, background: pinkSaheliActive ? "var(--accent)" : "var(--border)", position: "relative", flexShrink: 0, transition: "background 0.2s ease" }}>
+          <span
+            style={{
+              position: "absolute",
+              top: 2,
+              left: pinkSaheliActive ? 16 : 2,
+              width: 14,
+              height: 14,
+              borderRadius: "50%",
+              background: "#fff",
+              transition: "left 0.2s ease",
+            }}
+          />
         </span>
       </div>
 
@@ -142,38 +164,6 @@ function JourneyPreviewCard() {
       >
         <Sparkles size={15} /> Calculate Safest Route Options
       </Link>
-    </div>
-  );
-}
-
-function PreviewField({
-  label,
-  placeholder,
-  icon,
-  value,
-  onChange,
-}: {
-  label: string;
-  placeholder: string;
-  icon: React.ReactNode;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div>
-      <span style={{ display: "block", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.05em", color: "var(--foreground-muted)", marginBottom: "0.35rem", textTransform: "uppercase" }}>
-        {label}
-      </span>
-      <div className="field" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 0.75rem" }}>
-        {icon}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: "var(--foreground)", fontSize: "0.8rem" }}
-        />
-      </div>
     </div>
   );
 }

@@ -81,7 +81,9 @@ export function JourneyHome() {
   const initialOrigin = searchParams.get("origin") ?? undefined;
   const initialDestination = searchParams.get("destination") ?? undefined;
   const [sort, setSort] = useState<SortMode>("balanced");
-  const [pinkSaheliActive, setPinkSaheliActive] = useState(true);
+  // Defaults to true (matches the About preview card's own default), but respects an explicit
+  // ?concession=false carried over from there if the person switched it off before clicking through.
+  const [pinkSaheliActive, setPinkSaheliActive] = useState(searchParams.get("concession") !== "false");
   const [options, setOptions] = useState<RouteOption[]>([]);
   const [origin, setOrigin] = useState<MapPoint | null>(null);
   const [destination, setDestination] = useState<MapPoint | null>(null);
