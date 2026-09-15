@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { JourneyHome } from "@/components/JourneyHome";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
@@ -9,7 +10,12 @@ export default function JourneyPage() {
   return (
     <>
       <AppHeader />
-      <JourneyHome />
+      {/* JourneyHome reads ?origin=&destination= via useSearchParams (to pre-fill/auto-run a
+          search when arriving from About's journey preview card), which Next.js requires to be
+          inside a Suspense boundary. */}
+      <Suspense fallback={null}>
+        <JourneyHome />
+      </Suspense>
       <ChatbotWidget />
     </>
   );

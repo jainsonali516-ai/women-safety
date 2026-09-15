@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Zap, MapPin, Navigation, Calendar, Bus, Train, Car, Sparkles } from "lucide-react";
 import { TrustBadges } from "@/components/TrustBadges";
@@ -63,14 +64,36 @@ export function AboutHero() {
 }
 
 function JourneyPreviewCard() {
+  const [origin, setOrigin] = useState("");
+  const [destination, setDestination] = useState("");
+
+  // Filling both fields here and hitting the button takes you straight to the real planner with
+  // a search already running, instead of landing on an empty form and having to retype everything.
+  const journeyHref =
+    origin.trim() && destination.trim()
+      ? `/journey?origin=${encodeURIComponent(origin.trim())}&destination=${encodeURIComponent(destination.trim())}`
+      : "/journey";
+
   return (
     <div className="card herlane-float" style={{ padding: "1.25rem", position: "relative", zIndex: 2, maxWidth: 400, margin: "0 0 0 auto", display: "flex", flexDirection: "column", gap: "0.9rem" }}>
       <p style={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--foreground-muted)" }}>
         JOURNEY PLANNER <span style={{ opacity: 0.6, fontWeight: 600 }}>· preview</span>
       </p>
 
-      <PreviewField label="Starting Point / Current Location" placeholder="Enter station or landmark..." icon={<MapPin size={15} color="var(--accent)" />} />
-      <PreviewField label="Destination Point" placeholder="Where are you heading?" icon={<Navigation size={15} color="var(--accent-violet)" />} />
+      <PreviewField
+        label="Starting Point / Current Location"
+        placeholder="Enter station or landmark..."
+        icon={<MapPin size={15} color="var(--accent)" />}
+        value={origin}
+        onChange={setOrigin}
+      />
+      <PreviewField
+        label="Destination Point"
+        placeholder="Where are you heading?"
+        icon={<Navigation size={15} color="var(--accent-violet)" />}
+        value={destination}
+        onChange={setDestination}
+      />
 
       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.72rem", color: "var(--foreground-muted)", fontWeight: 600, paddingTop: "0.5rem", borderTop: "1px solid var(--border)" }}>
         <Calendar size={13} /> Travel Date: <span style={{ color: "var(--foreground)", fontWeight: 700 }}>15/09/2026</span>
@@ -113,7 +136,7 @@ function JourneyPreviewCard() {
       </div>
 
       <Link
-        href="/journey"
+        href={journeyHref}
         className="btn-accent"
         style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "0.8rem", fontWeight: 700, fontSize: "0.85rem", border: "none", marginTop: "0.2rem" }}
       >
@@ -123,14 +146,33 @@ function JourneyPreviewCard() {
   );
 }
 
-function PreviewField({ label, placeholder, icon }: { label: string; placeholder: string; icon: React.ReactNode }) {
+function PreviewField({
+  label,
+  placeholder,
+  icon,
+  value,
+  onChange,
+}: {
+  label: string;
+  placeholder: string;
+  icon: React.ReactNode;
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <div>
       <span style={{ display: "block", fontSize: "0.62rem", fontWeight: 700, letterSpacing: "0.05em", color: "var(--foreground-muted)", marginBottom: "0.35rem", textTransform: "uppercase" }}>
         {label}
       </span>
-      <div className="field" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 0.75rem", fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-        {icon} {placeholder}
+      <div className="field" style={{ display: "flex", alignItems: "center", gap: "0.5rem", padding: "0.6rem 0.75rem" }}>
+        {icon}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: "var(--foreground)", fontSize: "0.8rem" }}
+        />
       </div>
     </div>
   );

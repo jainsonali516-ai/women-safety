@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
 import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
 import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
@@ -76,6 +77,9 @@ async function cacheRouteForOffline(origin: MapPoint, destination: MapPoint) {
 
 export function JourneyHome() {
   const { active: lowPowerActive } = useEmergencyMode();
+  const searchParams = useSearchParams();
+  const initialOrigin = searchParams.get("origin") ?? undefined;
+  const initialDestination = searchParams.get("destination") ?? undefined;
   const [sort, setSort] = useState<SortMode>("balanced");
   const [pinkSaheliActive, setPinkSaheliActive] = useState(true);
   const [options, setOptions] = useState<RouteOption[]>([]);
@@ -180,6 +184,16 @@ export function JourneyHome() {
     if (options.length > 0) setOptions((prev) => reorderOptions(prev, next));
   }
 
+  // Arriving from the About page's journey preview card with both fields already filled in —
+  // run the search immediately instead of making the person retype and press the button again.
+  useEffect(() => {
+    if (initialOrigin && initialDestination) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberate one-time kickoff of a real search from the URL's initial query params, not state synchronization
+      runSearch({ origin: initialOrigin, destination: initialDestination, travelDate: new Date().toISOString().split("T")[0], selectedModes: ["metro", "dtc_bus", "cab"], originCoords: null, destinationCoords: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once on mount only, from the URL's initial query params
+  }, []);
+
   const safetyIndex = options.length > 0 ? Math.round(options.reduce((a, o) => a + o.safety_score, 0) / options.length) : null;
 
   if (lowPowerActive) {
@@ -193,6 +207,8 @@ export function JourneyHome() {
         onTogglePinkSaheli={() => setPinkSaheliActive((v) => !v)}
         onSearch={(values) => runSearch(values)}
         loading={loading}
+        initialOrigin={initialOrigin}
+        initialDestination={initialDestination}
       />
 
       <main style={{ padding: "0 1.5rem 2rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>

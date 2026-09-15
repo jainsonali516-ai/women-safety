@@ -37,6 +37,10 @@ interface HeroProps {
   onTogglePinkSaheli: () => void;
   onSearch: (values: JourneySearchValues) => void;
   loading?: boolean;
+  /** Pre-fills the fields when arriving from elsewhere (e.g. the About page's journey preview
+   * card) with a starting point/destination already typed in — only used for the initial render. */
+  initialOrigin?: string;
+  initialDestination?: string;
 }
 
 
@@ -130,9 +134,11 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
   onTogglePinkSaheli,
   onSearch,
   loading,
+  initialOrigin,
+  initialDestination,
 }) => {
-  const [origin, setOrigin] = useState('');
-  const [destination, setDestination] = useState('');
+  const [origin, setOrigin] = useState(initialOrigin ?? '');
+  const [destination, setDestination] = useState(initialDestination ?? '');
   const [travelDate, setTravelDate] = useState(new Date().toISOString().split('T')[0]);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsStatus, setGpsStatus] = useState<'idle' | 'success' | 'fallback'>('idle');
