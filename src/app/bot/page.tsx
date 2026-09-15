@@ -6,6 +6,7 @@ import { Send } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
 import { T } from "@/components/Translated";
 import { useLanguage } from "@/components/LanguageProvider";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -73,12 +74,12 @@ export default function BotPage() {
                 border: m.role === "bot" ? "1px solid var(--border)" : "none",
                 padding: "0.6rem 0.9rem",
                 borderRadius: "0.9rem",
-                maxWidth: "80%",
+                maxWidth: m.role === "bot" && !m.translatable ? "100%" : "80%",
                 fontSize: "0.9rem",
-                whiteSpace: "pre-wrap",
+                whiteSpace: m.role === "user" ? "pre-wrap" : undefined,
               }}
             >
-              {m.translatable ? <T>{m.text}</T> : m.text}
+              {m.role === "bot" ? (m.translatable ? <T>{m.text}</T> : <ChatMarkdown text={m.text} />) : m.text}
             </div>
           ))}
           {loading && (

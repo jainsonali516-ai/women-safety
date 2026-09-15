@@ -6,6 +6,7 @@ import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { TulipLogo } from "@/components/TulipLogo";
 import { T } from "@/components/Translated";
 import { useLanguage } from "@/components/LanguageProvider";
+import { ChatMarkdown } from "@/components/ChatMarkdown";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -138,12 +139,12 @@ export function ChatbotWidget() {
               border: m.role === "bot" ? "1px solid var(--border)" : "none",
               padding: "0.5rem 0.75rem",
               borderRadius: "0.8rem",
-              maxWidth: "85%",
+              maxWidth: m.role === "bot" && !m.translatable ? "100%" : "85%",
               fontSize: "0.85rem",
-              whiteSpace: "pre-wrap",
+              whiteSpace: m.role === "user" ? "pre-wrap" : undefined,
             }}
           >
-            {m.translatable ? <T>{m.text}</T> : m.text}
+            {m.role === "bot" ? (m.translatable ? <T>{m.text}</T> : <ChatMarkdown text={m.text} />) : m.text}
           </div>
         ))}
         {loading && (
