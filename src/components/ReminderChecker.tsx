@@ -34,31 +34,35 @@ function todayKey(reminderId: string) {
  */
 export function ReminderChecker() {
   const { user } = useAuth();
-  const [reminders, setReminders] = useState<Reminder[]>([]);
   const [due, setDue] = useState<Reminder | null>(null);
   const duplicateGuardRef = useRef<Set<string>>(new Set());
+  const notificationRequestedRef = useRef(false);
 
+  // Re-fetches the reminders list on every tick instead of once on mount — this component is
+  // mounted globally in the root layout, completely separate from the Contacts page's own
+  // reminders list state, so a reminder added (or edited/deleted) after this mounted would
+  // otherwise never be seen: the checker would keep matching against whatever list existed the
+  // moment the page first loaded, silently missing anything created afterward in the same session.
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    fetch("/api/reminders")
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.reminders) setReminders(data.reminders);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
-  useEffect(() => {
-    if (!user || reminders.length === 0) return;
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
-    }
+    async function tick() {
+      let reminders: Reminder[] = [];
+      try {
+        const res = await fetch("/api/reminders");
+        if (!res.ok) return;
+        reminders = (await res.json()).reminders ?? [];
+      } catch {
+        return; // network hiccup — just try again next tick
+      }
+      if (cancelled) return;
 
-    const tick = () => {
+      if (reminders.length > 0 && "Notification" in window && Notification.permission === "default" && !notificationRequestedRef.current) {
+        notificationRequestedRef.current = true;
+        Notification.requestPermission().catch(() => {});
+      }
+
       const now = new Date();
       const day = now.getDay();
       const hhmm = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
@@ -91,12 +95,15 @@ export function ReminderChecker() {
         }
         break; // one prompt at a time — if two reminders land on the same minute, the next tick picks up the other
       }
-    };
+    }
 
     tick();
     const interval = setInterval(tick, CHECK_INTERVAL_MS);
-    return () => clearInterval(interval);
-  }, [user, reminders]);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
 
   if (!due) return null;
   return <ReminderPrompt reminder={due} onClose={() => setDue(null)} />;
