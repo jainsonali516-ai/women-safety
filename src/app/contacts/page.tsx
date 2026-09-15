@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { RequireAuthGate } from "@/components/RequireAuthGate";
 import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
-import { TulipBloom } from "@/components/TulipBloom";
+import { TulipLogo } from "@/components/TulipLogo";
 
 interface Contact {
   id: string;
@@ -162,12 +162,7 @@ function ContactsManager() {
     <>
       <section className="card" style={{ padding: "1.25rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.8rem", marginBottom: "1rem" }}>
-            <TulipBloom
-              size={40}
-              openness={1}
-              petals={Math.max(3, Math.min(contacts.length, 10))}
-              title={`Your Trusted Circle — ${contacts.length} contact${contacts.length === 1 ? "" : "s"}`}
-            />
+            <TulipLogo size={40} />
             <div>
               <h2 style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.1rem" }}>
                 <Users size={18} style={{ color: "var(--accent-strong)" }} /> Your Trusted Circle

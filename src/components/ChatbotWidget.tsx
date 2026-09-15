@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { X, Send } from "lucide-react";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
-import { TulipBloom } from "@/components/TulipBloom";
+import { TulipLogo } from "@/components/TulipLogo";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -83,7 +83,7 @@ export function ChatbotWidget() {
           zIndex: 2000,
         }}
       >
-        <TulipBloom size={26} openness={1} color="white" centerColor="white" title="Open HerLane Bot" />
+        <TulipLogo size={40} />
       </button>
     );
   }
@@ -116,7 +116,9 @@ export function ChatbotWidget() {
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0.8rem 1rem", borderBottom: "1px solid var(--border)" }}>
         <span style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
-          <TulipBloom size={18} openness={1} animated={loading} title="HerLane Bot" />
+          <span className={loading ? "tulip-bloom-breathe" : undefined} style={{ display: "inline-flex" }}>
+            <TulipLogo size={18} />
+          </span>
           <strong style={{ fontSize: "0.9rem" }}>HerLane Bot</strong>
         </span>
         <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
@@ -144,7 +146,10 @@ export function ChatbotWidget() {
         ))}
         {loading && (
           <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.75rem", color: "var(--foreground-muted)" }}>
-            <TulipBloom size={16} openness={0.6} animated title="Thinking" /> Thinking...
+            <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
+              <TulipLogo size={16} />
+            </span>{" "}
+            Thinking...
           </div>
         )}
       </div>

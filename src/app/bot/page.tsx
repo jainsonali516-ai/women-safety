@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Send } from "lucide-react";
-import { TulipBloom } from "@/components/TulipBloom";
+import { TulipLogo } from "@/components/TulipLogo";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -62,7 +62,7 @@ export default function BotPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "1.5rem", maxWidth: 640, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <h1 style={{ fontSize: "1.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <TulipBloom size={26} openness={1} title="HerLane Bot" /> HerLane Bot
+          <TulipLogo size={30} /> HerLane Bot
         </h1>
         <div className="card" style={{ flex: 1, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: 360 }}>
           {messages.map((m, i) => (
@@ -85,7 +85,10 @@ export default function BotPage() {
           ))}
           {loading && (
             <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
-              <TulipBloom size={18} openness={0.6} animated title="Thinking" /> HerLane Bot is thinking...
+              <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
+                <TulipLogo size={18} />
+              </span>{" "}
+              HerLane Bot is thinking...
             </div>
           )}
         </div>
