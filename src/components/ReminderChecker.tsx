@@ -155,6 +155,10 @@ function ReminderPrompt({ reminder, onClose }: { reminder: Reminder; onClose: ()
         flexDirection: "column",
         gap: "0.7rem",
         zIndex: 2100,
+        // The shared .card background is a translucent "glass" surface, which reads fine over
+        // mostly-empty space but let a busy photo/gradient background show through too much on a
+        // floating alert like this one — same fix as the chat widget's panel: fully opaque instead.
+        background: "var(--surface)",
         boxShadow: "0 12px 32px rgba(0,0,0,0.35)",
         border: "1px solid var(--accent)",
       }}
