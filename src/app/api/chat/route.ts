@@ -5,7 +5,7 @@ import { freeTextSchema, safeParse } from "@/lib/validation";
 
 export const maxDuration = 60;
 
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
 const SYSTEM_PROMPT = `You are Alley, the AI safety assistant built into HerLane — a safety-first
 journey planner for female commuters across Delhi, Noida, Gurugram, Ghaziabad, and Faridabad.
