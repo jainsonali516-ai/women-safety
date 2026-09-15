@@ -1,47 +1,45 @@
-const RESEND_URL = "https://api.resend.com/emails";
+import nodemailer from "nodemailer";
 
-// Resend's shared sandbox sender — works without verifying a custom domain, but Resend only
-// lets it deliver to the email address the Resend account itself was created with until a
-// domain is verified. Set RESEND_FROM_EMAIL (e.g. "HerLane <noreply@yourdomain.com>") once a
-// domain is verified in the Resend dashboard so resets can reach any user.
-const DEFAULT_FROM = "HerLane <onboarding@resend.dev>";
+// Gmail SMTP delivery — requires GMAIL_USER (the sending address) and GMAIL_APP_PASSWORD
+// (a 16-character App Password from https://myaccount.google.com/apppasswords, not the
+// account's regular login password; App Passwords need 2-Step Verification enabled).
+function createTransport() {
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
+  if (!user || !pass) return null;
 
-export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL || DEFAULT_FROM;
-  console.log("[email] RESEND_API_KEY present?", !!apiKey, "| from:", from, "| to:", to);
-  if (!apiKey) {
-    console.error("RESEND_API_KEY is not configured — cannot send password reset email.");
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+}
+
+export async function sendPasswordResetOtpEmail(to: string, code: string): Promise<boolean> {
+  const transport = createTransport();
+  const user = process.env.GMAIL_USER;
+  console.log("[email] Gmail SMTP configured?", !!transport, "| from:", user, "| to:", to);
+  if (!transport || !user) {
+    console.error("GMAIL_USER / GMAIL_APP_PASSWORD are not configured — cannot send password reset email.");
     return false;
   }
 
   try {
-    console.log("[email] calling Resend API...");
-    const res = await fetch(RESEND_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: "Reset your HerLane password",
-        html: `
-          <p>Someone (hopefully you) asked to reset the password on your HerLane account.</p>
-          <p><a href="${resetUrl}">Click here to set a new password</a>. This link works once and expires in 30 minutes.</p>
-          <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
-        `,
-      }),
-      signal: AbortSignal.timeout(15000),
+    console.log("[email] sending otp via Gmail SMTP...");
+    const info = await transport.sendMail({
+      from: `HerLane <${user}>`,
+      to,
+      subject: "Your HerLane password reset code",
+      html: `
+        <p>Someone (hopefully you) asked to reset the password on your HerLane account.</p>
+        <p style="font-size:1.75rem; font-weight:700; letter-spacing:0.3em;">${code}</p>
+        <p>Enter this 6-digit code on the reset page to set a new password. It expires in 10 minutes and can only be used once.</p>
+        <p>If you didn't request this, you can safely ignore this email — your password won't change.</p>
+      `,
     });
-    console.log("[email] Resend responded with status:", res.status);
-    if (!res.ok) {
-      console.error("Resend API error:", res.status, await res.text().catch(() => ""));
-      return false;
-    }
-    const data = await res.json().catch(() => null);
-    console.log("[email] Resend success response:", data);
+    console.log("[email] Gmail SMTP accepted message:", info.messageId);
     return true;
   } catch (err) {
-    console.error("Failed to send password reset email:", err);
+    console.error("Failed to send password reset OTP email:", err);
     return false;
   }
 }

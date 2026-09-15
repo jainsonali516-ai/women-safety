@@ -7,7 +7,9 @@ import { TulipLogo } from "@/components/TulipLogo";
 
 function ResetPasswordForm() {
   const router = useRouter();
-  const token = useSearchParams().get("token");
+  const emailParam = useSearchParams().get("email");
+  const [email, setEmail] = useState(emailParam ?? "");
+  const [otp, setOtp] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -21,7 +23,7 @@ function ResetPasswordForm() {
       const res = await fetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ email, otp, password }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -34,14 +36,6 @@ function ResetPasswordForm() {
     }
   }
 
-  if (!token) {
-    return (
-      <p style={{ fontSize: "0.9rem", textAlign: "center", color: "#ef4444" }}>
-        This reset link is missing its token. Please use the link from your email, or request a new one.
-      </p>
-    );
-  }
-
   if (done) {
     return (
       <p style={{ fontSize: "0.9rem", textAlign: "center", color: "var(--foreground)" }}>
@@ -52,6 +46,26 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+      <input
+        type="email"
+        required
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="field"
+        style={{ padding: "0.65rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", background: "var(--background)", color: "var(--foreground)", fontSize: "0.95rem" }}
+      />
+      <input
+        type="text"
+        required
+        inputMode="numeric"
+        maxLength={6}
+        placeholder="6-digit code"
+        value={otp}
+        onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+        className="field"
+        style={{ padding: "0.65rem 0.8rem", borderRadius: "0.6rem", border: "1px solid var(--border)", background: "var(--background)", color: "var(--foreground)", fontSize: "0.95rem", letterSpacing: "0.3em" }}
+      />
       <input
         type="password"
         required
@@ -71,6 +85,9 @@ function ResetPasswordForm() {
       >
         {loading ? "Saving..." : "Set new password"}
       </button>
+      <Link href="/auth/forgot" style={{ textAlign: "center", fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
+        Didn&apos;t get a code? Request a new one
+      </Link>
     </form>
   );
 }
