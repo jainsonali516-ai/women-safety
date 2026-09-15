@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { X, Send } from "lucide-react";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { TulipLogo } from "@/components/TulipLogo";
 import { T } from "@/components/Translated";
 import { useLanguage } from "@/components/LanguageProvider";
 import { ChatMarkdown } from "@/components/ChatMarkdown";
+import { ASK_ALLY_EVENT } from "@/lib/askAlly";
 
 interface ChatMessage {
   role: "user" | "bot";
@@ -17,15 +18,41 @@ interface ChatMessage {
   translatable?: boolean;
 }
 
+const SEED_MESSAGES: ChatMessage[] = [{ role: "bot", text: "Ask me anything.", translatable: true }];
+
 export function ChatbotWidget() {
   const { active: lowPower } = useEmergencyMode();
   const { language } = useLanguage();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Ask me anything.", translatable: true },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(SEED_MESSAGES);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Handoff from a route card's "Ask Ally" trigger: a same-tab CustomEvent carrying a plain query
+  // string (place labels only — never raw coordinates), not React state passed through props or
+  // anything persisted. Opens the widget and pre-fills the input; the user still has to press Send.
+  useEffect(() => {
+    function handleAskAlly(e: Event) {
+      const text = (e as CustomEvent<string>).detail;
+      if (typeof text !== "string") return;
+      setInput(text);
+      setOpen(true);
+      requestAnimationFrame(() => inputRef.current?.focus());
+    }
+    window.addEventListener(ASK_ALLY_EVENT, handleAskAlly);
+    return () => window.removeEventListener(ASK_ALLY_EVENT, handleAskAlly);
+  }, []);
+
+  // Zero-PII / stateless by design: nothing here is ever written to a database (see
+  // /api/chat/route.ts — every request carries its own full history and nothing is persisted
+  // server-side), and closing the widget wipes the in-memory conversation instead of letting it
+  // sit around in React state for a later reopen.
+  function closeAndReset() {
+    setOpen(false);
+    setMessages(SEED_MESSAGES);
+    setInput("");
+  }
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -124,7 +151,7 @@ export function ChatbotWidget() {
           </span>
           <strong style={{ fontSize: "0.9rem" }}>Ally</strong>
         </span>
-        <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
+        <button onClick={closeAndReset} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
           <X size={18} />
         </button>
       </div>
@@ -158,6 +185,7 @@ export function ChatbotWidget() {
       </div>
       <form onSubmit={send} style={{ display: "flex", gap: "0.4rem", padding: "0.7rem", borderTop: "1px solid var(--border)" }}>
         <input
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask Ally..."

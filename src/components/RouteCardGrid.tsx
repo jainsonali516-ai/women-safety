@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle, ExternalLink } from "lucide-react";
+import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle } from "lucide-react";
 import { RISK_TIER_COLOR } from "@/lib/riskTier";
 import { TulipBloom } from "@/components/TulipBloom";
 import { T } from "@/components/Translated";
+import { dispatchAskAlly, buildAskAllyQuery } from "@/lib/askAlly";
 
 export interface RouteOption {
   mode: string;
@@ -29,7 +30,7 @@ const TIER_STYLE: Record<RouteOption["risk_tier"], { bg: string; fg: string }> =
   safe: { bg: RISK_TIER_COLOR.safe, fg: "white" },
 };
 
-export function RouteCardGrid({ options }: { options: RouteOption[] }) {
+export function RouteCardGrid({ options, originLabel, destinationLabel }: { options: RouteOption[]; originLabel?: string; destinationLabel?: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (options.length === 0) {
@@ -118,18 +119,35 @@ export function RouteCardGrid({ options }: { options: RouteOption[] }) {
                 <p><strong style={{ color: "var(--foreground)" }}><T>Cost:</T></strong> <T>{opt.why.cost}</T></p>
                 <p><strong style={{ color: "var(--foreground)" }}><T>Speed:</T></strong> <T>{opt.why.speed}</T></p>
                 {(opt.mode === "metro" || opt.mode === "bus") && (
-                  <p style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)" }}>
-                    <strong style={{ color: "var(--foreground)" }}><T>Line / platform / interchange details:</T></strong>{" "}
-                    <T>{"not available here — Delhi Metro and DTC don't publish a public real-time feed for this. Use the"}</T>{" "}
-                    <a
-                      href={opt.mode === "metro" ? "https://www.delhimetrorail.com" : "https://dtc.delhi.gov.in"}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: "var(--accent-strong)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "0.2rem" }}
+                  <p style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+                    <span>
+                      <strong style={{ color: "var(--foreground)" }}><T>Line / platform / interchange details:</T></strong>{" "}
+                      <T>{"not available here — Delhi Metro and DTC don't publish a public real-time feed for this."}</T>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        dispatchAskAlly(
+                          buildAskAllyQuery(originLabel, destinationLabel, opt.mode === "metro" ? "Metro" : opt.label)
+                        )
+                      }
+                      style={{
+                        alignSelf: "flex-start",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "0.35rem",
+                        padding: "0.4rem 0.7rem",
+                        borderRadius: "999px",
+                        border: "none",
+                        background: "linear-gradient(135deg, var(--accent), var(--accent-strong))",
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "0.76rem",
+                        cursor: "pointer",
+                      }}
                     >
-                      <T>{`official ${opt.mode === "metro" ? "DMRC" : "DTC"} app/site`}</T> <ExternalLink size={11} />
-                    </a>{" "}
-                    <T>for exact line, platform, and direction.</T>
+                      <T>Ask Ally</T> 🛡️
+                    </button>
                   </p>
                 )}
               </div>

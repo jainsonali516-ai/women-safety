@@ -261,7 +261,7 @@ export function JourneyHome() {
               </p>
             )}
 
-            <RouteCardGrid options={options} />
+            <RouteCardGrid options={options} originLabel={origin?.label} destinationLabel={destination?.label} />
           </>
         )}
       </main>
