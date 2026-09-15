@@ -112,6 +112,87 @@ body {
   min-width: 0;
 }
 
+/* ---------- Ambient background ----------
+   A few large, heavily-blurred gradient shapes drifting slowly behind all page content — kept
+   strictly behind (negative z-index) and out of the way (pointer-events: none) of every real UI
+   element. Dark mode gets bolder crimson streaks against the near-black surface; light mode gets
+   much softer blush tones, since the same opacity/saturation that reads as "ambient glow" on a
+   dark background reads as "murky smudge" on an ivory one. */
+.herlane-ambient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.herlane-ambient-streak {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  /* Light mode default: saturated color blobs read as a harsh smear against ivory/white much
+     faster than the same opacity does against a dark surface, so this stays soft. */
+  opacity: 0.22;
+  will-change: transform;
+}
+
+.herlane-ambient-streak-a {
+  width: 60vw;
+  height: 60vw;
+  top: -20vw;
+  left: -15vw;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  animation: herlane-ambient-drift-a 34s ease-in-out infinite;
+}
+
+.herlane-ambient-streak-b {
+  width: 50vw;
+  height: 50vw;
+  bottom: -18vw;
+  right: -12vw;
+  background: radial-gradient(circle, var(--accent-strong) 0%, transparent 70%);
+  animation: herlane-ambient-drift-b 28s ease-in-out infinite;
+}
+
+.herlane-ambient-streak-c {
+  width: 40vw;
+  height: 40vw;
+  top: 35vh;
+  left: 55vw;
+  background: radial-gradient(circle, var(--accent-amber) 0%, transparent 72%);
+  animation: herlane-ambient-drift-c 40s ease-in-out infinite;
+  opacity: 0.14;
+}
+
+[data-theme="dark"] .herlane-ambient-streak {
+  opacity: 0.4;
+}
+
+[data-theme="dark"] .herlane-ambient-streak-c {
+  opacity: 0.25;
+}
+
+@keyframes herlane-ambient-drift-a {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate(6vw, 8vh) rotate(20deg) scale(1.12); }
+}
+
+@keyframes herlane-ambient-drift-b {
+  0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate(-7vw, -6vh) rotate(-18deg) scale(1.08); }
+}
+
+@keyframes herlane-ambient-drift-c {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-4vw, 5vh) scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .herlane-ambient-streak {
+    animation: none;
+  }
+}
+
 body {
   min-height: 100%;
   display: flex;

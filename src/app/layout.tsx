@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { EmergencyModeProvider } from "@/components/EmergencyModeProvider";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
 import { EmergencyModeBanner } from "@/components/EmergencyModeBanner";
+import { AmbientBackground } from "@/components/AmbientBackground";
 import { AuthProvider } from "@/components/AuthProvider";
 
 // Sora: geometric sans for all UI/data text — neutral and legible so the flower motif doesn't
@@ -55,6 +56,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <AuthProvider>
             <EmergencyModeProvider>
               <ServiceWorkerRegister />
+              <AmbientBackground />
               <EmergencyModeBanner />
               {children}
             </EmergencyModeProvider>
