@@ -12,14 +12,14 @@ import { T } from "@/components/Translated";
 
 // "About" alone is genuinely ambiguous to a generic MT model without context (it can come back
 // meaning "approximately" rather than a page name) — translateSource gives the translator a
-// fuller, unambiguous phrase while English still shows the short label. "Alley" is the bot's
+// fuller, unambiguous phrase while English still shows the short label. "Ally" is the bot's
 // brand name, not a describable word, so — same treatment as "HerLane" — it's never translated.
 const NAV_LINKS: { href: string; label: string; translateSource?: string; translatable?: boolean }[] = [
   { href: "/about", label: "About", translateSource: "About Us" },
   { href: "/journey", label: "Journey" },
   { href: "/safety", label: "Safety Tools" },
   { href: "/contacts", label: "Contacts" },
-  { href: "/bot", label: "Alley", translatable: false },
+  { href: "/bot", label: "Ally", translatable: false },
 ];
 
 export function AppHeader() {

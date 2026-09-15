@@ -39,11 +39,11 @@ export function ChatbotWidget() {
       const data = await res.json();
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch (err) {
-      console.error("Alley request failed:", err);
+      console.error("Ally request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Alley is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "Ally is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -57,7 +57,7 @@ export function ChatbotWidget() {
       <button
         onClick={() => setOpen(true)}
         className="btn-accent"
-        aria-label="Open Alley"
+        aria-label="Open Ally"
         style={{
           position: "fixed",
           bottom: "1.5rem",
@@ -114,7 +114,7 @@ export function ChatbotWidget() {
           <span className={loading ? "tulip-bloom-breathe" : undefined} style={{ display: "inline-flex" }}>
             <TulipLogo size={18} />
           </span>
-          <strong style={{ fontSize: "0.9rem" }}>Alley</strong>
+          <strong style={{ fontSize: "0.9rem" }}>Ally</strong>
         </span>
         <button onClick={() => setOpen(false)} aria-label="Close" style={{ background: "none", border: "none", cursor: "pointer", color: "var(--foreground-muted)" }}>
           <X size={18} />
@@ -152,7 +152,7 @@ export function ChatbotWidget() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask Alley..."
+          placeholder="Ask Ally..."
           style={{ flex: 1, padding: "0.5rem 0.7rem", borderRadius: "0.6rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)", fontSize: "0.85rem" }}
         />
         <button type="submit" className="btn-accent" style={{ padding: "0.5rem 0.8rem", borderRadius: "0.6rem", border: "none", cursor: "pointer" }}>

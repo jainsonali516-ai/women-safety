@@ -7,7 +7,7 @@ export const maxDuration = 60;
 
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
-const SYSTEM_PROMPT = `You are Alley, the AI safety assistant built into HerLane — a safety-first
+const SYSTEM_PROMPT = `You are Ally, the AI safety assistant built into HerLane — a safety-first
 journey planner for female commuters across Delhi, Noida, Gurugram, Ghaziabad, and Faridabad.
 Help with trip timing, transit mode choice, and general safety considerations for getting around.
 Be warm, concise, and practical.
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
   if (!parsed.ok) return jsonError(parsed.error);
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return jsonError("Alley isn't configured on this server yet.", 503);
+  if (!apiKey) return jsonError("Ally isn't configured on this server yet.", 503);
 
   const { query, history } = parsed.data;
 
@@ -85,16 +85,16 @@ export async function POST(request: Request) {
       signal: AbortSignal.timeout(30000),
     });
   } catch {
-    return jsonError("Network error while reaching Alley.", 502);
+    return jsonError("Network error while reaching Ally.", 502);
   }
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     console.error("Gemini API error:", res.status, text);
     if (res.status === 429) {
-      return jsonError("Alley is a bit busy right now — please try again in a minute.", 429);
+      return jsonError("Ally is a bit busy right now — please try again in a minute.", 429);
     }
-    return jsonError("Sorry, Alley couldn't respond right now. Please try again shortly.", 502);
+    return jsonError("Sorry, Ally couldn't respond right now. Please try again shortly.", 502);
   }
 
   const data = (await res.json()) as GeminiResponse;
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     // A blocked/empty response (e.g. finishReason "SAFETY") still comes back as a 200 from Gemini —
     // this is not a network/server error, just nothing usable to show.
     console.error("Gemini returned no usable content, finishReason:", candidate?.finishReason);
-    return jsonError("Sorry, Alley couldn't respond to that. Please try rephrasing.", 502);
+    return jsonError("Sorry, Ally couldn't respond to that. Please try rephrasing.", 502);
   }
 
   return NextResponse.json({ answer });

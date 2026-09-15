@@ -12,7 +12,7 @@ interface ChatMessage {
 
 export default function BotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Hi, I'm Alley. Ask me anything." },
+    { role: "bot", text: "Hi, I'm Ally. Ask me anything." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,11 +37,11 @@ export default function BotPage() {
       const data = await res.json();
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch (err) {
-      console.error("Alley request failed:", err);
+      console.error("Ally request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "Alley is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "Ally is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -53,7 +53,7 @@ export default function BotPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "1.5rem", maxWidth: 640, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <h1 style={{ fontSize: "1.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <TulipLogo size={30} /> Alley
+          <TulipLogo size={30} /> Ally
         </h1>
         <div className="card" style={{ flex: 1, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: 360 }}>
           {messages.map((m, i) => (
@@ -79,7 +79,7 @@ export default function BotPage() {
               <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
                 <TulipLogo size={18} />
               </span>{" "}
-              Alley is thinking...
+              Ally is thinking...
             </div>
           )}
         </div>
@@ -87,7 +87,7 @@ export default function BotPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask Alley..."
+            placeholder="Ask Ally..."
             style={{ flex: 1, padding: "0.7rem 0.9rem", borderRadius: "0.7rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)" }}
           />
           <button type="submit" className="btn-accent" style={{ padding: "0.7rem 1rem", borderRadius: "0.7rem", border: "none", cursor: "pointer" }}>
