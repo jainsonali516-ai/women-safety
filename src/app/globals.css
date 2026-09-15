@@ -44,7 +44,11 @@
   --foreground: #1b1420;
   --foreground-muted: #6b5a68;
   --accent: var(--brand-pink);
-  --accent-strong: var(--brand-teal);
+  /* A deeper shade of the same pink, not teal — the photo heroes (home, About) are a warm
+     crimson/red mood throughout, and a pink-to-teal gradient on every button/icon chip sitting
+     on top of that photo read as mismatched. A monochrome pink gradient always matches, since
+     it's the same hue family as the primary accent rather than an unrelated color. */
+  --accent-strong: var(--brand-pink-strong);
   --accent-violet: var(--brand-violet);
   --accent-amber: var(--brand-amber);
   /* Neutral, whisper-thin borders by default — pink is reserved for emphasis (an active state, a
@@ -71,7 +75,7 @@
   --foreground: #fbf6f1;
   --foreground-muted: #b8aebf;
   --accent: var(--brand-pink);
-  --accent-strong: var(--brand-teal);
+  --accent-strong: #ff8fa8;
   --accent-violet: var(--brand-violet);
   --accent-amber: var(--brand-amber);
   /* Neutral rgba(255,255,255,0.08) borders — the signature dark surface stays sophisticated
