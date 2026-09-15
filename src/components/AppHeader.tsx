@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { TulipLogo } from "./TulipLogo";
 import { ThemeToggle } from "./ThemeToggle";
 import { ProfileMenu } from "./ProfileMenu";
@@ -17,6 +18,7 @@ const NAV_LINKS = [
 
 export function AppHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header
@@ -40,11 +42,27 @@ export function AppHeader() {
       </Link>
 
       <nav className="app-nav-desktop" style={{ alignItems: "center", gap: "1.1rem" }}>
-        {NAV_LINKS.map((link) => (
-          <Link key={link.href} href={link.href} style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", whiteSpace: "nowrap" }}>
-            {link.label}
-          </Link>
-        ))}
+        {NAV_LINKS.map((link) => {
+          const active = pathname === link.href || pathname?.startsWith(`${link.href}/`);
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              style={{
+                fontSize: "0.9rem",
+                fontWeight: active ? 700 : 400,
+                color: active ? "var(--accent)" : "var(--foreground-muted)",
+                whiteSpace: "nowrap",
+                padding: "0.4rem 0.7rem",
+                borderRadius: "999px",
+                background: active ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
+                transition: "background 0.15s ease, color 0.15s ease",
+              }}
+            >
+              {link.label}
+            </Link>
+          );
+        })}
         <a
           href="tel:112"
           title="Quick SOS: call 112"
@@ -139,16 +157,27 @@ export function AppHeader() {
               boxShadow: "0 12px 24px rgba(0, 0, 0, 0.35)",
             }}
           >
-            {NAV_LINKS.map((link) => (
+            {NAV_LINKS.map((link) => {
+              const active = pathname === link.href || pathname?.startsWith(`${link.href}/`);
+              return (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMenuOpen(false)}
-                style={{ fontSize: "1rem", color: "var(--foreground)", fontWeight: 600 }}
+                style={{
+                  fontSize: "1rem",
+                  color: active ? "var(--accent)" : "var(--foreground)",
+                  fontWeight: active ? 800 : 600,
+                  padding: "0.3rem 0.6rem",
+                  borderRadius: "0.6rem",
+                  background: active ? "color-mix(in srgb, var(--accent) 12%, transparent)" : "transparent",
+                  width: "fit-content",
+                }}
               >
                 {link.label}
               </Link>
-            ))}
+              );
+            })}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: "0.4rem", borderTop: "1px solid var(--border)" }}>
               <span style={{ fontSize: "0.85rem", color: "var(--foreground-muted)" }}>Theme</span>
               <ThemeToggle />
