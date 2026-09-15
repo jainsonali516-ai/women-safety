@@ -98,6 +98,10 @@ export function ChatbotWidget() {
         width: "min(340px, calc(100vw - 2rem))",
         maxHeight: "min(480px, calc(100vh - 4rem))",
         borderRadius: "1rem",
+        // The shared .glass background (70%/65% opaque) let the page content behind it show
+        // through too much on a floating panel like this — readable enough for a sticky nav bar
+        // with mostly-empty space behind it, not for a chat window sitting over busy page content.
+        background: "var(--surface)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
