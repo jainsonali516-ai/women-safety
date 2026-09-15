@@ -113,7 +113,7 @@ export default async function Home() {
           <HomeCard
             href="/bot"
             icon={<MessageSquareText size={22} />}
-            title="HerLane Bot"
+            title="Alley"
             desc="Ask about an upcoming trip and get a safety-aware forecast."
             gradient="linear-gradient(135deg, var(--accent-strong), var(--accent))"
           />

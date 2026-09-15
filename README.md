@@ -20,7 +20,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 - Address search (Photon, Komoot's free OSM-based geocoder, forward + reverse), real road-distance/duration routing (OSRM), and both safety signals (street-light density + shop/amenity foot-traffic density, both via the OSM Overpass API) — all free, no API keys or billing account required. Switched from Nominatim after finding it doesn't do prefix/type-ahead matching — searches like "noid" (mid-way through typing "Noida") or many residential sector/colony names returned nothing; Photon is built for exactly this and is biased to the Delhi NCR bounding box
 - Metro fares follow DMRC's real distance slabs (₹10–₹60); DTC/Cluster bus fares follow the concession toggle — ₹0 with Pink Saheli active, or a standard ₹5–₹25 distance fare with it off; E-Rickshaw feeder fare (₹10–₹20 flat) shows up for short (≤3 km) trips
 - Uber & Ola deep links (native app URI + web fallback) pre-filled with pickup/drop-off coordinates
-- Tulip Bot: a general chat assistant (floating widget on every page, plus a full `/bot` page), backed by on-demand.io's multi-agent chat API (`/api/chat`) — session id is kept for the whole conversation so it remembers earlier turns instead of starting fresh on every message
+- Alley: a general chat assistant (floating widget on every page, plus a full `/bot` page), backed by Google's Gemini API directly (`/api/chat`). Stateless by design — the client sends the recent conversation history with every request, and nothing is persisted server-side afterward, on this app's end or Google's
 - Security: strict input validation (zod, including a stricter Indian-mobile regex) on every route, CSP/HSTS/X-Frame-Options headers, all third-party API calls proxied server-side so keys never reach the browser
 - Metro/Bus cards are upfront that **exact line, platform, and interchange details aren't available** — Delhi Metro/DTC don't publish a public real-time feed for this, so the app links to the official DMRC/DTC app instead of guessing (a wrong "board towards X" instruction in a safety app is worse than no instruction)
 - The map shows a single overall-route polyline with one uniform safety glow matching the route's risk badge (an earlier per-stretch "Safety Zone Breakdown" was tried and then removed by request in favor of this simpler, single overall score)
@@ -33,7 +33,7 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 | Feature | Needs |
 |---|---|
 | Automatic SMS delivery for "Share My Location" (instead of the manual SMS/WhatsApp fallback) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` |
-| Tulip Bot chat replies | `ON_DEMAND_API_KEY` (without it, `/api/chat` returns a clear "not configured" error rather than crashing) |
+| Alley chat replies | `GEMINI_API_KEY` (without it, `/api/chat` returns a clear "not configured" error rather than crashing) |
 | Forgot-password reset emails | `GMAIL_USER`, `GMAIL_APP_PASSWORD` (a 16-character [Google App Password](https://myaccount.google.com/apppasswords), not the account's login password — requires 2-Step Verification enabled on that Google account). Without them, `/api/auth/forgot-password` still responds normally, but no email actually goes out — check server logs |
 
 **Not implemented — Google Earth Engine night-light scoring.** Real Earth Engine access requires a Google Cloud service account approved for Earth Engine, which is a manual multi-day process on Google's side and can't be wired up in this session. The safety score currently uses OSM street-light + shop/amenity density as a documented stand-in (see `src/lib/scoring.ts`). Swap in Earth Engine later without changing the API shape.
@@ -58,11 +58,11 @@ A safety-first journey planner for female commuters across Delhi, Noida, Gurugra
 
 ## Pages
 
-- `/` — home: a welcome hub with quick links to Journey, Safety Tools, Contacts, and Tulip Bot
+- `/` — home: a welcome hub with quick links to Journey, Safety Tools, Contacts, and Alley
 - `/journey` — the Journey search hero, safety map, and route results (redirects to `/auth` if signed out)
 - `/safety` — Safety Tools: SOS quick-dial, Share My Location, Live Journey Tracking
 - `/contacts` — trusted contacts and location-reminder alarms
-- `/bot` — full-page Tulip Bot (also available as a floating widget on every page)
+- `/bot` — full-page Alley (also available as a floating widget on every page)
 - `/auth` — sign up / log in
 
 ## Setup

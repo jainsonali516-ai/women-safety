@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { Send } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
@@ -12,14 +12,10 @@ interface ChatMessage {
 
 export default function BotPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: "bot", text: "Hi, I'm HerLane Bot. Ask me anything." },
+    { role: "bot", text: "Hi, I'm Alley. Ask me anything." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  // Kept for the whole conversation so on-demand.io's session remembers earlier turns instead
-  // of starting fresh on every message — same pattern as the floating widget version.
-  const sessionIdRef = useRef<string | null>(null);
-  const externalUserIdRef = useRef<string | null>(null);
 
   async function send(e: React.FormEvent) {
     e.preventDefault();
@@ -30,27 +26,22 @@ export default function BotPage() {
     setInput("");
     setLoading(true);
     try {
-      if (!externalUserIdRef.current) externalUserIdRef.current = crypto.randomUUID();
+      // Stateless by design — every request sends its own full history, and nothing is kept
+      // server-side afterward (see src/app/api/chat/route.ts), so there's no session id to track.
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: userMessage,
-          externalUserId: externalUserIdRef.current,
-          sessionId: sessionIdRef.current ?? undefined,
-          history,
-        }),
+        body: JSON.stringify({ query: userMessage, history }),
         signal: AbortSignal.timeout(45000),
       });
       const data = await res.json();
-      if (res.ok && data.sessionId) sessionIdRef.current = data.sessionId;
       setMessages((m) => [...m, { role: "bot", text: res.ok ? data.answer || "..." : data.error }]);
     } catch (err) {
-      console.error("HerLane Bot request failed:", err);
+      console.error("Alley request failed:", err);
       const timedOut = err instanceof DOMException && err.name === "TimeoutError";
       setMessages((m) => [
         ...m,
-        { role: "bot", text: timedOut ? "HerLane Bot is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
+        { role: "bot", text: timedOut ? "Alley is taking a while — please try again." : "Sorry, something went wrong. Please try again." },
       ]);
     } finally {
       setLoading(false);
@@ -62,7 +53,7 @@ export default function BotPage() {
       <AppHeader />
       <main style={{ flex: 1, padding: "1.5rem", maxWidth: 640, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1rem" }}>
         <h1 style={{ fontSize: "1.4rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <TulipLogo size={30} /> HerLane Bot
+          <TulipLogo size={30} /> Alley
         </h1>
         <div className="card" style={{ flex: 1, padding: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem", minHeight: 360 }}>
           {messages.map((m, i) => (
@@ -88,7 +79,7 @@ export default function BotPage() {
               <span className="tulip-bloom-breathe" style={{ display: "inline-flex" }}>
                 <TulipLogo size={18} />
               </span>{" "}
-              HerLane Bot is thinking...
+              Alley is thinking...
             </div>
           )}
         </div>
@@ -96,7 +87,7 @@ export default function BotPage() {
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask HerLane Bot..."
+            placeholder="Ask Alley..."
             style={{ flex: 1, padding: "0.7rem 0.9rem", borderRadius: "0.7rem", border: "1px solid var(--border)", background: "var(--surface)", color: "var(--foreground)" }}
           />
           <button type="submit" className="btn-accent" style={{ padding: "0.7rem 1rem", borderRadius: "0.7rem", border: "none", cursor: "pointer" }}>

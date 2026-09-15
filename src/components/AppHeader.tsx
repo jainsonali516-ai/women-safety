@@ -13,7 +13,7 @@ const NAV_LINKS = [
   { href: "/journey", label: "Journey" },
   { href: "/safety", label: "Safety Tools" },
   { href: "/contacts", label: "Contacts" },
-  { href: "/bot", label: "HerLane Bot" },
+  { href: "/bot", label: "Alley" },
 ];
 
 export function AppHeader() {

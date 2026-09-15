@@ -101,7 +101,7 @@ const FAQ: FaqCategory[] = [
     items: [
       {
         q: "Does HerLane warn me about protests, rallies, or road closures?",
-        a: "Optionally. HerLane Bot can check recent news for rallies, protests, or road closures reported near Delhi NCR around your travel date, and will suggest Metro if one's found, to avoid surface-route disruption. It's a live news search, not a curated events calendar, and it's simply skipped — never faked — if that's not configured.",
+        a: "Optionally. Alley can check recent news for rallies, protests, or road closures reported near Delhi NCR around your travel date, and will suggest Metro if one's found, to avoid surface-route disruption. It's a live news search, not a curated events calendar, and it's simply skipped — never faked — if that's not configured.",
       },
     ],
   },
@@ -124,7 +124,7 @@ export default function AboutPage() {
           <AboutCard icon={<MapPinned size={20} />} title="Safety-Scored Routing" desc="Routes across Metro, DTC buses, autos, and cabs are ranked using real street-light density and foot-traffic signals, not guesswork." />
           <AboutCard icon={<Shield size={20} />} title="Built for Emergencies" desc="One-tap SOS dialing, instant location sharing, and live journey tracking that keeps working even if your connection drops." />
           <AboutCard icon={<Users size={20} />} title="Your Trusted Circle" desc="Keep a list of emergency contacts you can reach — or who can reach you — in one tap." />
-          <AboutCard icon={<Bot size={20} />} title="HerLane Bot" desc="Ask about an upcoming trip and get a safety-aware forecast for the best time and mode to travel." />
+          <AboutCard icon={<Bot size={20} />} title="Alley" desc="Ask about an upcoming trip and get a safety-aware forecast for the best time and mode to travel." />
         </section>
 
         <div style={{ maxWidth: 760, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "2.5rem" }}>
@@ -135,7 +135,7 @@ export default function AboutPage() {
             <p style={{ fontSize: "0.9rem", color: "var(--foreground-muted)", lineHeight: 1.6 }}>
               HerLane&apos;s routing and safety signals run on OpenStreetMap-based services (Photon, OSRM,
               Overpass) — no paid API keys or billing accounts required to use the core app. Where a
-              feature depends on an optional service (like SMS delivery or HerLane Bot&apos;s natural-language
+              feature depends on an optional service (like SMS delivery or Alley&apos;s natural-language
               replies), it&apos;s clearly labeled and degrades gracefully rather than pretending to work
               when it can&apos;t.
             </p>

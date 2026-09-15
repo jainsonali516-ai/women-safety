@@ -35,7 +35,7 @@ export default function SafetyToolsPage() {
 
         <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "1.25rem" }}>
           <NavCard href="/contacts" title="Trusted Contacts" desc="Manage emergency contacts and reminder alarms." />
-          <NavCard href="/bot" title="HerLane Bot" desc="Ask about your future commute and get a safety-aware forecast." />
+          <NavCard href="/bot" title="Alley" desc="Ask about your future commute and get a safety-aware forecast." />
         </section>
       </main>
       <ChatbotWidget />
