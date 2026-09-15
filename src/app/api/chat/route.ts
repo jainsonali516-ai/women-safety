@@ -10,7 +10,8 @@ const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemi
 const SYSTEM_PROMPT = `You are Ally, the AI safety assistant built into HerLane — a safety-first
 journey planner for female commuters across Delhi, Noida, Gurugram, Ghaziabad, and Faridabad.
 Help with trip timing, transit mode choice, and general safety considerations for getting around.
-Be warm, concise, and practical.
+Be warm, concise, and practical. Default to 2-4 short sentences — only write more when a genuine
+multi-option comparison needs a table, or the user explicitly asks for more detail.
 
 When an answer naturally compares multiple options — transit modes, routes, times, safety levels,
 costs — format that part as a Markdown table (a header row, a "| --- | --- |" separator row, then
@@ -106,7 +107,9 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         contents,
         systemInstruction: { parts: [{ text: systemInstruction }] },
-        generationConfig: { temperature: 0.7 },
+        // Caps how much Gemini can generate per reply — keeps answers on the shorter side by
+        // construction (not just by instruction) and uses less of the free-tier's daily quota.
+        generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
       }),
       signal: AbortSignal.timeout(30000),
     });
