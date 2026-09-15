@@ -555,10 +555,12 @@ a:focus-visible {
   /* The top band is intentionally strong and full-width (not just the left side, where the
      horizontal scrim already helps) — both source photos have a small baked-in mock nav/wordmark
      right at the top from the original reference shots, and it needs to disappear under the real
-     AppHeader regardless of viewport aspect ratio / crop, not just be dimmed. */
+     AppHeader regardless of viewport aspect ratio / crop, not just be dimmed. The bottom stop
+     fades all the way to the page's own background color (not just a darker rgba) so the hero
+     dissolves into the rest of the page instead of hard-cutting to a flat panel underneath it. */
   background:
     linear-gradient(100deg, rgba(8, 6, 10, 0.85) 0%, rgba(8, 6, 10, 0.5) 42%, rgba(8, 6, 10, 0.12) 68%),
-    linear-gradient(180deg, rgba(8, 6, 10, 0.96) 0%, rgba(8, 6, 10, 0.92) 8%, rgba(8, 6, 10, 0.55) 16%, rgba(8, 6, 10, 0.15) 24%, transparent 32%, transparent 76%, rgba(8, 6, 10, 0.45) 100%);
+    linear-gradient(180deg, rgba(8, 6, 10, 0.96) 0%, rgba(8, 6, 10, 0.92) 8%, rgba(8, 6, 10, 0.55) 16%, rgba(8, 6, 10, 0.15) 24%, transparent 32%, transparent 62%, var(--background-solid) 100%);
 }
 
 .herlane-photo-hero-content {
