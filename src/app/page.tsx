@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { TrustBadges } from "@/components/TrustBadges";
 import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
 import { ChatbotWidget } from "@/components/ChatbotWidget";
-import { Compass, ShieldCheck, Users, MessageSquareText, Zap, ArrowRight } from "lucide-react";
+import { Compass, ShieldCheck, Users, MessageSquareText, MessageSquareQuote, Zap, ArrowRight } from "lucide-react";
 import { T } from "@/components/Translated";
 import { HomeHeroHeadline } from "@/components/HomeHeroHeadline";
 
@@ -118,6 +118,13 @@ export default async function Home() {
             title="Ally"
             desc="Ask about an upcoming trip and get a safety-aware forecast."
             gradient="linear-gradient(135deg, var(--accent-strong), var(--accent))"
+          />
+          <HomeCard
+            href="/feedback"
+            icon={<MessageSquareQuote size={22} />}
+            title="Feedback"
+            desc="Share your experience and see what other travelers are saying."
+            gradient="linear-gradient(135deg, var(--accent), var(--accent-violet))"
           />
         </section>
       </main>

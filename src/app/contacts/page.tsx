@@ -6,7 +6,6 @@ import { RequireAuthGate } from "@/components/RequireAuthGate";
 import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
 import { T } from "@/components/Translated";
-import { FeedbackSection } from "@/components/FeedbackSection";
 
 interface Contact {
   id: string;
@@ -33,8 +32,6 @@ export default function ContactsPage() {
         <RequireAuthGate message="Sign in to save your emergency contacts & enable automatic alerts.">
           <ContactsManager />
         </RequireAuthGate>
-        {/* Public — no sign-in required, matching the feedback table's RLS policies. */}
-        <FeedbackSection />
       </main>
     </>
   );
