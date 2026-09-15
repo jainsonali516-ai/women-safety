@@ -98,7 +98,7 @@ function JourneyPreviewCard() {
         value={destination}
         onChange={setDestination}
         onSelect={(s: Suggestion) => setDestination(s.name)}
-        icon={<Navigation className="absolute left-4 w-5 h-5 pointer-events-none" style={{ color: "var(--accent-violet)" }} />}
+        icon={<Navigation className="absolute left-4 w-5 h-5 pointer-events-none" style={{ color: "var(--accent-strong)" }} />}
         ringColor="focus:ring-rose-500/50"
       />
 
@@ -151,7 +151,7 @@ function JourneyPreviewCard() {
           <span style={{ fontSize: "0.6rem", fontWeight: 700, color: "var(--accent-amber)" }}>🚫 Two-Wheelers Excluded</span>
         </div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-          <ModePill icon={<Train size={13} />} label="Delhi Metro" color="var(--accent-violet)" />
+          <ModePill icon={<Train size={13} />} label="Delhi Metro" color="var(--accent-strong)" />
           <ModePill icon={<Bus size={13} />} label="DTC Bus (₹0)" color="var(--accent)" />
           <ModePill icon={<Car size={13} />} label="Verified Cabs" />
         </div>

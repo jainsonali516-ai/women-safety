@@ -101,7 +101,7 @@ export default async function Home() {
             icon={<ShieldCheck size={22} />}
             title="Safety Tools"
             desc="SOS quick-dial, share your live location, and journey tracking."
-            gradient="linear-gradient(135deg, var(--accent-strong), var(--accent-violet))"
+            gradient="linear-gradient(135deg, var(--accent), var(--accent-strong))"
           />
           <HomeCard
             href="/contacts"
@@ -115,7 +115,7 @@ export default async function Home() {
             icon={<MessageSquareText size={22} />}
             title="HerLane Bot"
             desc="Ask about an upcoming trip and get a safety-aware forecast."
-            gradient="linear-gradient(135deg, var(--accent-violet), var(--accent))"
+            gradient="linear-gradient(135deg, var(--accent-strong), var(--accent))"
           />
         </section>
       </main>
