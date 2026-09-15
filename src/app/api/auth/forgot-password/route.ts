@@ -1,18 +1,23 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { jsonError } from "@/lib/api";
 import { emailSchema, safeParse } from "@/lib/validation";
-import { sendPasswordResetEmail } from "@/lib/email";
+import { sendPasswordResetOtpEmail } from "@/lib/email";
 
-const RESET_TOKEN_TTL_MS = 30 * 60 * 1000;
+const OTP_TTL_MS = 10 * 60 * 1000;
 
 const bodySchema = z.object({ email: emailSchema });
 
 // Always the same response whether or not the email has an account — otherwise this endpoint
 // could be used to check which emails are registered, same anti-enumeration reasoning as login.
-const GENERIC_RESPONSE = { message: "If an account exists for that email, a reset link has been sent." };
+const GENERIC_RESPONSE = { message: "If an account exists for that email, a 6-digit code has been sent." };
+
+// randomInt is crypto-secure (Node's CSPRNG), unlike Math.random().
+function generateOtp(): string {
+  return randomInt(0, 1_000_000).toString().padStart(6, "0");
+}
 
 export async function POST(request: Request) {
   console.log("[forgot-password] request received");
@@ -30,22 +35,20 @@ export async function POST(request: Request) {
   console.log("[forgot-password] user found?", !!user);
 
   if (user) {
-    // Only one valid reset link per user at a time — older ones stop working once a new one is requested.
+    // Only one valid code per user at a time — older ones stop working once a new one is requested.
     const { error: deleteError } = await supabase.from("password_resets").delete().eq("user_id", user.id);
-    if (deleteError) console.log("[forgot-password] error clearing old tokens:", deleteError.message);
+    if (deleteError) console.log("[forgot-password] error clearing old otps:", deleteError.message);
 
-    const token = randomBytes(32).toString("hex");
-    const tokenHash = createHash("sha256").update(token).digest("hex");
-    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString();
+    const otp = generateOtp();
+    const otpHash = createHash("sha256").update(otp).digest("hex");
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS).toISOString();
 
-    const { error } = await supabase.from("password_resets").insert({ user_id: user.id, token_hash: tokenHash, expires_at: expiresAt });
-    if (error) console.log("[forgot-password] error inserting token:", error.message);
+    const { error } = await supabase.from("password_resets").insert({ user_id: user.id, otp_hash: otpHash, expires_at: expiresAt });
+    if (error) console.log("[forgot-password] error inserting otp:", error.message);
 
     if (!error) {
-      const origin = new URL(request.url).origin;
-      const resetUrl = `${origin}/auth/reset?token=${token}`;
-      console.log("[forgot-password] sending email to:", user.email, "with url:", resetUrl);
-      const sent = await sendPasswordResetEmail(user.email, resetUrl);
+      console.log("[forgot-password] sending otp to:", user.email);
+      const sent = await sendPasswordResetOtpEmail(user.email, otp);
       console.log("[forgot-password] email sent?", sent);
     }
   }
