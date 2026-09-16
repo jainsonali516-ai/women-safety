@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getSessionUser } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { AppHeader } from "@/components/AppHeader";
 import { TrustBadges } from "@/components/TrustBadges";
 import { PhotoHeroBackground } from "@/components/PhotoHeroBackground";
@@ -10,6 +11,17 @@ import { HomeHeroHeadline } from "@/components/HomeHeroHeadline";
 
 export default async function Home() {
   const user = await getSessionUser();
+
+  // Asked for at signup (AuthForm's "Full name" field), but the session cookie only carries
+  // userId/email to keep the JWT minimal — a real lookup, not something worth persisting into
+  // every session token just for a greeting. Falls back to no name for older/phone-only accounts
+  // that predate this field being required.
+  let firstName: string | null = null;
+  if (user) {
+    const supabase = createAdminClient();
+    const { data } = await supabase.from("users").select("full_name").eq("id", user.userId).maybeSingle();
+    firstName = data?.full_name?.trim().split(/\s+/)[0] ?? null;
+  }
 
   if (!user) {
     return (
@@ -62,7 +74,15 @@ export default async function Home() {
           <div className="herlane-photo-hero-content" style={{ justifyContent: "center" }}>
             <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "1.1rem", textAlign: "center", maxWidth: 620, margin: "0 auto" }}>
               <h1 className="herlane-hero-photo-title">
-                <T>Welcome back to</T> <span style={{ color: "var(--brand-pink)" }}>HerLane</span>
+                {firstName ? (
+                  <>
+                    <T>Welcome back,</T> <span style={{ color: "var(--brand-pink)" }}>{firstName}</span>
+                  </>
+                ) : (
+                  <>
+                    <T>Welcome back to</T> <span style={{ color: "var(--brand-pink)" }}>HerLane</span>
+                  </>
+                )}
               </h1>
               <p className="herlane-hero-photo-subtitle">
                 <T>
