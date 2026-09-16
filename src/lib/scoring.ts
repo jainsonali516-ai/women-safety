@@ -1,10 +1,24 @@
 import { istParts } from "@/lib/istTime";
 import { getSunTimes } from "@/lib/sunTimes";
 import { queryOverpass } from "@/lib/overpass";
+import { CACHE_TTL_MS } from "@/lib/cacheConfig";
 
 interface LatLng {
   latitude: number;
   longitude: number;
+}
+
+// Rounds to ~100m grid so two near-identical midpoints (e.g. slightly different GPS precision
+// for "the same place") build the same Overpass query string and hit the same cache entry.
+function roundCoord(n: number) {
+  return Math.round(n * 1000) / 1000;
+}
+
+// Rounds a timestamp down to the current cache-TTL window so two calls within the same window
+// can't land on opposite sides of an hour/sunset boundary and silently get a different
+// rush-hour/after-dark reading for what's effectively the same moment.
+function bucketedDate(date: Date) {
+  return new Date(Math.floor(date.getTime() / CACHE_TTL_MS) * CACHE_TTL_MS);
 }
 
 /**
@@ -16,7 +30,7 @@ interface LatLng {
 export async function fetchStreetLightDensity(point: LatLng, radiusMeters = 400) {
   const query = `
     [out:json][timeout:15];
-    node["highway"="street_lamp"](around:${radiusMeters},${point.latitude},${point.longitude});
+    node["highway"="street_lamp"](around:${radiusMeters},${roundCoord(point.latitude)},${roundCoord(point.longitude)});
     out count;
   `;
 
@@ -32,11 +46,13 @@ export async function fetchStreetLightDensity(point: LatLng, radiusMeters = 400)
  * an area typically is (a Google Places Nearby Search substitute that needs no API key).
  */
 export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
+  const lat = roundCoord(point.latitude);
+  const lng = roundCoord(point.longitude);
   const query = `
     [out:json][timeout:15];
     (
-      node["shop"](around:${radiusMeters},${point.latitude},${point.longitude});
-      node["amenity"~"restaurant|cafe|fast_food|marketplace|pharmacy|bank|atm"](around:${radiusMeters},${point.latitude},${point.longitude});
+      node["shop"](around:${radiusMeters},${lat},${lng});
+      node["amenity"~"restaurant|cafe|fast_food|marketplace|pharmacy|bank|atm"](around:${radiusMeters},${lat},${lng});
     );
     out count;
   `;
@@ -59,7 +75,7 @@ export async function fetchFootTrafficScore(point: LatLng, radiusMeters = 400) {
  * stands in for a real congestion-ratio score until a paid traffic API is configured.
  */
 export function computeHeuristicRushScore(date = new Date()) {
-  const { hour, isWeekend } = istParts(date);
+  const { hour, isWeekend } = istParts(bucketedDate(date));
   if (isWeekend) return 80;
   const isPeak = (hour >= 8 && hour < 11) || (hour >= 17 && hour < 22);
   return isPeak ? 40 : 85;
@@ -71,8 +87,9 @@ export function computeHeuristicRushScore(date = new Date()) {
  * routinely wrong by an hour or more depending on the season.
  */
 export function isAfterSunset(date = new Date()) {
-  const { preciseHour } = istParts(date);
-  const { sunriseHour, sunsetHour } = getSunTimes(date);
+  const bucketed = bucketedDate(date);
+  const { preciseHour } = istParts(bucketed);
+  const { sunriseHour, sunsetHour } = getSunTimes(bucketed);
   return preciseHour >= sunsetHour || preciseHour < sunriseHour;
 }
 
@@ -105,8 +122,7 @@ export function computeSafetyScore({ streetLightCount, streetLightDataAvailable,
   return Math.round(lightScore * lightWeight + footTrafficScore * (1 - lightWeight));
 }
 
-export function computeFinalScore(safetyScore: number, rushScore: number, mode: "balanced" | "safest" | "fastest" | "cheapest") {
-  const afterSunset = isAfterSunset();
+export function computeFinalScore(safetyScore: number, rushScore: number, mode: "balanced" | "safest" | "fastest" | "cheapest", afterSunset: boolean) {
   if (mode === "safest") return safetyScore;
   if (mode === "fastest") return rushScore;
   if (mode === "cheapest") return rushScore; // cheapest sorting is applied on fare, not this score
