@@ -205,6 +205,20 @@ async function fetchAmenitiesOfType(
     .filter((a) => a.distanceFromRouteMeters <= bufferMeters);
 }
 
+// Raw OpenStreetMap data sometimes has two separate nodes for the same real-world place — an old
+// entry never merged with a newer one, or two contributors independently mapping the same police
+// post/hospital entrance a few meters apart. Overpass returns both as distinct, valid nodes, so
+// without this the map would show two pins essentially stacked on top of each other for what a
+// user sees as one place. Collapses same-type points within 40m of each other down to one.
+function dedupeNearby(amenities: RouteAmenity[], thresholdMeters = 40): RouteAmenity[] {
+  const kept: RouteAmenity[] = [];
+  for (const amenity of amenities) {
+    const isDuplicate = kept.some((k) => k.type === amenity.type && haversineMeters(amenity, k) < thresholdMeters);
+    if (!isDuplicate) kept.push(amenity);
+  }
+  return kept;
+}
+
 export async function fetchRouteAmenities(
   origin: LatLng,
   destination: LatLng,
@@ -228,5 +242,5 @@ export async function fetchRouteAmenities(
     results.push(await fetchAmenitiesOfType(type, bounds, origin, destination, bufferMeters));
   }
 
-  return results.flat().slice(0, 150);
+  return dedupeNearby(results.flat()).slice(0, 150);
 }
