@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { T, useTranslated } from '@/components/Translated';
 import { useLanguage } from '@/components/LanguageProvider';
+import { getCurrentPositionWithFallback } from '@/lib/geolocation';
 
 export interface Coords {
   latitude: number;
@@ -157,7 +158,7 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
   // keeps the original two-tone split for free.
   const translatedHeadline = useTranslated('Navigate Delhi NCR with Confidence & Peace of Mind');
 
-  const handleDetectLocation = () => {
+  const handleDetectLocation = async () => {
     setGpsLoading(true);
     setGpsStatus('idle');
 
@@ -167,34 +168,38 @@ export const JourneySearchHero: React.FC<HeroProps> = ({
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setOriginCoords({ latitude, longitude });
-        try {
-          const res = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
-          if (res.ok) {
-            const data = await res.json();
-            setOrigin(data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-            setGpsStatus('success');
-          } else {
-            setOrigin(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-            setGpsStatus('success');
-          }
-        } catch {
-          setOrigin(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-          setGpsStatus('success');
-        } finally {
-          setGpsLoading(false);
-        }
-      },
-      (error) => {
-        console.warn('GPS location request failed:', error.message);
-        setGpsStatus('fallback');
-        setGpsLoading(false);
-      },
-      { timeout: 8000, enableHighAccuracy: true }
-    );
+    // A high-accuracy-only request with a short timeout was the actual cause of "GPS signal
+    // weak" firing far more than real GPS failures warrant — a first high-accuracy fix can
+    // genuinely take 15-20s (worse indoors), and most laptops have no GPS chip at all, relying
+    // on slower wifi-based positioning under the hood either way. Try a fast, coarse fix first,
+    // then fall back to a slower high-accuracy one only if that genuinely fails (same fix
+    // already proven out for SosTracker's "Start Tracking", see lib/geolocation.ts).
+    const { position, errorCode } = await getCurrentPositionWithFallback();
+    if (!position) {
+      if (errorCode !== null) console.warn('GPS location request failed, code:', errorCode);
+      setGpsStatus('fallback');
+      setGpsLoading(false);
+      return;
+    }
+
+    const { latitude, longitude } = position.coords;
+    setOriginCoords({ latitude, longitude });
+    try {
+      const res = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrigin(data.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setGpsStatus('success');
+      } else {
+        setOrigin(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        setGpsStatus('success');
+      }
+    } catch {
+      setOrigin(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+      setGpsStatus('success');
+    } finally {
+      setGpsLoading(false);
+    }
   };
 
   const toggleMode = (mode: string) => {

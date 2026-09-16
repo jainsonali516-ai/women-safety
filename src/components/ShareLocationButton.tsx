@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MapPin, Loader2, Copy, Check, MessageCircle } from "lucide-react";
 import { T } from "@/components/Translated";
+import { getCurrentPositionWithFallback } from "@/lib/geolocation";
 
 interface Contact {
   id: string;
@@ -77,25 +78,17 @@ export function ShareLocationButton() {
     if (!confirmed) return;
 
     setStatus("locating");
-    const timeoutId = setTimeout(() => {
-      setStatus((s) => {
-        if (s === "locating") setNeedsManualLocation(true);
-        return s === "locating" ? "idle" : s;
-      });
-    }, 10000);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        clearTimeout(timeoutId);
-        shareFromCoords(position.coords.latitude, position.coords.longitude);
-      },
-      () => {
-        clearTimeout(timeoutId);
-        setStatus("idle");
-        setNeedsManualLocation(true);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    // A high-accuracy-only request used to fail here well before real GPS trouble justified it —
+    // a first high-accuracy fix can genuinely take 15-20s, and most laptops have no GPS chip at
+    // all. Try a fast, coarse fix first, then fall back to a slower high-accuracy one only if
+    // that genuinely fails (see lib/geolocation.ts).
+    const { position } = await getCurrentPositionWithFallback();
+    if (position) {
+      shareFromCoords(position.coords.latitude, position.coords.longitude);
+    } else {
+      setStatus("idle");
+      setNeedsManualLocation(true);
+    }
   }
 
   async function useManualLandmark(e: React.FormEvent) {
