@@ -1,3 +1,5 @@
+import { getCached, setCached } from "./overpassCache";
+
 // Shared Overpass query helper with a retry against a second free public mirror. Every safety
 // signal in this app (street-light density, foot-traffic, route amenities, nearby help points)
 // depends on Overpass's free, shared, rate-limited public server — testing earlier in this
@@ -8,6 +10,10 @@
 // each category is its own independent query, so a transient failure on any one of them dropped
 // just that category for that search. Retrying once, against a different instance, fixes most
 // of these transient failures without doubling load on whichever server just struggled.
+//
+// Results (including a failed `null`) are also cached for a few minutes (see overpassCache.ts) —
+// without that, two otherwise-identical calls a minute apart could get different answers purely
+// from this server's own flakiness, not from anything actually changing on the ground.
 const OVERPASS_MIRRORS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"];
 
 const OVERPASS_HEADERS = {
@@ -30,6 +36,10 @@ function delay(ms: number) {
  * free-exploration map browsing (unlike the safety-score-relevant calls, which keep the retry).
  */
 export async function queryOverpass(query: string, timeoutMs = 10000, retryMirror = true): Promise<{ elements: unknown[] } | null> {
+  const cacheKey = `${retryMirror}:${query}`;
+  const cached = getCached<{ elements: unknown[] } | null>(cacheKey);
+  if (cached !== undefined) return cached;
+
   const mirrors = retryMirror ? OVERPASS_MIRRORS : OVERPASS_MIRRORS.slice(0, 1);
   for (let attempt = 0; attempt < mirrors.length; attempt++) {
     try {
@@ -39,12 +49,17 @@ export async function queryOverpass(query: string, timeoutMs = 10000, retryMirro
         body: query,
         signal: AbortSignal.timeout(timeoutMs),
       });
-      if (res.ok) return await res.json();
+      if (res.ok) {
+        const data = await res.json();
+        setCached(cacheKey, data);
+        return data;
+      }
       console.error(`[overpass] ${mirrors[attempt]} -> HTTP ${res.status}`);
     } catch (err) {
       console.error(`[overpass] ${mirrors[attempt]} -> ${err instanceof Error ? err.message : err}`);
     }
     if (attempt < mirrors.length - 1) await delay(500);
   }
+  setCached(cacheKey, null);
   return null;
 }

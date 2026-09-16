@@ -25,10 +25,10 @@ const UI_MODE_MAP: Record<string, string[]> = {
  * score) does. Recomputing and reordering here, from data already on the page, makes tab
  * switches instant instead of re-running live geocoding + Overpass/OSRM lookups every time.
  */
-function reorderOptions(options: RouteOption[], sort: SortMode): RouteOption[] {
+function reorderOptions(options: RouteOption[], sort: SortMode, afterSunset: boolean): RouteOption[] {
   const rescored = options.map((opt) => ({
     ...opt,
-    final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort),
+    final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort, afterSunset),
   }));
   return rescored.sort((a, b) => {
     if (sort === "cheapest") return a.fare_inr - b.fare_inr;
@@ -184,7 +184,7 @@ export function JourneyHome() {
 
   function changeSort(next: SortMode) {
     setSort(next);
-    if (options.length > 0) setOptions((prev) => reorderOptions(prev, next));
+    if (options.length > 0) setOptions((prev) => reorderOptions(prev, next, Boolean(signals?.after_sunset)));
   }
 
   // Arriving from the About page's journey preview card with both fields already filled in —

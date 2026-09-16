@@ -207,7 +207,7 @@ export async function POST(request: Request) {
       fare_inr: opt.fare_inr,
       safety_score: opt.safety_score,
       rush_score: opt.rush_score,
-      final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort),
+      final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort, afterSunset),
       risk_tier: riskTier.tier,
       risk_label: riskTier.label,
       risk_alert: riskTier.alert,
