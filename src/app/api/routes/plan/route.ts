@@ -89,6 +89,14 @@ export async function POST(request: Request) {
   const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
   const cabDurationMin = (driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60) * roadPeakMultiplier;
 
+  // Real transit corridors don't run in a straight line between two points — using raw crow-flies
+  // distance here was understating actual travel distance (and so, duration) for any trip that
+  // isn't already near-aligned start-to-end, sometimes badly. cabDistanceKm is already the best
+  // real-world distance this app computes (live OSRM road routing when available, a circuity-
+  // factored fallback otherwise) — reusing it for the other modes' duration math is a meaningfully
+  // better proxy for actual distance travelled than crow-flies, even though none of these modes
+  // literally follow roads.
+  //
   // Delhi Metro/DTC don't expose a public live-routing GTFS feed, so real per-station routing
   // isn't wired up — these are distance-based estimates at each mode's average incl.-stops speed.
   // Metro adds an explicit average headway wait (trains run every ~4-6 min) plus typical station
@@ -97,10 +105,10 @@ export async function POST(request: Request) {
   // frequently at peak), so no peak multiplier applies to it.
   const METRO_AVG_HEADWAY_MIN = 5;
   const METRO_STATION_ACCESS_MIN = 4;
-  const metroDurationMin = Math.round((straightLineKm / 33) * 60 + METRO_AVG_HEADWAY_MIN + METRO_STATION_ACCESS_MIN);
-  const busDurationMin = Math.round(((straightLineKm / 18) * 60 + 5) * roadPeakMultiplier);
-  const eRickshawDurationMin = Math.round((straightLineKm / 12) * 60 * roadPeakMultiplier);
-  const autoDurationMin = Math.round((straightLineKm / 20) * 60 * roadPeakMultiplier);
+  const metroDurationMin = Math.round((cabDistanceKm / 33) * 60 + METRO_AVG_HEADWAY_MIN + METRO_STATION_ACCESS_MIN);
+  const busDurationMin = Math.round(((cabDistanceKm / 18) * 60 + 5) * roadPeakMultiplier);
+  const eRickshawDurationMin = Math.round((cabDistanceKm / 12) * 60 * roadPeakMultiplier);
+  const autoDurationMin = Math.round((cabDistanceKm / 20) * 60 * roadPeakMultiplier);
 
   const metroFare = metroFareForDistance(straightLineKm);
   const busFare = busFareForDistance(straightLineKm, concession);
