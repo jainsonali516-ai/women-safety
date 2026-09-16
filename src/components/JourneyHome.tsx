@@ -86,6 +86,9 @@ export function JourneyHome() {
   // ?concession=false carried over from there if the person switched it off before clicking through.
   const [pinkSaheliActive, setPinkSaheliActive] = useState(searchParams.get("concession") !== "false");
   const [options, setOptions] = useState<RouteOption[]>([]);
+  // Which route card's line is highlighted on the map — defaults to the top result on a fresh
+  // search, but re-sorting the same results shouldn't silently steal the user's selection away.
+  const [selectedMode, setSelectedMode] = useState<string | null>(null);
   const [origin, setOrigin] = useState<MapPoint | null>(null);
   const [destination, setDestination] = useState<MapPoint | null>(null);
   const [loading, setLoading] = useState(false);
@@ -170,6 +173,7 @@ export function JourneyHome() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setOptions(data.options);
+      setSelectedMode(data.options[0]?.mode ?? null);
       setSignals(data.signals);
       setRoutePolyline(data.route_polyline ?? null);
 
@@ -227,6 +231,8 @@ export function JourneyHome() {
           safetyIndex={safetyIndex}
           amenities={amenities}
           routePolyline={routePolyline}
+          selectedMode={selectedMode}
+          selectedModeLabel={options.find((o) => o.mode === selectedMode)?.label}
         />
 
         {options.length > 0 && (
@@ -261,7 +267,13 @@ export function JourneyHome() {
               </p>
             )}
 
-            <RouteCardGrid options={options} originLabel={origin?.label} destinationLabel={destination?.label} />
+            <RouteCardGrid
+              options={options}
+              originLabel={origin?.label}
+              destinationLabel={destination?.label}
+              selectedMode={selectedMode}
+              onSelectMode={setSelectedMode}
+            />
           </>
         )}
       </main>

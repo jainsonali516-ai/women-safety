@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { LocateFixed, Flame, TrainFront, ShieldCheck, RotateCcw, Droplets, Layers, X } from "lucide-react";
 import { classifyRiskTier, RISK_TIER_COLOR } from "@/lib/riskTier";
+import { MODE_COLOR, ROAD_MODES } from "@/lib/modeColors";
 
 export interface MapPoint {
   latitude: number;
@@ -25,6 +26,9 @@ interface Props {
   amenities?: RouteAmenity[];
   /** Real road-snapped [lat, lng] path from OSRM — null when live routing was unavailable. */
   routePolyline?: [number, number][] | null;
+  /** Which route card is active — colors and (for road modes) which line style is drawn. */
+  selectedMode?: string | null;
+  selectedModeLabel?: string | null;
 }
 
 const AMENITY_COLOR: Record<RouteAmenity["type"], string> = {
@@ -77,7 +81,7 @@ const MOCK_CORRIDORS: { name: string; latitude: number; longitude: number; densi
 const DENSITY_COLOR: Record<string, string> = { high: "#22c55e", moderate: "#eab308", low: "#ef4444" };
 const DENSITY_WEIGHT: Record<string, number> = { high: 0.9, moderate: 0.55, low: 0.25 };
 
-export function SafetyMapContainer({ origin, destination, safetyIndex, amenities, routePolyline }: Props) {
+export function SafetyMapContainer({ origin, destination, safetyIndex, amenities, routePolyline, selectedMode, selectedModeLabel }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const heatLayerRef = useRef<import("leaflet").Layer | null>(null);
@@ -201,20 +205,30 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
         L.marker([destination.latitude, destination.longitude]).bindTooltip(destination.label ?? "Destination").addTo(routeLayerRef.current);
       }
       if (origin && destination) {
-        // A uniform glow matching the route's overall risk tier — one route line per search,
-        // colored the same as the risk badge shown on the cards below, not a per-stretch
-        // breakdown (that was tried and removed by request in favor of this simpler view).
+        // Once a route card is selected, the line takes on that mode's color (shared with the
+        // card's own accent, see lib/modeColors.ts) instead of a generic risk-tier glow — so
+        // it's visually obvious which line belongs to which card. Before any selection exists
+        // (results still loading), fall back to the overall risk-tier color as before.
         const tierColor = typeof safetyIndex === "number" ? classifyRiskTier(safetyIndex).tier : null;
-        const glowColor = tierColor ? RISK_TIER_COLOR[tierColor] : "#ff2fb2";
+        const fallbackColor = tierColor ? RISK_TIER_COLOR[tierColor] : "#ff2fb2";
+        const glowColor = selectedMode ? (MODE_COLOR[selectedMode] ?? fallbackColor) : fallbackColor;
+        const isRoadMode = selectedMode ? ROAD_MODES.has(selectedMode) : true;
 
-        if (routePolyline && routePolyline.length > 1) {
+        if (isRoadMode && routePolyline && routePolyline.length > 1) {
           // Real road-snapped path (actual street turns/flyovers/roundabouts from OSRM), not a
-          // straight line between the two points.
+          // straight line between the two points. Shared across every road-based mode (auto,
+          // e-rickshaw, both cab providers) since this app only has one real routed path to
+          // work with — still honest, since a car/auto/e-rickshaw genuinely would follow roads.
           L.polyline(routePolyline, { color: glowColor, weight: 5, opacity: 0.85 }).addTo(routeLayerRef.current);
           L.polyline(routePolyline, { color: glowColor, weight: 12, opacity: 0.18 }).addTo(routeLayerRef.current);
         } else {
-          // Live routing wasn't available for this search — say so with a dashed line rather
-          // than silently drawing a straight "path" that looks like a real route.
+          // Either live routing wasn't available, or the selected mode is Metro/Bus — neither
+          // DMRC nor DTC publishes a public live-routing feed, so there's no real line geometry
+          // to draw for them. A dashed line is explicit about being an estimate rather than
+          // silently drawing a straight "path" that looks like a real route.
+          const tooltip = isRoadMode
+            ? "Live routing unavailable — showing a straight-line estimate"
+            : `${selectedModeLabel ?? "This mode"} — approximate straight-line, not the real transit route`;
           L.polyline(
             [
               [origin.latitude, origin.longitude],
@@ -222,7 +236,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
             ],
             { color: glowColor, weight: 3, dashArray: "6 6" }
           )
-            .bindTooltip("Live routing unavailable — showing a straight-line estimate")
+            .bindTooltip(tooltip)
             .addTo(routeLayerRef.current);
         }
 
@@ -238,7 +252,7 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
       }
     }
     drawRoute();
-  }, [origin, destination, routePolyline, safetyIndex]);
+  }, [origin, destination, routePolyline, safetyIndex, selectedMode, selectedModeLabel]);
 
   useEffect(() => {
     async function drawAmenities() {
@@ -347,6 +361,45 @@ export function SafetyMapContainer({ origin, destination, safetyIndex, amenities
           }}
         >
           <ShieldCheck size={15} color="var(--accent-strong)" /> Safety Index: {safetyIndex}/100
+        </div>
+      )}
+
+      {selectedMode && origin && destination && (
+        <div
+          className="glass"
+          style={{
+            position: "absolute",
+            bottom: 12,
+            left: 12,
+            zIndex: 1000,
+            padding: "0.45rem 0.8rem",
+            borderRadius: "0.7rem",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            color: "var(--foreground-muted)",
+          }}
+        >
+          {ROAD_MODES.has(selectedMode) ? (
+            <>
+              <span style={{ width: 18, height: 3, borderRadius: 2, background: MODE_COLOR[selectedMode], flexShrink: 0 }} />
+              Real road route
+            </>
+          ) : (
+            <>
+              <span
+                style={{
+                  width: 18,
+                  height: 0,
+                  borderTop: `3px dashed ${MODE_COLOR[selectedMode] ?? "currentColor"}`,
+                  flexShrink: 0,
+                }}
+              />
+              Approximate — no live transit data
+            </>
+          )}
         </div>
       )}
 

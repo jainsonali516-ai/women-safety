@@ -6,6 +6,7 @@ import { RISK_TIER_COLOR } from "@/lib/riskTier";
 import { TulipBloom } from "@/components/TulipBloom";
 import { T } from "@/components/Translated";
 import { dispatchAskAlly, buildAskAllyQuery } from "@/lib/askAlly";
+import { MODE_COLOR } from "@/lib/modeColors";
 
 export interface RouteOption {
   mode: string;
@@ -30,7 +31,19 @@ const TIER_STYLE: Record<RouteOption["risk_tier"], { bg: string; fg: string }> =
   safe: { bg: RISK_TIER_COLOR.safe, fg: "white" },
 };
 
-export function RouteCardGrid({ options, originLabel, destinationLabel }: { options: RouteOption[]; originLabel?: string; destinationLabel?: string }) {
+export function RouteCardGrid({
+  options,
+  originLabel,
+  destinationLabel,
+  selectedMode,
+  onSelectMode,
+}: {
+  options: RouteOption[];
+  originLabel?: string;
+  destinationLabel?: string;
+  selectedMode?: string | null;
+  onSelectMode?: (mode: string) => void;
+}) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (options.length === 0) {
@@ -46,8 +59,24 @@ export function RouteCardGrid({ options, originLabel, destinationLabel }: { opti
       {options.map((opt) => {
         const tierStyle = TIER_STYLE[opt.risk_tier];
         const isOpen = expanded === opt.mode;
+        const modeColor = MODE_COLOR[opt.mode] ?? "var(--border)";
+        const isSelected = selectedMode === opt.mode;
         return (
-          <div key={opt.mode} className="card route-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+          <div
+            key={opt.mode}
+            className="card route-card"
+            onClick={() => onSelectMode?.(opt.mode)}
+            style={{
+              padding: "1.25rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.6rem",
+              cursor: onSelectMode ? "pointer" : undefined,
+              borderLeft: `4px solid ${modeColor}`,
+              boxShadow: isSelected ? `0 0 0 2px ${modeColor}` : undefined,
+              transition: "box-shadow 0.15s ease",
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
               <strong style={{ fontSize: "0.95rem", flex: 1, minWidth: 0 }}>{opt.label}</strong>
               <span
