@@ -70,7 +70,7 @@ export function FeedbackSection() {
       <div>
         <h2 style={{ fontWeight: 700, marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
           <MessageSquareQuote size={18} style={{ color: "var(--accent-strong)" }} />
-          <T>Customer Feedback</T>
+          <T>User Feedback</T>
         </h2>
         <p style={{ fontSize: "0.8rem", color: "var(--foreground-muted)" }}>
           <T>Tell us what you think of HerLane. Approved feedback appears publicly below — no sign-in needed to share yours.</T>
