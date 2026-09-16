@@ -233,6 +233,7 @@ export function JourneyHome() {
           routePolyline={routePolyline}
           selectedMode={selectedMode}
           selectedModeLabel={options.find((o) => o.mode === selectedMode)?.label}
+          onClearSelectedMode={() => setSelectedMode(null)}
         />
 
         {options.length > 0 && (
