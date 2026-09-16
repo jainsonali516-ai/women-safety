@@ -15,6 +15,15 @@ const listeners = new Set<() => void>();
 
 const STORAGE_KEY = "herlane-translations";
 
+// If Sarvam is down or the account is out of credits, every single string on a page would
+// otherwise retry and fail independently, then retry again on every later page visit — each one
+// waiting out its own network round trip before falling back to English. This is a simple circuit
+// breaker: one retry-worthy failure (quota/rate-limit/server error) stops new attempts for a
+// cooldown window instead, so the fallback to English is instant everywhere until it's likely
+// worth trying again.
+const COOLDOWN_MS = 2 * 60 * 1000;
+let serviceDownUntil = 0;
+
 function cacheKey(text: string, lang: string) {
   return `${lang}::${text}`;
 }
@@ -80,9 +89,12 @@ async function flush(language: string) {
         if (translatedTexts[i]) cache.set(cacheKey(t, language), translatedTexts[i]);
       });
       persistCache();
+    } else if (res.status === 402 || res.status === 429 || res.status >= 500) {
+      serviceDownUntil = Date.now() + COOLDOWN_MS;
     }
   } catch {
-    /* translation failed — the original text stays showing, which is a fine fallback */
+    // Network error — treat the same as a service outage, not a per-text problem.
+    serviceDownUntil = Date.now() + COOLDOWN_MS;
   } finally {
     texts.forEach((t) => inFlight.delete(cacheKey(t, language)));
     notifyAll();
@@ -109,6 +121,7 @@ export function useTranslated(text: string): string {
 
   useEffect(() => {
     if (language === "en" || !text.trim()) return;
+    if (Date.now() < serviceDownUntil) return; // recently failed — don't retry a likely-doomed request
     const key = cacheKey(text, language);
     if (cache.has(key) || inFlight.has(key)) return;
 

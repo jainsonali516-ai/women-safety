@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import { T } from "@/components/Translated";
 
 /** Shared login/signup form + submit logic — used standalone on the full /auth page and inside
  * AuthModal, so the two don't drift into two different auth implementations. */
@@ -97,13 +98,17 @@ export function AuthForm({ onSuccess }: { onSuccess?: () => void }) {
         className="field"
         style={inputStyle}
       />
-      {error && <p style={errorStyle}>{error}</p>}
+      {error && (
+        <p style={errorStyle}>
+          <T>{error}</T>
+        </p>
+      )}
       <button type="submit" disabled={loading} className="btn-accent" style={buttonStyle}>
-        {loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}
+        <T>{loading ? "Please wait..." : mode === "login" ? "Log in" : "Sign up"}</T>
       </button>
       {mode === "login" && (
         <Link href="/auth/forgot" style={{ fontSize: "0.8rem", color: "var(--foreground-muted)", textAlign: "center" }}>
-          Forgot password?
+          <T>Forgot password?</T>
         </Link>
       )}
       <button
@@ -114,7 +119,7 @@ export function AuthForm({ onSuccess }: { onSuccess?: () => void }) {
         }}
         style={{ background: "none", border: "none", color: "var(--foreground-muted)", fontSize: "0.8rem", cursor: "pointer" }}
       >
-        {mode === "login" ? "Need an account? Sign up" : "Already have an account? Log in"}
+        <T>{mode === "login" ? "Need an account? Sign up" : "Already have an account? Log in"}</T>
       </button>
     </form>
   );
