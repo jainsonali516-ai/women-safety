@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
-import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
-import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
+import { RouteCardGrid, type RouteOption, type MapRouteCategory } from "@/components/RouteCardGrid";
+import { SafetyMapContainer, type MapPoint, type RouteAmenity, type ActiveRoute, type RouteLeg, type RouteStationMarker } from "@/components/SafetyMapContainer";
 import { OfflineRouteView } from "@/components/OfflineRouteView";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
@@ -19,6 +19,27 @@ const UI_MODE_MAP: Record<string, string[]> = {
   dtc_bus: ["bus"],
   cab: ["cab_uber", "cab_ola"],
 };
+
+const CATEGORY_COLOR: Record<MapRouteCategory, string> = {
+  car: "#ff2fb2",
+  auto: "#22C55E",
+  metro: "#8B5CF6",
+  bus: "#EAB308",
+};
+
+interface TransitAnchor {
+  name: string;
+  latitude: number;
+  longitude: number;
+  walkMeters: number;
+}
+
+interface TransitRouteResponse {
+  originAnchor: TransitAnchor | null;
+  destAnchor: TransitAnchor | null;
+  lineSummary?: string;
+  interchangeNeeded: boolean;
+}
 
 /**
  * Re-sorting doesn't need a fresh server round-trip — the safety/duration/fare numbers behind
@@ -100,6 +121,103 @@ export function JourneyHome() {
   // the new one's pins. This counter lets each fetch recognize it's stale and ignore itself.
   const amenityRequestIdRef = useRef(0);
 
+  // The single transport option currently focused via "View on Map" (null = default road view).
+  const [activeMode, setActiveMode] = useState<string | null>(null);
+  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
+  // null = fall back to the already-loaded whole-trip `amenities`; an array (even empty) means a
+  // mode-specific fetch has resolved and should be shown instead.
+  const [activeAmenities, setActiveAmenities] = useState<RouteAmenity[] | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+
+  function clearActiveRoute() {
+    setActiveMode(null);
+    setActiveRoute(null);
+    setActiveAmenities(null);
+  }
+
+  async function viewOnMap(opt: RouteOption, category: MapRouteCategory) {
+    if (!origin || !destination) return;
+    setActiveMode(opt.mode);
+    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const color = CATEGORY_COLOR[category];
+
+    if (category === "car" || category === "auto") {
+      // Real road-based modes reuse the already-fetched OSRM road geometry — genuinely the same
+      // road network a car/auto would use, just styled and labeled per provider, not a fake path.
+      const hasRealPath = Boolean(routePolyline && routePolyline.length > 1);
+      const points: [number, number][] = hasRealPath
+        ? routePolyline!
+        : [[origin.latitude, origin.longitude], [destination.latitude, destination.longitude]];
+      setActiveRoute({
+        mode: category,
+        label: opt.label,
+        summary: `${opt.label} · Road route · ${opt.duration_min} min`,
+        legs: [{ kind: "road", points, approximate: !hasRealPath }],
+        stations: [],
+        color,
+      });
+      // Same road corridor as the full-trip amenities already loaded — no need to refetch.
+      setActiveAmenities(null);
+      return;
+    }
+
+    // Bus: fetch real nearest-stop anchors — never draw the road route relabeled as transit.
+    // (Metro no longer reaches this branch — it uses the GTFS-backed "View Details" journey
+    // panel instead of a drawn map route; see MetroJourneyPanel.tsx.)
+    setActiveRoute({ mode: category, label: opt.label, summary: `Loading ${opt.label} route…`, legs: [], stations: [], color });
+    try {
+      const res = await fetch("/api/routes/transit-route", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin, destination, mode: "bus" }),
+      });
+      const data: TransitRouteResponse | null = res.ok ? await res.json() : null;
+      const originAnchor = data?.originAnchor ?? null;
+      const destAnchor = data?.destAnchor ?? null;
+
+      if (!originAnchor || !destAnchor) {
+        setActiveRoute({
+          mode: category,
+          label: opt.label,
+          summary: `${opt.label} · No nearby bus stop found in OSM data`,
+          legs: [],
+          stations: [],
+          color,
+        });
+        setActiveAmenities(null);
+        return;
+      }
+
+      const legs: RouteLeg[] = [
+        { kind: "walk", points: [[origin.latitude, origin.longitude], [originAnchor.latitude, originAnchor.longitude]], approximate: true },
+        { kind: category, points: [[originAnchor.latitude, originAnchor.longitude], [destAnchor.latitude, destAnchor.longitude]], approximate: true },
+        { kind: "walk", points: [[destAnchor.latitude, destAnchor.longitude], [destination.latitude, destination.longitude]], approximate: true },
+      ];
+      const stations: RouteStationMarker[] = [
+        { kind: "bus", name: originAnchor.name, latitude: originAnchor.latitude, longitude: originAnchor.longitude },
+        { kind: "bus", name: destAnchor.name, latitude: destAnchor.latitude, longitude: destAnchor.longitude },
+      ];
+      const summary = `${opt.label} · Nearest stops · ${opt.duration_min} min`;
+
+      setActiveRoute({ mode: category, label: opt.label, summary, legs, stations, color });
+
+      // Route-specific amenities — near the walking legs and the station/stop stretch, not the
+      // whole city.
+      const path = [origin, originAnchor, destAnchor, destination].map((p) => ({ latitude: p.latitude, longitude: p.longitude }));
+      const amenRes = await fetch("/api/route-amenities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ origin, destination, path }),
+      });
+      const amenData = amenRes.ok ? await amenRes.json() : null;
+      setActiveAmenities(amenData?.amenities ?? []);
+    } catch {
+      setActiveRoute({ mode: category, label: opt.label, summary: `${opt.label} · Route details unavailable right now`, legs: [], stations: [], color });
+      setActiveAmenities(null);
+    }
+  }
+
   async function fetchAmenityGroup(originPoint: MapPoint, destPoint: MapPoint, types: string[], requestId: number) {
     try {
       const res = await fetch("/api/route-amenities", {
@@ -132,6 +250,7 @@ export function JourneyHome() {
   async function runSearch(values: JourneySearchValues) {
     setError(null);
     setLoading(true);
+    clearActiveRoute();
     try {
       // Prefer coordinates the user explicitly confirmed (GPS detect or picking a suggestion)
       // over blindly geocoding raw text, which could silently resolve to the wrong place.
@@ -224,13 +343,17 @@ export function JourneyHome() {
           </p>
         )}
 
-        <SafetyMapContainer
-          origin={origin}
-          destination={destination}
-          safetyIndex={safetyIndex}
-          amenities={amenities}
-          routePolyline={routePolyline}
-        />
+        <div ref={mapSectionRef}>
+          <SafetyMapContainer
+            origin={origin}
+            destination={destination}
+            safetyIndex={safetyIndex}
+            amenities={activeAmenities ?? amenities}
+            routePolyline={routePolyline}
+            activeRoute={activeRoute}
+            onClearActiveRoute={clearActiveRoute}
+          />
+        </div>
 
         {options.length > 0 && (
           <>
@@ -264,7 +387,15 @@ export function JourneyHome() {
               </p>
             )}
 
-            <RouteCardGrid options={options} originLabel={origin?.label} destinationLabel={destination?.label} />
+            <RouteCardGrid
+              options={options}
+              originLabel={origin?.label}
+              destinationLabel={destination?.label}
+              originPoint={origin}
+              destinationPoint={destination}
+              activeMapMode={activeMode}
+              onViewOnMap={viewOnMap}
+            />
           </>
         )}
       </main>

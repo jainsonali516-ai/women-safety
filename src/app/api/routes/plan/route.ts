@@ -14,6 +14,8 @@ import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
 import { busFareForDistance, eRickshawFareForDistance, metroFareForDistance } from "@/lib/fares";
 import { classifyRiskTier, explainCost, explainSafety, explainSpeed } from "@/lib/riskTier";
+import { findNearestStation, planMetroJourney } from "@/lib/gtfs/journeyPlanner";
+import { metroLineColor } from "@/lib/metroLineColors";
 
 const ALL_MODES = ["metro", "bus", "e_rickshaw", "auto", "cab_uber", "cab_ola"] as const;
 
@@ -60,6 +62,41 @@ export async function POST(request: Request) {
     fetchDrivingRoute(origin, destination),
   ]);
 
+  // Real DMRC line/interchange info and an accurate scheduled duration, from the bundled GTFS
+  // feed (see lib/gtfs/) — local data, no network call, so unlike the Overpass-based amenities
+  // elsewhere in this file this never needs to be rate-limited or run sequentially to stay
+  // reliable. Only worth computing when Metro will actually be an option at all (same 1.2km
+  // "not realistically a metro trip" threshold used below for whether to show it).
+  const wantsMetroDetails = allowedModes.has("metro") && straightLineKm >= 1.2;
+  let metroLineInfo: string | undefined;
+  let metroLineColors: string[] | undefined;
+  let metroGtfsDurationMin: number | undefined;
+  if (wantsMetroDetails) {
+    try {
+      const originStation = findNearestStation(origin);
+      const destStation = findNearestStation(destination);
+      if (originStation && destStation && originStation.stop.id !== destStation.stop.id) {
+        const plan = planMetroJourney(originStation.stop.id, destStation.stop.id);
+        if (plan) {
+          const lineNames = [plan.legs[0].lineName, ...plan.interchanges.map((i) => i.toLine)];
+          metroLineInfo =
+            plan.interchanges.length === 0
+              ? `Direct via ${lineNames[0]} Line`
+              : `${lineNames.join(" → ")} Line (${plan.interchanges.length} interchange${plan.interchanges.length > 1 ? "s" : ""})`;
+          metroLineColors = lineNames.map(metroLineColor);
+          if (plan.totalTravelMinutes !== null) {
+            const originWalkMin = Math.max(1, Math.round(originStation.walkMeters / 80));
+            const destWalkMin = Math.max(1, Math.round(destStation.walkMeters / 80));
+            metroGtfsDurationMin = plan.totalTravelMinutes + originWalkMin + destWalkMin + plan.interchanges.length * 4;
+          }
+        }
+      }
+    } catch {
+      // GTFS data failed to load — fall back to the distance-based estimate below, same "skipped,
+      // never faked" behavior as every other optional enhancement in this file.
+    }
+  }
+
   const safetyScore = computeSafetyScore({
     streetLightCount: lights.count,
     streetLightDataAvailable: lights.available,
@@ -105,7 +142,12 @@ export async function POST(request: Request) {
   // frequently at peak), so no peak multiplier applies to it.
   const METRO_AVG_HEADWAY_MIN = 5;
   const METRO_STATION_ACCESS_MIN = 4;
-  const metroDurationMin = Math.round((cabDistanceKm / 33) * 60 + METRO_AVG_HEADWAY_MIN + METRO_STATION_ACCESS_MIN);
+  // Prefer the real GTFS-computed duration (actual stations, actual scheduled travel time) when
+  // it was available above — the distance-based estimate is only a fallback for when the GTFS
+  // feed couldn't resolve a connection, not the default source of truth. Without this, this
+  // headline number and the "View Details" panel's real total could show two different answers
+  // for the same trip.
+  const metroDurationMin = metroGtfsDurationMin ?? Math.round((cabDistanceKm / 33) * 60 + METRO_AVG_HEADWAY_MIN + METRO_STATION_ACCESS_MIN);
   const busDurationMin = Math.round(((cabDistanceKm / 18) * 60 + 5) * roadPeakMultiplier);
   const eRickshawDurationMin = Math.round((cabDistanceKm / 12) * 60 * roadPeakMultiplier);
   const autoDurationMin = Math.round((cabDistanceKm / 20) * 60 * roadPeakMultiplier);
@@ -140,6 +182,8 @@ export async function POST(request: Request) {
             safety_score: Math.min(100, safetyScore + 15), // stations/platforms are staffed & monitored
             rush_score: 85,
             mode_bonus: 15,
+            line_info: metroLineInfo,
+            line_colors: metroLineColors,
           },
         ]
       : []),
@@ -221,6 +265,8 @@ export async function POST(request: Request) {
       risk_alert: riskTier.alert,
       deep_link: "deep_link" in opt ? opt.deep_link : undefined,
       web_link: "web_link" in opt ? opt.web_link : undefined,
+      line_info: "line_info" in opt ? opt.line_info : undefined,
+      line_colors: "line_colors" in opt ? opt.line_colors : undefined,
       why: {
         safety: explainSafety({ ...safetyExplanationBase, modeBonus: opt.mode_bonus, modeLabel: opt.label }),
         cost: explainCost(opt.label, opt.fare_inr, legDistanceKm, opt.mode === "bus" ? concession : undefined),
