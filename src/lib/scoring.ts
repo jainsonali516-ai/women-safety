@@ -1,5 +1,4 @@
 import { istParts } from "@/lib/istTime";
-import { getSunTimes } from "@/lib/sunTimes";
 import { queryOverpass } from "@/lib/overpass";
 import { CACHE_TTL_MS } from "@/lib/cacheConfig";
 
@@ -79,18 +78,6 @@ export function computeHeuristicRushScore(date = new Date()) {
   if (isWeekend) return 80;
   const isPeak = (hour >= 8 && hour < 11) || (hour >= 17 && hour < 22);
   return isPeak ? 40 : 85;
-}
-
-/**
- * Real astronomical sunset for Delhi NCR, not a fixed 19:00 cutoff — Delhi's actual sunset
- * ranges from ~17:25 IST in late December to ~19:20 IST in late June, so a fixed threshold was
- * routinely wrong by an hour or more depending on the season.
- */
-export function isAfterSunset(date = new Date()) {
-  const bucketed = bucketedDate(date);
-  const { preciseHour } = istParts(bucketed);
-  const { sunriseHour, sunsetHour } = getSunTimes(bucketed);
-  return preciseHour >= sunsetHour || preciseHour < sunriseHour;
 }
 
 export interface SafetyInputs {

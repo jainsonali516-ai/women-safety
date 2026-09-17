@@ -17,16 +17,17 @@ export interface RiskTierInfo {
 
 /**
  * Converts the 0-100 safety score into one of 4 explicit tiers instead of a raw number —
- * easier to act on at a glance than "62/100".
+ * easier to act on at a glance than "62/100". Bands: 70-100 Safe, 50-69 Moderately Safe,
+ * 30-49 Moderately Risky, below 30 High Risk.
  */
 export function classifyRiskTier(safetyScore: number): RiskTierInfo {
-  if (safetyScore < 25) {
+  if (safetyScore < 30) {
     return { tier: "high", label: "HIGH RISK", alert: "🚨 High Risk — not recommended, especially after dark" };
   }
   if (safetyScore < 50) {
-    return { tier: "mid_high", label: "Mid-High Risk", alert: "⚠️ Exercise caution after hours" };
+    return { tier: "mid_high", label: "Moderately Risky", alert: "⚠️ Exercise caution after hours" };
   }
-  if (safetyScore < 75) {
+  if (safetyScore < 70) {
     return { tier: "mid_low", label: "Moderately Safe", alert: "Moderately safe corridor" };
   }
   return { tier: "safe", label: "Safe to Go", alert: "✓ High safety index — recommended" };

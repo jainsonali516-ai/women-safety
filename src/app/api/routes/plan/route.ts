@@ -8,7 +8,6 @@ import {
   computeSafetyScore,
   fetchFootTrafficScore,
   fetchStreetLightDensity,
-  isAfterSunset,
 } from "@/lib/scoring";
 import { fetchDrivingRoute } from "@/lib/routing";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
@@ -16,6 +15,14 @@ import { busFareForDistance, eRickshawFareForDistance, metroFareForDistance } fr
 import { classifyRiskTier, explainCost, explainSafety, explainSpeed } from "@/lib/riskTier";
 import { findNearestStation, planMetroJourney } from "@/lib/gtfs/journeyPlanner";
 import { metroLineColor } from "@/lib/metroLineColors";
+import {
+  applyEveningOpenModePenalty,
+  applyGlobalCap,
+  applyLateNightPenalty,
+  applyPreSunsetOpenModeCap,
+  getTemporalContext,
+  rushCrowdingPenalty,
+} from "@/lib/temporalSafety";
 
 const ALL_MODES = ["metro", "bus", "e_rickshaw", "auto", "cab_uber", "cab_ola"] as const;
 
@@ -53,7 +60,12 @@ export async function POST(request: Request) {
   const allowedModes = new Set(modes ?? ALL_MODES);
   const straightLineKm = haversineKm(origin, destination);
   const mid = midpoint(origin, destination);
-  const afterSunset = isAfterSunset();
+  // Real-time sunrise/sunset (sunrise-sunset.org, with a local-astronomical-formula fallback —
+  // see lib/sunTimes.ts), plus every other time-dependent rule this endpoint needs: the pre-
+  // sunset/post-sunrise buffers, 8-11 AM crowding tiers, late-night window, and Bus/Metro
+  // operating hours. All computed fresh per request — nothing here is persisted.
+  const temporal = await getTemporalContext();
+  const afterSunset = temporal.isAfterSunset;
   const isPeakHour = computeHeuristicRushScore() < 70;
 
   const [lights, footTraffic, driving] = await Promise.all([
@@ -174,19 +186,25 @@ export async function POST(request: Request) {
     { ...destination, label: destination.label }
   );
 
+  // Bus/Metro get measurably more crowded through the 8-11 AM window — an escalating penalty
+  // (standard/heavy/peak) on top of, not instead of, the base safety score.
+  const crowdingPenalty = rushCrowdingPenalty(temporal.rushTier);
+
   const rawOptions = [
     // Metro stations are realistically spaced ~1+ km apart — under that, origin and destination
     // are effectively at the same station, and nobody walks into a station, boards, and gets off
     // one stop later for a trip this short. Showing it anyway was a real "no one would actually
-    // do this" case, not an honest option.
-    ...(straightLineKm >= 1.2
+    // do this" case, not an honest option. Also gated on the Metro actually running right now
+    // (6:00 AM-11:50 PM) — recommending it outside operating hours isn't a real option either.
+    ...(straightLineKm >= 1.2 && temporal.metroOperating
       ? [
           {
             mode: "metro",
             label: "Delhi Metro",
             duration_min: metroDurationMin,
             fare_inr: metroFare,
-            safety_score: Math.min(100, safetyScore + 15), // stations/platforms are staffed & monitored
+            // stations/platforms are staffed & monitored, offset by real 8-11 AM crowding
+            safety_score: Math.max(0, Math.min(100, safetyScore + 15) - crowdingPenalty),
             rush_score: 85,
             mode_bonus: 15,
             line_info: metroLineInfo,
@@ -195,14 +213,15 @@ export async function POST(request: Request) {
         ]
       : []),
     // Same logic for a bus: nobody waits at a stop for a bus to cover a few-hundred-metre walk.
-    ...(straightLineKm >= 0.8
+    // Gated on DTC actually running right now (6:45 AM-10:00 PM).
+    ...(straightLineKm >= 0.8 && temporal.busOperating
       ? [
           {
             mode: "bus",
             label: concession ? "DTC / Cluster Bus (free for women — Pink Pass)" : "DTC / Cluster Bus",
             duration_min: busDurationMin,
             fare_inr: busFare,
-            safety_score: Math.max(0, safetyScore - unmonitoredModePenalty),
+            safety_score: Math.max(0, safetyScore - unmonitoredModePenalty - crowdingPenalty),
             rush_score: 55,
             mode_bonus: -unmonitoredModePenalty,
           },
@@ -256,17 +275,39 @@ export async function POST(request: Request) {
     },
   ].filter((opt) => allowedModes.has(opt.mode as (typeof ALL_MODES)[number]));
 
+  const OPEN_MODES = new Set(["bus", "auto", "e_rickshaw"]);
+
+  // The remaining time-of-day rules apply to the FINAL safety score, on top of whatever the
+  // live signals + mode bonus/penalty + crowding penalty above already produced — each is a cap
+  // or floor a mode's score can't cross at certain times, not a replacement for the underlying
+  // score. Order matters: buffer/evening penalties narrow the range first, the late-night rule
+  // then exempts Metro from the rest, and the global 80-point cap is always applied last since
+  // it's a hard ceiling independent of mode.
+  function finalizeSafetyScore(rawScore: number, mode: string): number {
+    let score = rawScore;
+    if (OPEN_MODES.has(mode) && (temporal.inPreSunsetBuffer || temporal.inPostSunriseBuffer)) {
+      score = applyPreSunsetOpenModeCap(score);
+    }
+    if (mode === "auto" || mode === "bus") {
+      score = applyEveningOpenModePenalty(score, temporal.hour);
+    }
+    score = applyLateNightPenalty(score, mode, temporal.isLateNight);
+    score = applyGlobalCap(score, temporal.hour);
+    return Math.max(0, Math.round(score));
+  }
+
   const options = rawOptions.map((opt) => {
-    const riskTier = classifyRiskTier(opt.safety_score);
+    const finalSafetyScore = finalizeSafetyScore(opt.safety_score, opt.mode);
+    const riskTier = classifyRiskTier(finalSafetyScore);
     const legDistanceKm = opt.mode.startsWith("cab") ? cabDistanceKm : opt.mode === "metro" ? (metroGtfsDistanceKm ?? straightLineKm) : straightLineKm;
     return {
       mode: opt.mode,
       label: opt.label,
       duration_min: opt.duration_min,
       fare_inr: opt.fare_inr,
-      safety_score: opt.safety_score,
+      safety_score: finalSafetyScore,
       rush_score: opt.rush_score,
-      final_score: computeFinalScore(opt.safety_score, opt.rush_score, sort, afterSunset),
+      final_score: computeFinalScore(finalSafetyScore, opt.rush_score, sort, afterSunset),
       risk_tier: riskTier.tier,
       risk_label: riskTier.label,
       risk_alert: riskTier.alert,
@@ -302,6 +343,14 @@ export async function POST(request: Request) {
       foot_traffic_data_available: footTraffic.available,
       live_routing_available: Boolean(driving),
       after_sunset: afterSunset,
+      sunrise_hour: Math.round(temporal.sunriseHour * 100) / 100,
+      sunset_hour: Math.round(temporal.sunsetHour * 100) / 100,
+      rush_tier: temporal.rushTier,
+      bus_operating: temporal.busOperating,
+      metro_operating: temporal.metroOperating,
+      in_pre_sunset_buffer: temporal.inPreSunsetBuffer,
+      in_post_sunrise_buffer: temporal.inPostSunriseBuffer,
+      is_late_night: temporal.isLateNight,
     },
     sort,
     options: sorted,
