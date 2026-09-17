@@ -11,6 +11,7 @@ import { saveEmergencyRoute } from "@/lib/offlineDb";
 import { computeFinalScore } from "@/lib/scoring";
 import { T } from "@/components/Translated";
 import { TransitAlertBanner } from "@/components/TransitAlertBanner";
+import { DidYouKnowCard } from "@/components/DidYouKnowCard";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -49,6 +50,15 @@ function reorderOptions(options: RouteOption[], sort: SortMode, afterSunset: boo
     if (sort === "safest") return b.safety_score - a.safety_score;
     return b.final_score - a.final_score;
   });
+}
+
+/** Splits a full geocoded address ("Kashmere Gate, Old Delhi, Delhi, India") into a primary place
+ * name and a city-level context, used to search Wikipedia for the right article — a bare "place"
+ * search can otherwise match an unrelated same-named page somewhere else in the world. */
+function placeNameParts(label?: string): { place: string; context?: string } {
+  if (!label) return { place: "" };
+  const parts = label.split(",").map((p) => p.trim()).filter(Boolean);
+  return { place: parts[0] ?? label, context: parts.length > 2 ? parts[parts.length - 2] : undefined };
 }
 
 async function geocodeOne(query: string) {
@@ -287,6 +297,10 @@ export function JourneyHome() {
             onClearActiveRoute={clearActiveRoute}
           />
         </div>
+
+        {destination?.label && (
+          <DidYouKnowCard place={placeNameParts(destination.label).place} context={placeNameParts(destination.label).context} />
+        )}
 
         {options.length > 0 && (
           <>
