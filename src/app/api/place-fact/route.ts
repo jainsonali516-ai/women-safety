@@ -15,6 +15,8 @@ export async function GET(request: Request) {
 
   if (!place || place.length < 2) return jsonError("A `place` query parameter is required");
 
-  const fact = await fetchPlaceFact(place, context);
-  return NextResponse.json({ fact });
+  const result = await fetchPlaceFact(place, context);
+  if (!result) return NextResponse.json({ found: false, fact: null });
+
+  return NextResponse.json({ found: true, place: result.title, fact: result.fact, wikipediaUrl: result.sourceUrl });
 }

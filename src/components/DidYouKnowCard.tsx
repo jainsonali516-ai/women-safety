@@ -4,10 +4,11 @@ import { useEffect, useState } from "react";
 import { Lightbulb, ExternalLink } from "lucide-react";
 import { T } from "@/components/Translated";
 
-interface PlaceFact {
-  fact: string;
-  title: string;
-  sourceUrl: string;
+interface PlaceFactResponse {
+  found: boolean;
+  place?: string;
+  fact?: string | null;
+  wikipediaUrl?: string | null;
 }
 
 /**
@@ -16,27 +17,28 @@ interface PlaceFact {
  * the rest of the journey-planning page (see /api/place-fact and lib/placeFact.ts).
  */
 export function DidYouKnowCard({ place, context }: { place: string; context?: string }) {
-  const [fact, setFact] = useState<PlaceFact | null>(null);
+  const [result, setResult] = useState<PlaceFactResponse | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    setFact(null);
+    setResult(null);
     const params = new URLSearchParams({ place });
     if (context) params.set("context", context);
     fetch(`/api/place-fact?${params.toString()}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled) setFact(data?.fact ?? null);
+      .then((data: PlaceFactResponse | null) => {
+        if (!cancelled) setResult(data);
       })
       .catch(() => {
-        if (!cancelled) setFact(null);
+        if (!cancelled) setResult(null);
       });
     return () => {
       cancelled = true;
     };
   }, [place, context]);
 
-  if (!fact) return null;
+  if (!result?.found || !result.fact || !result.wikipediaUrl) return null;
+  const fact = { fact: result.fact, sourceUrl: result.wikipediaUrl };
 
   return (
     <div
