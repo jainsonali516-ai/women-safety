@@ -10,6 +10,7 @@ import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
 import { computeFinalScore } from "@/lib/scoring";
 import { T } from "@/components/Translated";
+import { TransitAlertBanner } from "@/components/TransitAlertBanner";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -215,6 +216,8 @@ export function JourneyHome() {
       />
 
       <main style={{ padding: "0 1.5rem 2rem", maxWidth: 1100, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+        <TransitAlertBanner />
+
         {error && (
           <p style={{ color: "#ef4444", fontSize: "0.9rem" }}>
             <T>{error}</T>
