@@ -234,7 +234,7 @@ export function RouteCardGrid({ options, originLabel, destinationLabel, originPo
                     </button>
                   </p>
                 )}
-                {category && category !== "metro" && onViewOnMap && (
+                {category && category !== "metro" && category !== "bus" && onViewOnMap && (
                   <button
                     type="button"
                     onClick={() => onViewOnMap(opt, category)}
