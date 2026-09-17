@@ -1,24 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle, Map as MapIcon, ListTree } from "lucide-react";
+import { ChevronDown, Clock, IndianRupee, Navigation, AlertTriangle } from "lucide-react";
 import { RISK_TIER_COLOR } from "@/lib/riskTier";
 import { TulipBloom } from "@/components/TulipBloom";
 import { T } from "@/components/Translated";
 import { dispatchAskAlly, buildAskAllyQuery } from "@/lib/askAlly";
-import { MetroJourneyPanel } from "@/components/MetroJourneyPanel";
-
-/** Groups the app's granular booking modes into the four map-route categories used by
- * "View on Map" — Uber/Ola both draw the same real road route, e.g., just styled per-provider. */
-export type MapRouteCategory = "car" | "auto" | "metro" | "bus";
-
-export function mapRouteCategoryFor(mode: string): MapRouteCategory | null {
-  if (mode === "cab_uber" || mode === "cab_ola") return "car";
-  if (mode === "auto" || mode === "e_rickshaw") return "auto";
-  if (mode === "metro") return "metro";
-  if (mode === "bus") return "bus";
-  return null;
-}
 
 export interface RouteOption {
   mode: string;
@@ -47,24 +34,8 @@ const TIER_STYLE: Record<RouteOption["risk_tier"], { bg: string; fg: string }> =
   safe: { bg: RISK_TIER_COLOR.safe, fg: "white" },
 };
 
-interface LatLng {
-  latitude: number;
-  longitude: number;
-}
-
-interface Props {
-  options: RouteOption[];
-  originLabel?: string;
-  destinationLabel?: string;
-  originPoint?: LatLng | null;
-  destinationPoint?: LatLng | null;
-  activeMapMode?: string | null;
-  onViewOnMap?: (option: RouteOption, category: MapRouteCategory) => void;
-}
-
-export function RouteCardGrid({ options, originLabel, destinationLabel, originPoint, destinationPoint, activeMapMode, onViewOnMap }: Props) {
+export function RouteCardGrid({ options, originLabel, destinationLabel }: { options: RouteOption[]; originLabel?: string; destinationLabel?: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [metroDetailsOpen, setMetroDetailsOpen] = useState<string | null>(null);
 
   if (options.length === 0) {
     return (
@@ -79,21 +50,8 @@ export function RouteCardGrid({ options, originLabel, destinationLabel, originPo
       {options.map((opt) => {
         const tierStyle = TIER_STYLE[opt.risk_tier];
         const isOpen = expanded === opt.mode;
-        const category = mapRouteCategoryFor(opt.mode);
-        const isActiveOnMap = activeMapMode === opt.mode;
         return (
-          <div
-            key={opt.mode}
-            className="card route-card"
-            style={{
-              padding: "1.25rem",
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.6rem",
-              border: isActiveOnMap ? "2px solid var(--accent-strong)" : undefined,
-              boxShadow: isActiveOnMap ? "0 0 0 3px color-mix(in srgb, var(--accent-strong) 25%, transparent)" : undefined,
-            }}
-          >
+          <div key={opt.mode} className="card route-card" style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
               <strong style={{ fontSize: "0.95rem", flex: 1, minWidth: 0 }}>{opt.label}</strong>
               <span
@@ -175,44 +133,17 @@ export function RouteCardGrid({ options, originLabel, destinationLabel, originPo
                 <p><strong style={{ color: "var(--foreground)" }}><T>Safety:</T></strong> <T>{opt.why.safety}</T></p>
                 <p><strong style={{ color: "var(--foreground)" }}><T>Cost:</T></strong> <T>{opt.why.cost}</T></p>
                 <p><strong style={{ color: "var(--foreground)" }}><T>Speed:</T></strong> <T>{opt.why.speed}</T></p>
-                {opt.mode === "metro" && originPoint && destinationPoint && (
-                  <div style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <button
-                      type="button"
-                      onClick={() => setMetroDetailsOpen(metroDetailsOpen === opt.mode ? null : opt.mode)}
-                      style={{
-                        alignSelf: "flex-start",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "0.35rem",
-                        padding: "0.4rem 0.7rem",
-                        borderRadius: "999px",
-                        border: "none",
-                        background: "linear-gradient(135deg, var(--accent), var(--accent-strong))",
-                        color: "white",
-                        fontWeight: 700,
-                        fontSize: "0.76rem",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <ListTree size={14} /> <T>{metroDetailsOpen === opt.mode ? "Hide Details" : "View Details"}</T>
-                    </button>
-                    {metroDetailsOpen === opt.mode && (
-                      <MetroJourneyPanel origin={originPoint} destination={destinationPoint} knownFareInr={opt.fare_inr} />
-                    )}
-                  </div>
-                )}
-                {opt.mode === "bus" && (
+                {(opt.mode === "metro" || opt.mode === "bus") && (
                   <p style={{ paddingTop: "0.3rem", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.45rem" }}>
                     <span>
-                      <strong style={{ color: "var(--foreground)" }}><T>Line / stop details:</T></strong>{" "}
-                      <T>{"not available here — DTC doesn't publish a public real-time feed for this."}</T>
+                      <strong style={{ color: "var(--foreground)" }}><T>Line / platform / interchange details:</T></strong>{" "}
+                      <T>{"not available here — Delhi Metro and DTC don't publish a public real-time feed for this."}</T>
                     </span>
                     <button
                       type="button"
                       onClick={() =>
                         dispatchAskAlly(
-                          buildAskAllyQuery(originLabel, destinationLabel, opt.label)
+                          buildAskAllyQuery(originLabel, destinationLabel, opt.mode === "metro" ? "Metro" : opt.label)
                         )
                       }
                       style={{
@@ -233,29 +164,6 @@ export function RouteCardGrid({ options, originLabel, destinationLabel, originPo
                       <T>Ask Ally</T> 🛡️
                     </button>
                   </p>
-                )}
-                {category && category !== "metro" && category !== "bus" && onViewOnMap && (
-                  <button
-                    type="button"
-                    onClick={() => onViewOnMap(opt, category)}
-                    style={{
-                      alignSelf: "flex-start",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "0.4rem",
-                      padding: "0.5rem 0.85rem",
-                      borderRadius: "0.6rem",
-                      border: "none",
-                      background: isActiveOnMap ? "var(--surface)" : "linear-gradient(135deg, var(--accent), var(--accent-strong))",
-                      color: isActiveOnMap ? "var(--foreground)" : "white",
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      cursor: "pointer",
-                      marginTop: "0.2rem",
-                    }}
-                  >
-                    <MapIcon size={14} /> <T>{isActiveOnMap ? "Viewing on Map" : "View on Map"}</T>
-                  </button>
                 )}
               </div>
             )}

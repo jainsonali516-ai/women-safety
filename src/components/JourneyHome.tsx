@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { JourneySearchHero, type JourneySearchValues } from "@/components/JourneySearchHero";
-import { RouteCardGrid, type RouteOption, type MapRouteCategory } from "@/components/RouteCardGrid";
-import { SafetyMapContainer, type MapPoint, type RouteAmenity, type ActiveRoute } from "@/components/SafetyMapContainer";
+import { RouteCardGrid, type RouteOption } from "@/components/RouteCardGrid";
+import { SafetyMapContainer, type MapPoint, type RouteAmenity } from "@/components/SafetyMapContainer";
 import { OfflineRouteView } from "@/components/OfflineRouteView";
 import { useEmergencyMode } from "@/components/EmergencyModeProvider";
 import { saveEmergencyRoute } from "@/lib/offlineDb";
@@ -18,13 +18,6 @@ const UI_MODE_MAP: Record<string, string[]> = {
   metro: ["metro"],
   dtc_bus: ["bus"],
   cab: ["cab_uber", "cab_ola"],
-};
-
-// Only car/auto ever reach the map now — Metro uses the GTFS "View Details" panel and Bus has no
-// map view either, so this only needs the two road-based colors.
-const CATEGORY_COLOR: Record<Extract<MapRouteCategory, "car" | "auto">, string> = {
-  car: "#ff2fb2",
-  auto: "#22C55E",
 };
 
 /**
@@ -107,45 +100,6 @@ export function JourneyHome() {
   // the new one's pins. This counter lets each fetch recognize it's stale and ignore itself.
   const amenityRequestIdRef = useRef(0);
 
-  // The single transport option currently focused via "View on Map" (null = default road view).
-  const [activeMode, setActiveMode] = useState<string | null>(null);
-  const [activeRoute, setActiveRoute] = useState<ActiveRoute | null>(null);
-  // null = fall back to the already-loaded whole-trip `amenities`; an array (even empty) means a
-  // mode-specific fetch has resolved and should be shown instead.
-  const [activeAmenities, setActiveAmenities] = useState<RouteAmenity[] | null>(null);
-  const mapSectionRef = useRef<HTMLDivElement>(null);
-
-  function clearActiveRoute() {
-    setActiveMode(null);
-    setActiveRoute(null);
-    setActiveAmenities(null);
-  }
-
-  async function viewOnMap(opt: RouteOption, category: MapRouteCategory) {
-    if (!origin || !destination) return;
-    setActiveMode(opt.mode);
-    mapSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-    // Only car/auto reach the map now — Metro uses the GTFS "View Details" panel and Bus has no
-    // map view (see RouteCardGrid.tsx). Road-based modes reuse the already-fetched OSRM geometry —
-    // genuinely the same road network a car/auto would use, just styled per provider.
-    const color = CATEGORY_COLOR[category];
-    const hasRealPath = Boolean(routePolyline && routePolyline.length > 1);
-    const points: [number, number][] = hasRealPath
-      ? routePolyline!
-      : [[origin.latitude, origin.longitude], [destination.latitude, destination.longitude]];
-    setActiveRoute({
-      mode: category,
-      label: opt.label,
-      summary: `${opt.label} · Road route · ${opt.duration_min} min`,
-      legs: [{ kind: "road", points, approximate: !hasRealPath }],
-      stations: [],
-      color,
-    });
-    // Same road corridor as the full-trip amenities already loaded — no need to refetch.
-    setActiveAmenities(null);
-  }
-
   async function fetchAmenityGroup(originPoint: MapPoint, destPoint: MapPoint, types: string[], requestId: number) {
     try {
       const res = await fetch("/api/route-amenities", {
@@ -178,7 +132,6 @@ export function JourneyHome() {
   async function runSearch(values: JourneySearchValues) {
     setError(null);
     setLoading(true);
-    clearActiveRoute();
     try {
       // Prefer coordinates the user explicitly confirmed (GPS detect or picking a suggestion)
       // over blindly geocoding raw text, which could silently resolve to the wrong place.
@@ -271,17 +224,13 @@ export function JourneyHome() {
           </p>
         )}
 
-        <div ref={mapSectionRef}>
-          <SafetyMapContainer
-            origin={origin}
-            destination={destination}
-            safetyIndex={safetyIndex}
-            amenities={activeAmenities ?? amenities}
-            routePolyline={routePolyline}
-            activeRoute={activeRoute}
-            onClearActiveRoute={clearActiveRoute}
-          />
-        </div>
+        <SafetyMapContainer
+          origin={origin}
+          destination={destination}
+          safetyIndex={safetyIndex}
+          amenities={amenities}
+          routePolyline={routePolyline}
+        />
 
         {options.length > 0 && (
           <>
@@ -315,15 +264,7 @@ export function JourneyHome() {
               </p>
             )}
 
-            <RouteCardGrid
-              options={options}
-              originLabel={origin?.label}
-              destinationLabel={destination?.label}
-              originPoint={origin}
-              destinationPoint={destination}
-              activeMapMode={activeMode}
-              onViewOnMap={viewOnMap}
-            />
+            <RouteCardGrid options={options} originLabel={origin?.label} destinationLabel={destination?.label} />
           </>
         )}
       </main>
