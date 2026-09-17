@@ -114,7 +114,13 @@ export async function POST(request: Request) {
     systemInstruction: { parts: [{ text: systemInstruction }] },
     // Caps how much Gemini can generate per reply — keeps answers on the shorter side by
     // construction (not just by instruction) and uses less of the free-tier's daily quota.
-    generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+    // thinkingBudget: 0 disables this model's internal "reasoning" tokens, which otherwise count
+    // against maxOutputTokens too — confirmed by direct testing that a real query burned 385 of
+    // the 400-token budget on invisible thinking, leaving only 11 tokens for the actual answer
+    // and truncating it mid-sentence (finishReason "MAX_TOKENS"). Ally's replies are short,
+    // conversational safety/travel advice, not the kind of multi-step reasoning this budget is
+    // for, so disabling it fixes the truncation and uses noticeably fewer tokens per reply.
+    generationConfig: { temperature: 0.7, maxOutputTokens: 400, thinkingConfig: { thinkingBudget: 0 } },
   });
 
   let res: Response | null = null;
