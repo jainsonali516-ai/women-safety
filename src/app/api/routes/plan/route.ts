@@ -71,6 +71,7 @@ export async function POST(request: Request) {
   let metroLineInfo: string | undefined;
   let metroLineColors: string[] | undefined;
   let metroGtfsDurationMin: number | undefined;
+  let metroGtfsDistanceKm: number | undefined;
   if (wantsMetroDetails) {
     try {
       const originStation = findNearestStation(origin);
@@ -89,6 +90,10 @@ export async function POST(request: Request) {
             const destWalkMin = Math.max(1, Math.round(destStation.walkMeters / 80));
             metroGtfsDurationMin = plan.totalTravelMinutes + originWalkMin + destWalkMin + plan.interchanges.length * 4;
           }
+          // Real track distance (GTFS's own shape_dist_traveled), not crow-flies — a Metro trip
+          // routinely covers noticeably more real distance than a straight line, especially with
+          // an interchange, which was previously pushing the fare into a too-low distance slab.
+          if (plan.totalDistanceKm !== null) metroGtfsDistanceKm = plan.totalDistanceKm;
         }
       }
     } catch {
@@ -152,7 +157,9 @@ export async function POST(request: Request) {
   const eRickshawDurationMin = Math.round((cabDistanceKm / 12) * 60 * roadPeakMultiplier);
   const autoDurationMin = Math.round((cabDistanceKm / 20) * 60 * roadPeakMultiplier);
 
-  const metroFare = metroFareForDistance(straightLineKm);
+  // Prefer the real GTFS track distance when available — same reasoning as metroDurationMin
+  // above, and the actual bug behind fares reading too low on multi-leg/interchange journeys.
+  const metroFare = metroFareForDistance(metroGtfsDistanceKm ?? straightLineKm);
   const busFare = busFareForDistance(straightLineKm, concession);
   const eRickshawFare = eRickshawFareForDistance(straightLineKm);
   const autoFare = Math.round(30 + straightLineKm * 11);
@@ -251,7 +258,7 @@ export async function POST(request: Request) {
 
   const options = rawOptions.map((opt) => {
     const riskTier = classifyRiskTier(opt.safety_score);
-    const legDistanceKm = opt.mode.startsWith("cab") ? cabDistanceKm : straightLineKm;
+    const legDistanceKm = opt.mode.startsWith("cab") ? cabDistanceKm : opt.mode === "metro" ? (metroGtfsDistanceKm ?? straightLineKm) : straightLineKm;
     return {
       mode: opt.mode,
       label: opt.label,

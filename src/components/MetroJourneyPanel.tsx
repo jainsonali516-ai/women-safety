@@ -36,6 +36,10 @@ type MetroJourneyResponse =
       availabilityVerified: boolean;
       serviceWindowNote?: string;
       estimatedFareInr: number | null;
+      /** true = the distance slab was picked using GTFS's real track distance for this trip;
+       * false = only a straight-line estimate was available, which understates real Metro
+       * distance (especially with an interchange) and can pick too low a fare slab. */
+      fareVerified: boolean;
     }
   | { status: "unavailable"; reason: string; detail?: string }
   | { status: "unverified"; reason: string };
@@ -145,7 +149,10 @@ export function MetroJourneyPanel({ origin, destination, straightLineKm, knownFa
           icon={<IndianRupee size={13} />}
           text={(() => {
             const fare = knownFareInr ?? data.estimatedFareInr;
-            return fare !== null && fare !== undefined ? `Est. ₹${fare} (distance-based, confirm at station)` : "Check current Metro fare";
+            if (fare === null || fare === undefined) return "Check current Metro fare";
+            return data.fareVerified
+              ? `Est. ₹${fare} (based on real Metro distance, confirm at station)`
+              : `Est. ₹${fare} (approximate, confirm at station)`;
           })()}
         />
       </div>

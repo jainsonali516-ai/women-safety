@@ -106,12 +106,14 @@ export function loadGtfs(): GtfsData {
 
     const stopTimesByTrip = new Map<string, GtfsStopTime[]>();
     for (const r of readCsv("stop_times.txt")) {
+      const distTraveled = parseFloat(r.shape_dist_traveled);
       const entry: GtfsStopTime = {
         tripId: r.trip_id,
         stopId: r.stop_id,
         sequence: parseInt(r.stop_sequence, 10),
         arrivalSec: timeToSeconds(r.arrival_time),
         departureSec: timeToSeconds(r.departure_time),
+        distTraveledMeters: Number.isFinite(distTraveled) ? distTraveled : null,
       };
       const list = stopTimesByTrip.get(r.trip_id) ?? [];
       list.push(entry);

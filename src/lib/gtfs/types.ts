@@ -26,6 +26,11 @@ export interface GtfsStopTime {
   sequence: number;
   arrivalSec: number;
   departureSec: number;
+  /** Real cumulative track distance in meters from the trip's first stop (GTFS's own
+   * shape_dist_traveled) — used for fare calculation instead of straight-line distance, since a
+   * Metro journey (especially with an interchange) covers meaningfully more real distance than a
+   * crow-flies line between origin and destination. */
+  distTraveledMeters: number | null;
 }
 
 export interface GtfsCalendar {

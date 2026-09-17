@@ -94,10 +94,18 @@ export async function POST(request: Request) {
       scheduleNote: plan.scheduleNote,
       availabilityVerified: availability === "available",
       serviceWindowNote: nextDepartureNote,
-      // Same distance-slab approximation already shown on the route card (see lib/fares.ts) —
-      // this GTFS feed has no fare_attributes/fare_rules data, so it's labelled as an estimate
-      // rather than presented as a GTFS-verified fare.
-      estimatedFareInr: typeof straightLineKm === "number" ? metroFareForDistance(straightLineKm) : null,
+      // DMRC's real distance-slab fare table (lib/fares.ts) applied to the REAL track distance
+      // ridden (GTFS's own shape_dist_traveled, summed per leg) — not straight-line distance,
+      // which understates real Metro distance and can push the fare into a lower slab than the
+      // actual one, especially on journeys with an interchange. Falls back to the client-supplied
+      // straight-line estimate only when this feed's distance field wasn't usable for this trip.
+      estimatedFareInr:
+        plan.totalDistanceKm !== null
+          ? metroFareForDistance(plan.totalDistanceKm)
+          : typeof straightLineKm === "number"
+            ? metroFareForDistance(straightLineKm)
+            : null,
+      fareVerified: plan.totalDistanceKm !== null,
     });
   } catch {
     // The GTFS feed failed to load/parse — a technical failure, never to be read by the UI as

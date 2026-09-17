@@ -38,7 +38,7 @@ export function findNearestStation(point: LatLng, radiusMeters = 2000): NearestS
 interface RouteStopSequence {
   routeId: string;
   lineName: string;
-  stopOrder: Map<string, { sequence: number; arrivalSec: number; departureSec: number }>;
+  stopOrder: Map<string, { sequence: number; arrivalSec: number; departureSec: number; distTraveledMeters: number | null }>;
 }
 
 /** The single most complete trip on a route (most stops) stands in for "the route's real station
@@ -57,8 +57,10 @@ function representativeSequenceForRoute(gtfs: GtfsData, routeId: string): RouteS
   }
   if (!bestTripId) return null;
   const stopTimes = gtfs.stopTimesByTrip.get(bestTripId)!;
-  const stopOrder = new Map<string, { sequence: number; arrivalSec: number; departureSec: number }>();
-  for (const st of stopTimes) stopOrder.set(st.stopId, { sequence: st.sequence, arrivalSec: st.arrivalSec, departureSec: st.departureSec });
+  const stopOrder = new Map<string, { sequence: number; arrivalSec: number; departureSec: number; distTraveledMeters: number | null }>();
+  for (const st of stopTimes) {
+    stopOrder.set(st.stopId, { sequence: st.sequence, arrivalSec: st.arrivalSec, departureSec: st.departureSec, distTraveledMeters: st.distTraveledMeters });
+  }
   const route = gtfs.routes.get(routeId)!;
   return { routeId, lineName: route.lineName, stopOrder };
 }
@@ -69,6 +71,11 @@ export interface JourneyLeg {
   alightStopName: string;
   stationCount: number;
   travelMinutes: number | null;
+  /** Real track distance for this leg (GTFS's own shape_dist_traveled), not a straight-line
+   * estimate — a Metro journey routinely covers noticeably more real distance than a crow-flies
+   * line between its two stops, especially with an interchange. Null when the feed's distance
+   * field wasn't usable for this leg. */
+  distanceKm: number | null;
 }
 
 export interface MetroJourneyPlan {
@@ -77,6 +84,8 @@ export interface MetroJourneyPlan {
   legs: JourneyLeg[];
   interchanges: { stationName: string; fromLine: string; toLine: string }[];
   totalTravelMinutes: number | null;
+  /** Sum of each leg's real track distance — null if any leg's distance couldn't be determined. */
+  totalDistanceKm: number | null;
   scheduleNote: string;
 }
 
@@ -93,12 +102,14 @@ function buildLeg(gtfs: GtfsData, lineName: string, fromStopId: string, toStopId
     const from = seq.stopOrder.get(fromStopId);
     const to = seq.stopOrder.get(toStopId);
     if (!from || !to || from.sequence >= to.sequence) continue;
+    const hasDist = from.distTraveledMeters !== null && to.distTraveledMeters !== null;
     return {
       lineName,
       boardStopName: gtfs.stops.get(fromStopId)?.name ?? fromStopId,
       alightStopName: gtfs.stops.get(toStopId)?.name ?? toStopId,
       stationCount: to.sequence - from.sequence,
       travelMinutes: Math.round((to.arrivalSec - from.departureSec) / 60),
+      distanceKm: hasDist ? (to.distTraveledMeters! - from.distTraveledMeters!) / 1000 : null,
     };
   }
   // Both stops ARE on this line (that's why buildLeg was called), just not covered by one
@@ -109,6 +120,7 @@ function buildLeg(gtfs: GtfsData, lineName: string, fromStopId: string, toStopId
     alightStopName: gtfs.stops.get(toStopId)?.name ?? toStopId,
     stationCount: 0,
     travelMinutes: null,
+    distanceKm: null,
   };
 }
 
@@ -189,13 +201,17 @@ export function planMetroJourney(originStopId: string, destStopId: string): Omit
     boardStop = alightStop;
   }
 
-  const anyUnknown = legs.some((l) => l.travelMinutes === null);
-  const totalTravelMinutes = anyUnknown ? null : legs.reduce((sum, l) => sum + (l.travelMinutes ?? 0), 0);
+  const anyUnknownTime = legs.some((l) => l.travelMinutes === null);
+  const totalTravelMinutes = anyUnknownTime ? null : legs.reduce((sum, l) => sum + (l.travelMinutes ?? 0), 0);
+
+  const anyUnknownDistance = legs.some((l) => l.distanceKm === null);
+  const totalDistanceKm = anyUnknownDistance ? null : legs.reduce((sum, l) => sum + (l.distanceKm ?? 0), 0);
 
   return {
     legs,
     interchanges,
     totalTravelMinutes,
+    totalDistanceKm,
     scheduleNote: "Scheduled Metro information (static DMRC timetable, not a live feed)",
   };
 }
