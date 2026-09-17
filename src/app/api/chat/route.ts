@@ -81,8 +81,18 @@ export async function POST(request: Request) {
   const parsed = safeParse(bodySchema, body);
   if (!parsed.ok) return jsonError(parsed.error);
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return jsonError("Ally isn't configured on this server yet.", 503);
+  // Multiple keys, tried in order — a failover chain, not load-balanced round-robin: stay on the
+  // first key until it actually fails (network error, rate limit, or a 5xx from Google) before
+  // falling back to the next one, so a single working key handles all traffic on its own until
+  // it's genuinely exhausted. GEMINI_API_KEY is kept as a last-resort fallback for any deployment
+  // that only ever set the single legacy variable.
+  const apiKeys = [
+    process.env.GEMINI_API_KEY_1,
+    process.env.GEMINI_API_KEY_2,
+    process.env.GEMINI_API_KEY_3,
+    process.env.GEMINI_API_KEY,
+  ].filter((key, index, all): key is string => Boolean(key) && all.indexOf(key) === index);
+  if (apiKeys.length === 0) return jsonError("Ally isn't configured on this server yet.", 503);
 
   const { query, history, language } = parsed.data;
 
@@ -99,27 +109,54 @@ export async function POST(request: Request) {
     { role: "user", parts: [{ text: query }] },
   ];
 
-  let res: Response;
-  try {
-    res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents,
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        // Caps how much Gemini can generate per reply — keeps answers on the shorter side by
-        // construction (not just by instruction) and uses less of the free-tier's daily quota.
-        generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-  } catch {
-    return jsonError("Network error while reaching Ally.", 502);
+  const requestBody = JSON.stringify({
+    contents,
+    systemInstruction: { parts: [{ text: systemInstruction }] },
+    // Caps how much Gemini can generate per reply — keeps answers on the shorter side by
+    // construction (not just by instruction) and uses less of the free-tier's daily quota.
+    generationConfig: { temperature: 0.7, maxOutputTokens: 400 },
+  });
+
+  let res: Response | null = null;
+  let lastNetworkError = false;
+  for (let i = 0; i < apiKeys.length; i++) {
+    try {
+      const attempt = await fetch(`${GEMINI_URL}?key=${apiKeys[i]}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+        signal: AbortSignal.timeout(30000),
+      });
+      lastNetworkError = false;
+      if (attempt.ok) {
+        res = attempt;
+        break;
+      }
+      const text = await attempt.text().catch(() => "");
+      console.error(`Gemini API error (key ${i + 1}/${apiKeys.length}):`, attempt.status, text);
+      // A 429 (rate limit) or 5xx from Google is exactly the failure this key rotation exists
+      // for — try the next key. Google also returns a plain 400 "API key not valid" for a bad
+      // key (not 401/403 as you'd expect), which is just as much a per-key problem and needs the
+      // same fallback — confirmed by testing with a deliberately invalid key. Anything else
+      // (e.g. a 400 for genuinely malformed request content) would fail identically on every
+      // key, so there's no point burning through the rest of them.
+      const isKeyProblem = /api key/i.test(text);
+      if (attempt.status === 429 || attempt.status >= 500 || isKeyProblem) {
+        res = attempt;
+        continue;
+      }
+      res = attempt;
+      break;
+    } catch (err) {
+      lastNetworkError = true;
+      console.error(`Gemini network error (key ${i + 1}/${apiKeys.length}):`, err instanceof Error ? err.message : err);
+    }
   }
 
+  if (lastNetworkError) return jsonError("Network error while reaching Ally.", 502);
+  if (!res) return jsonError("Sorry, Ally couldn't respond right now. Please try again shortly.", 502);
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    console.error("Gemini API error:", res.status, text);
     if (res.status === 429) {
       return jsonError("Ally is a bit busy right now — please try again in a minute.", 429);
     }
