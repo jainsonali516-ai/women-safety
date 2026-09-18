@@ -1,4 +1,5 @@
 import { loadGtfs } from "./load";
+import { istParts } from "@/lib/istTime";
 import type { GtfsData } from "./types";
 
 /** service_ids that run on a given date's day-of-week, per calendar.txt's weekly pattern.
@@ -7,7 +8,9 @@ import type { GtfsData } from "./types";
  * pattern is what's actually being relied on here, not the exact date window, and Metro's weekly
  * pattern doesn't change often. Labelled as "scheduled" (not live) everywhere this is surfaced. */
 function activeServiceIds(gtfs: GtfsData, date: Date): string[] {
-  const dayIndex = (date.getDay() + 6) % 7; // getDay(): 0=Sun..6=Sat -> convert to 0=Mon..6=Sun
+  // Reads the day-of-week in IST, not the server's own local time — on Vercel the server runs
+  // in UTC, so near midnight IST this would otherwise silently pick the wrong calendar day.
+  const dayIndex = (istParts(date).dayOfWeek + 6) % 7; // istParts: 0=Sun..6=Sat -> convert to 0=Mon..6=Sun
   const ids: string[] = [];
   for (const cal of gtfs.calendar.values()) {
     if (cal.days[dayIndex]) ids.push(cal.serviceId);
@@ -49,7 +52,11 @@ export function departureWindowForStop(stopId: string, lineName: string, date: D
 }
 
 export function secondsSinceMidnight(date: Date): number {
-  return date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds();
+  // IST, not the server's own local time — this is the exact bug that made a 7:16 AM IST
+  // request read as ~1:46 AM (Vercel's server clock is UTC) and wrongly report Metro as not
+  // yet running for a station whose real scheduled window had long since started.
+  const { hour, minute } = istParts(date);
+  return hour * 3600 + minute * 60 + date.getSeconds();
 }
 
 export function formatHms(totalSec: number): string {
