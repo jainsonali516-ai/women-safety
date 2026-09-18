@@ -53,7 +53,9 @@ export function TestimonialCarousel({ items }: { items: FeedbackItem[] }) {
             }}
           >
             <Quote size={24} style={{ opacity: 0.4, marginBottom: "0.4rem", flexShrink: 0 }} fill="white" />
-            <p style={{ fontSize: "0.88rem", lineHeight: 1.6 }}>{item.message}</p>
+            <p style={{ fontSize: "0.88rem", lineHeight: 1.6 }}>
+              <T>{item.message}</T>
+            </p>
           </div>
         ))}
       </div>
