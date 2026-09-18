@@ -299,7 +299,11 @@ export function JourneyHome() {
         </div>
 
         {destination?.label && (
-          <DidYouKnowCard place={placeNameParts(destination.label).place} context={placeNameParts(destination.label).context} />
+          <DidYouKnowCard
+            key={destination.label}
+            place={placeNameParts(destination.label).place}
+            context={placeNameParts(destination.label).context}
+          />
         )}
 
         {options.length > 0 && (

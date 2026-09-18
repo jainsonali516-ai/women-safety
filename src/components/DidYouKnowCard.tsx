@@ -21,7 +21,6 @@ export function DidYouKnowCard({ place, context }: { place: string; context?: st
 
   useEffect(() => {
     let cancelled = false;
-    setResult(null);
     const params = new URLSearchParams({ place });
     if (context) params.set("context", context);
     fetch(`/api/place-fact?${params.toString()}`)

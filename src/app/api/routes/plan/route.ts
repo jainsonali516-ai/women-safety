@@ -298,7 +298,7 @@ export async function POST(request: Request) {
 
   const options = rawOptions.map((opt) => {
     const finalSafetyScore = finalizeSafetyScore(opt.safety_score, opt.mode);
-    const riskTier = classifyRiskTier(finalSafetyScore);
+    const riskTier = classifyRiskTier(finalSafetyScore, afterSunset);
     const legDistanceKm = opt.mode.startsWith("cab") ? cabDistanceKm : opt.mode === "metro" ? (metroGtfsDistanceKm ?? straightLineKm) : straightLineKm;
     return {
       mode: opt.mode,
