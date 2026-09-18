@@ -12,6 +12,7 @@ import { computeFinalScore } from "@/lib/scoring";
 import { T } from "@/components/Translated";
 import { TransitAlertBanner } from "@/components/TransitAlertBanner";
 import { DidYouKnowCard } from "@/components/DidYouKnowCard";
+import { JourneyCheckIn } from "@/components/JourneyCheckIn";
 
 type SortMode = "balanced" | "safest" | "fastest" | "cheapest";
 
@@ -285,6 +286,8 @@ export function JourneyHome() {
             <T>{error}</T>
           </p>
         )}
+
+        <JourneyCheckIn originLabel={origin?.label} destinationLabel={destination?.label} />
 
         <div ref={mapSectionRef}>
           <SafetyMapContainer
