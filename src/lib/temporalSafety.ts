@@ -89,11 +89,13 @@ export async function getTemporalContext(date = new Date()): Promise<TemporalCon
 
 /** Points subtracted from Bus/Metro safety scores during the 8-11 AM crowding windows — an
  * escalating penalty (standard < heavy < peak) reflecting how packed transit genuinely gets
- * through that hour, not a flat "rush hour" constant. */
+ * through that hour, not a flat "rush hour" constant. Reduced from an earlier 5/10/15 after real
+ * routes showed this stacking with the separate unmonitored-mode penalty and pushing an ordinary
+ * weekday morning into Moderately Risky/High Risk too easily. */
 export function rushCrowdingPenalty(rushTier: RushTier): number {
-  if (rushTier === "peak") return 15;
-  if (rushTier === "heavy") return 10;
-  if (rushTier === "standard") return 5;
+  if (rushTier === "peak") return 8;
+  if (rushTier === "heavy") return 5;
+  if (rushTier === "standard") return 3;
   return 0;
 }
 
