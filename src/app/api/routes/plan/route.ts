@@ -10,6 +10,7 @@ import {
   fetchStreetLightDensity,
 } from "@/lib/scoring";
 import { fetchDrivingRoute } from "@/lib/routing";
+import { fetchLiveTraffic } from "@/lib/tomtom";
 import { buildOlaLinks, buildUberLinks } from "@/lib/rideDeepLinks";
 import { busFareForDistance, eRickshawFareForDistance, metroFareForDistance } from "@/lib/fares";
 import { classifyRiskTier, explainCost, explainSafety, explainSpeed } from "@/lib/riskTier";
@@ -68,10 +69,11 @@ export async function POST(request: Request) {
   const afterSunset = temporal.isAfterSunset;
   const isPeakHour = computeHeuristicRushScore() < 70;
 
-  const [lights, footTraffic, driving] = await Promise.all([
+  const [lights, footTraffic, driving, liveTraffic] = await Promise.all([
     fetchStreetLightDensity(mid),
     fetchFootTrafficScore(mid),
     fetchDrivingRoute(origin, destination),
+    fetchLiveTraffic(origin, destination),
   ]);
 
   // Real DMRC line/interchange info and an accurate scheduled duration, from the bundled GTFS
@@ -135,13 +137,19 @@ export async function POST(request: Request) {
 
   const rushScore = computeHeuristicRushScore();
 
-  // Surface roads (bus/auto/e-rickshaw/cab) genuinely slow down in weekday peak traffic — OSRM's
-  // free public router returns a "typical," not live-traffic, duration, so this heuristic
-  // multiplier is the only peak-hour effect currently applied to road-based ETAs.
-  const roadPeakMultiplier = isPeakHour ? 1.35 : 1;
+  // Surface roads (bus/auto/e-rickshaw/cab) genuinely slow down in traffic. When TomTom's live
+  // routing succeeds, `roadPeakMultiplier` becomes a REAL congestion ratio for this exact route
+  // right now (current travel time ÷ free-flow travel time) instead of a flat "1.35x during
+  // 8-11 AM/5-10 PM" guess — the same fallback heuristic is kept for whenever TomTom is
+  // unavailable (no key, quota exhausted, network error), so this never blocks route planning.
+  const roadPeakMultiplier = liveTraffic ? liveTraffic.congestionRatio : isPeakHour ? 1.35 : 1;
 
   const cabDistanceKm = driving ? driving.distanceMeters / 1000 : straightLineKm * 1.3;
-  const cabDurationMin = (driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60) * roadPeakMultiplier;
+  // Prefer TomTom's real live-traffic-aware travel time directly over OSRM's typical-traffic
+  // duration — it's already congestion-adjusted, so no multiplier is applied on top of it.
+  const cabDurationMin = liveTraffic
+    ? liveTraffic.travelTimeSeconds / 60
+    : (driving ? driving.durationSeconds / 60 : (cabDistanceKm / 22) * 60) * roadPeakMultiplier;
 
   // Real transit corridors don't run in a straight line between two points — using raw crow-flies
   // distance here was understating actual travel distance (and so, duration) for any trip that
@@ -318,7 +326,13 @@ export async function POST(request: Request) {
       why: {
         safety: explainSafety({ ...safetyExplanationBase, modeBonus: opt.mode_bonus, modeLabel: opt.label }),
         cost: explainCost(opt.label, opt.fare_inr, legDistanceKm, opt.mode === "bus" ? concession : undefined),
-        speed: explainSpeed(opt.label, opt.duration_min, Boolean(driving), isPeakHour),
+        speed: explainSpeed(
+          opt.label,
+          opt.duration_min,
+          Boolean(driving),
+          isPeakHour,
+          liveTraffic && opt.mode !== "metro" ? liveTraffic.delaySeconds / 60 : undefined
+        ),
       },
     };
   });
@@ -342,6 +356,9 @@ export async function POST(request: Request) {
       foot_traffic_score: footTraffic.score,
       foot_traffic_data_available: footTraffic.available,
       live_routing_available: Boolean(driving),
+      live_traffic_available: Boolean(liveTraffic),
+      live_traffic_delay_min: liveTraffic ? Math.round((liveTraffic.delaySeconds / 60) * 10) / 10 : null,
+      live_traffic_congestion_ratio: liveTraffic ? Math.round(liveTraffic.congestionRatio * 100) / 100 : null,
       after_sunset: afterSunset,
       sunrise_hour: Math.round(temporal.sunriseHour * 100) / 100,
       sunset_hour: Math.round(temporal.sunsetHour * 100) / 100,

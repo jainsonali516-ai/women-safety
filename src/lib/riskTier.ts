@@ -105,10 +105,23 @@ export function explainCost(modeLabel: string, fareInr: number, distanceKm: numb
   return `${modeLabel} fare for ~${distanceKm.toFixed(1)} km, ₹${fareInr} total.`;
 }
 
-export function explainSpeed(modeLabel: string, durationMin: number, liveRoutingAvailable: boolean, isPeakHour: boolean): string {
-  const trafficNote = isPeakHour
-    ? "current time falls in a typical weekday traffic peak, which slows surface transport"
-    : "outside peak hours, so surface roads are comparatively clear";
+export function explainSpeed(
+  modeLabel: string,
+  durationMin: number,
+  liveRoutingAvailable: boolean,
+  isPeakHour: boolean,
+  liveTrafficDelayMin?: number
+): string {
+  // A real, current traffic delay (from TomTom) is a much more concrete, honest statement than
+  // a generic "typical peak hour" guess — used whenever it's available, for road-based modes only.
+  const trafficNote =
+    typeof liveTrafficDelayMin === "number"
+      ? liveTrafficDelayMin >= 1
+        ? `current live traffic is adding about ${Math.round(liveTrafficDelayMin)} min to this trip`
+        : "roads are currently flowing freely, with no significant live traffic delay"
+      : isPeakHour
+        ? "current time falls in a typical weekday traffic peak, which slows surface transport"
+        : "outside peak hours, so surface roads are comparatively clear";
   const dataNote = liveRoutingAvailable
     ? "using real road-distance routing"
     : "estimated from straight-line distance (live routing was unavailable)";

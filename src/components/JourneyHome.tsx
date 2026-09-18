@@ -333,7 +333,7 @@ export function JourneyHome() {
             {signals && (
               <p style={{ fontSize: "0.75rem", color: "var(--foreground-muted)" }}>
                 <T>
-                  {`${signals.live_routing_available ? "Real road-distance routing used. " : "Routing service unavailable — using distance estimates. "}${signals.street_light_data_available ? "Live OSM street-light data used." : "Street-light data unavailable."}`}
+                  {`${signals.live_routing_available ? "Real road-distance routing used. " : "Routing service unavailable — using distance estimates. "}${signals.live_traffic_available ? "Live traffic data used for travel times. " : ""}${signals.street_light_data_available ? "Live OSM street-light data used." : "Street-light data unavailable."}`}
                 </T>
               </p>
             )}
