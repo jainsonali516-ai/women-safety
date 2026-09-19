@@ -281,5 +281,42 @@ export function useJourneyTimer() {
     };
   }, [state.active, state.journeyId]);
 
+  // Keeps the screen awake while a journey is active, so the countdown/GPS tracking above doesn't
+  // silently stall because the phone locked itself. Best-effort only: not all browsers support
+  // the Wake Lock API, and the lock is auto-released by the OS if the tab loses visibility, which
+  // is exactly what the visibilitychange re-request below is for.
+  useEffect(() => {
+    if (!state.active || typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+
+    let lock: WakeLockSentinel | null = null;
+    let cancelled = false;
+
+    async function acquire() {
+      try {
+        const sentinel = await navigator.wakeLock.request("screen");
+        if (cancelled) {
+          sentinel.release().catch(() => {});
+          return;
+        }
+        lock = sentinel;
+      } catch {
+        /* denied/unsupported in this context — the timer/GPS sync above still work without it */
+      }
+    }
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") acquire();
+    }
+
+    acquire();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      if (lock) lock.release().catch(() => {});
+    };
+  }, [state.active]);
+
   return { ...state, startJourney, extendJourney, endJourney };
 }
