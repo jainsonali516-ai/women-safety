@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PlayCircle, MessageCircle, X } from "lucide-react";
+import { PlayCircle, MessageCircle, X, Send } from "lucide-react";
 import { T } from "@/components/Translated";
 import { useJourneyTimer } from "@/hooks/useJourneyTimer";
 import { JourneyCheckInModal, formatEta, type CheckInStep } from "@/components/JourneyCheckInModal";
@@ -80,7 +80,7 @@ export function JourneyCheckIn({ originLabel, destinationLabel }: { originLabel?
    * WhatsApp open happens synchronously enough to survive most popup blockers since it's still
    * within the same user-gesture handler chain as the button press that triggered this).
    */
-  async function triggerSafetyAlert(opts: { manualUnsafe?: boolean; testAlert?: boolean } = {}) {
+  async function triggerSafetyAlert(opts: { manualUnsafe?: boolean; testAlert?: boolean; demoMode?: boolean } = {}) {
     if (!timer.journeyId) return;
     if (!navigator.onLine) {
       setAlertState((s) => ({ ...s, emailStatus: "sending" }));
@@ -91,7 +91,12 @@ export function JourneyCheckIn({ originLabel, destinationLabel }: { originLabel?
       const res = await fetch("/api/safety/send-alert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ journeyId: timer.journeyId, manualUnsafe: opts.manualUnsafe, testAlert: opts.testAlert }),
+        body: JSON.stringify({
+          journeyId: timer.journeyId,
+          manualUnsafe: opts.manualUnsafe,
+          testAlert: opts.testAlert,
+          demoMode: opts.demoMode,
+        }),
       });
       if (!res.ok) {
         setAlertState((s) => ({ ...s, emailStatus: "failed" }));
@@ -225,7 +230,12 @@ export function JourneyCheckIn({ originLabel, destinationLabel }: { originLabel?
                 {alertState.reasons.length > 0 && <> — {alertState.reasons.join("; ")}</>}
               </span>
             )}
-            {(alertState.emailStatus !== "idle" || alertState.whatsappStatus !== "idle") && (
+            {alertState.emailStatus === "sending" && (
+              <span style={{ fontSize: "0.68rem", color: "var(--accent-strong)" }}>
+                <T>Sending test alert...</T>
+              </span>
+            )}
+            {alertState.emailStatus !== "sending" && (alertState.emailStatus !== "idle" || alertState.whatsappStatus !== "idle") && (
               <span style={{ fontSize: "0.68rem", color: "var(--foreground-muted)" }}>
                 <T>Email</T>: <T>{alertState.emailStatus}</T> · <T>WhatsApp</T>: <T>{alertState.whatsappStatus}</T>
               </span>
@@ -237,6 +247,24 @@ export function JourneyCheckIn({ originLabel, destinationLabel }: { originLabel?
             style={{ background: "none", border: "none", color: "var(--accent-strong)", cursor: "pointer", display: "flex", flexShrink: 0, marginTop: "0.1rem" }}
           >
             <MessageCircle size={16} />
+          </button>
+          <button
+            onClick={() => void triggerSafetyAlert({ testAlert: true, demoMode: true })}
+            disabled={!timer.journeyId || alertState.emailStatus === "sending"}
+            aria-label="Send test safety alert"
+            title={timer.journeyId ? "Send a real test alert to your trusted contacts" : "Sign in to enable test alerts"}
+            style={{
+              background: "none",
+              border: "none",
+              color: timer.journeyId ? "var(--accent-strong)" : "var(--foreground-muted)",
+              cursor: timer.journeyId ? "pointer" : "not-allowed",
+              display: "flex",
+              flexShrink: 0,
+              marginTop: "0.1rem",
+              opacity: alertState.emailStatus === "sending" ? 0.5 : 1,
+            }}
+          >
+            <Send size={16} />
           </button>
           <button
             onClick={handleSafe}
