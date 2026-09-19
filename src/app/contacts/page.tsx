@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { RequireAuthGate } from "@/components/RequireAuthGate";
-import { Phone, Trash2, Plus, Bell, Users, BellOff } from "lucide-react";
+import { Phone, Trash2, Plus, Bell, Users, BellOff, Mail, MailX } from "lucide-react";
 import { TulipLogo } from "@/components/TulipLogo";
 import { T } from "@/components/Translated";
 
@@ -12,6 +12,8 @@ interface Contact {
   name: string;
   phone: string;
   relationship: string | null;
+  email: string | null;
+  alerts_enabled: boolean;
 }
 
 interface Reminder {
@@ -40,7 +42,8 @@ export default function ContactsPage() {
 function ContactsManager() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [form, setForm] = useState({ name: "", phone: "", relationship: "" });
+  const [form, setForm] = useState({ name: "", phone: "", relationship: "", email: "" });
+  const [busyContactId, setBusyContactId] = useState<string | null>(null);
   const [reminderTime, setReminderTime] = useState("20:00");
   const [reminderDays, setReminderDays] = useState<number[]>([1, 2, 3, 4, 5]); // defaults to weekdays, but every day is toggleable below
   const [error, setError] = useState<string | null>(null);
@@ -81,7 +84,7 @@ function ContactsManager() {
         setError(data.error);
         return;
       }
-      setForm({ name: "", phone: "", relationship: "" });
+      setForm({ name: "", phone: "", relationship: "", email: "" });
       // Append the row the server just returned instead of re-fetching the whole list — on a
       // slow phone connection a second full round trip after the save is what made this feel
       // like it was hanging.
@@ -105,6 +108,25 @@ function ContactsManager() {
       setContacts(previous);
     } finally {
       setDeletingContactId(null);
+    }
+  }
+
+  async function toggleContactAlerts(contact: Contact) {
+    if (busyContactId) return;
+    setBusyContactId(contact.id);
+    const previous = contacts;
+    setContacts((prev) => prev.map((c) => (c.id === contact.id ? { ...c, alerts_enabled: !c.alerts_enabled } : c)));
+    try {
+      const res = await fetch(`/api/contacts/${contact.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alertsEnabled: !contact.alerts_enabled }),
+      });
+      if (!res.ok) setContacts(previous);
+    } catch {
+      setContacts(previous);
+    } finally {
+      setBusyContactId(null);
     }
   }
 
@@ -182,6 +204,14 @@ function ContactsManager() {
             <input placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className="field" style={inputStyle} />
             <input placeholder="+91 phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required className="field" style={inputStyle} />
             <input placeholder="Relationship" value={form.relationship} onChange={(e) => setForm({ ...form, relationship: e.target.value })} className="field" style={inputStyle} />
+            <input
+              type="email"
+              placeholder="Email (for safety alerts)"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              className="field"
+              style={inputStyle}
+            />
             <button
               type="submit"
               disabled={addingContact}
@@ -204,11 +234,31 @@ function ContactsManager() {
                   <span style={{ color: "var(--foreground-muted)", fontSize: "0.85rem" }}>
                     {c.phone} {c.relationship ? `· ${c.relationship}` : ""}
                   </span>
+                  <br />
+                  <span style={{ color: "var(--foreground-muted)", fontSize: "0.75rem" }}>
+                    {c.email ? c.email : <T>No email — safety alerts can&apos;t reach this contact</T>}
+                  </span>
                 </span>
                 <span style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <a href={`tel:${c.phone}`} className="icon-btn" style={iconBtn}>
                     <Phone size={16} />
                   </a>
+                  {c.email && (
+                    <button
+                      onClick={() => toggleContactAlerts(c)}
+                      disabled={busyContactId === c.id}
+                      title={c.alerts_enabled ? "Safety alerts enabled — click to disable" : "Safety alerts disabled — click to enable"}
+                      className="icon-btn"
+                      style={{
+                        ...iconBtn,
+                        color: c.alerts_enabled ? "var(--accent-strong)" : "var(--foreground-muted)",
+                        opacity: busyContactId === c.id ? 0.5 : 1,
+                        cursor: busyContactId === c.id ? "wait" : "pointer",
+                      }}
+                    >
+                      {c.alerts_enabled ? <Mail size={16} /> : <MailX size={16} />}
+                    </button>
+                  )}
                   <button
                     onClick={() => deleteContact(c.id)}
                     disabled={deletingContactId === c.id}

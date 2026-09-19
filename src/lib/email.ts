@@ -3,7 +3,9 @@ import nodemailer from "nodemailer";
 // Gmail SMTP delivery — requires GMAIL_USER (the sending address) and GMAIL_APP_PASSWORD
 // (a 16-character App Password from https://myaccount.google.com/apppasswords, not the
 // account's regular login password; App Passwords need 2-Step Verification enabled).
-function createTransport() {
+// Exported so other server-only email senders (e.g. lib/email/sendSafetyAlert.ts) reuse this
+// exact transporter instead of duplicating the Gmail auth setup.
+export function createTransport() {
   const user = process.env.GMAIL_USER;
   const pass = process.env.GMAIL_APP_PASSWORD;
   if (!user || !pass) return null;

@@ -12,11 +12,20 @@ export async function PATCH(
   const supabase = createAdminClient();
 
   const body = await request.json().catch(() => null);
-  const { name, phone, relationship } = body ?? {};
+  const { name, phone, relationship, email, alertsEnabled } = body ?? {};
+  if (email && typeof email === "string" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return jsonError("Enter a valid email address");
+  }
 
   const { data, error } = await supabase
     .from("emergency_contacts")
-    .update({ name, phone, relationship })
+    .update({
+      name,
+      phone,
+      relationship,
+      ...(email !== undefined ? { email: email || null } : {}),
+      ...(typeof alertsEnabled === "boolean" ? { alerts_enabled: alertsEnabled } : {}),
+    })
     .eq("id", id)
     .eq("user_id", user.id)
     .select()
