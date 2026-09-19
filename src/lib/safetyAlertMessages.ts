@@ -34,13 +34,13 @@ export function emailSubject(riskLevel: JourneyRiskLevel): string {
 /** Plain-text WhatsApp share message — used both by the client's `wa.me` opener and included in
  * the server's API response so a live client can open the exact same text. */
 export function whatsappEscalationMessage(ctx: AlertContext): string {
-  const mapsLine =
-    ctx.lastKnownLatitude !== null && ctx.lastKnownLongitude !== null
-      ? ` Last known location: ${googleMapsLink(ctx.lastKnownLatitude, ctx.lastKnownLongitude)}`
-      : "";
+  const hasLocation = ctx.lastKnownLatitude !== null && ctx.lastKnownLongitude !== null;
+  const locationLine = hasLocation
+    ? ` Last known location (Lat: ${ctx.lastKnownLatitude}, Lng: ${ctx.lastKnownLongitude}): ${googleMapsLink(ctx.lastKnownLatitude!, ctx.lastKnownLongitude!)}`
+    : "";
   return (
     `HERLANE Safety Alert: ${ctx.userName}'s journey from ${ctx.originLabel} to ${ctx.destinationLabel} needs a check — ` +
-    `${ctx.reasons.join("; ")}.${mapsLine}${ctx.demoMode ? " (DEMO MODE)" : ""}`
+    `${ctx.reasons.join("; ")}.${locationLine}${ctx.demoMode ? " (DEMO MODE)" : ""}`
   );
 }
 
